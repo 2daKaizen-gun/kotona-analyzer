@@ -28,11 +28,11 @@
     - [] Phase 1-3: Database Schema Design & Containerization (Docker with PostgreSQL/MySQL)
     - [] Phase 1-4: Security Configuration (API Key Management & .env Setup)
 
-- **Phase 2**: Holiday Data Acquisition & Modeling
-    - [] Phase 2-1: Research & Integrate Public Holiday APIs (KR/JP)
-    - [] Phase 2-2: Define TypeScript Interfaces for Holiday & Schedule Models
-    - [] Phase 2-3: Develop Data Fetching Utilities with Error Handling
-    - [] Phase 2-4: Implement Local Caching Logic for Performance Optimization
+- **Phase 2**: AI Integration & Core Analysis Engine Development
+    - [] Phase 2-1: Integrate Google Gemini API via Spring AI
+    - [] Phase 2-2: Design 'Role-based Prompts' for Japanese Business Context
+    - [] Phase 2-3: Implement AI Response Parsing & Error Handling
+    - [] Phase 2-4: Text Pre-processing & Japanese Token Analysis
 
 - **Phase 3**: Core Business & Comparison Logic
     - [] Phase 3-1: Develop "Cross-Border Holiday Comparison" Engine
