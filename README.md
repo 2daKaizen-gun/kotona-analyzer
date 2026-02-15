@@ -34,11 +34,11 @@
     - [] Phase 2-3: Implement AI Response Parsing & Error Handling
     - [] Phase 2-4: Text Pre-processing & Japanese Token Analysis
 
-- **Phase 3**: Core Business & Comparison Logic
-    - [] Phase 3-1: Develop "Cross-Border Holiday Comparison" Engine
-    - [] Phase 3-2: Implement Long-term Vacation Detection (Golden Week, Chuseok, etc.)
-    - [] Phase 3-3: Build Context-Aware Alert Logic (Business Risk Assessment)
-    - [] Phase 3-4: Create Scheduling Recommendation Algorithm
+- **Phase 3**: Core Business Logic & Scoring Algorithm
+    - [] Phase 3-1: Develop Scoring Logic for 'Indirectness' and 'Etiquette'
+    - [] Phase 3-2: Implement Sentiment Analysis for Extracting 'Honne'
+    - [] Phase 3-3: Build Context-Aware Risk Detection (Soft-rejection signals)
+    - [] Phase 3-4: Develop Category Classification Engine
 
 - **Phase 4**: Advanced Web Interface & UX Development
     - [] Phase 4-1: Build Interactive Dual-Calendar Dashboard UI
