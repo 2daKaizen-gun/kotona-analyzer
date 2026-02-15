@@ -40,18 +40,14 @@
     - [] Phase 3-3: Build Context-Aware Risk Detection (Soft-rejection signals)
     - [] Phase 3-4: Develop Category Classification Engine
 
-- **Phase 4**: Advanced Web Interface & UX Development
-    - [] Phase 4-1: Build Interactive Dual-Calendar Dashboard UI
-    - [] Phase 4-2: Implement Real-time Schedule Conflict Visualization
-    - [] Phase 4-3: Develop Business Email Template Generator (KR/JP Bilingual)
-    - [] Phase 4-4: Implement Dynamic Calendar Navigation
-    - [] Phase 4-5: User-Defined Schedule Management & Data Persistence
-    - [] Phase 4-6: Integrate Gemini AI for Smart Email Generation
+- **Phase 4**: Response Generation & Data Management
+    - [] Phase 4-1: Implement Smart Reply Generator for Various Scenarios
+    - [] Phase 4-2: Develop CRUD APIs & Data Persistence for Analysis History
+    - [] Phase 4-3: Construct Japanese Business Phrase Library
+    - [] Phase 4-4: API Documentation Automation via Swagger
 
-- **Phase 5**: Deployment, Documentation & Portfolio Finalization
-    - [] Phase 5-1: Cloud Deployment & CI/CD Pipeline Setup (Vercel)
-    - [] Phase 5-2: Performance Optimization (Server-side Rendering & Static Generation)
-    - [] Phase 5-3: Comprehensive Technical Documentation (README & API Docs)
-    - [] Phase 5-4: Global Localization & UX Optimization
-    - [] Phase 5-5: Code Refactoring & TypeScript Strict Mode Audit
-    - [] Phase 5-6: Final Project Retrospective
+- **Phase 5**: Quality Assurance & Portfolio Finalization
+    - [] Phase 5-1: Execute Unit Testing for Core Logic using JUnit5
+    - [] Phase 5-2: Cloud Deployment & CI/CD Pipeline Configuration
+    - [] Phase 5-3: Comprehensive Technical Documentation (README & Diagrams)
+    - [] Phase 5-4: Final Project Retrospective & Achievement Summary
