@@ -22,36 +22,36 @@
 - 가독성 높은 API 명세 및 테스트 코드 중심 개발.
 
 ## ✅ Milestone
-- **Phase 1**: Foundation & Frontend Environment Setup
-    - [x] Phase 1-1: Initialize GitHub Repository & Project Board
-    - [x] Phase 1-2: Setup Next.js (App Router) & TypeScript Development Environment
-    - [x] Phase 1-3: Configure Global Styling Strategy (Tailwind CSS & Business Theme)
-    - [x] Phase 1-4: Security Setup (Environment Variables & .env Configuration)
+- **Phase 1**: Project Foundation & Backend Environment Setup
+    - [] Phase 1-1: Initialize GitHub Repository & Project Board
+    - [] Phase 1-2: Setup Spring Boot 3.x & Java 17 Development Environment
+    - [] Phase 1-3: Database Schema Design & Containerization (Docker with PostgreSQL/MySQL)
+    - [] Phase 1-4: Security Configuration (API Key Management & .env Setup)
 
 - **Phase 2**: Holiday Data Acquisition & Modeling
-    - [x] Phase 2-1: Research & Integrate Public Holiday APIs (KR/JP)
-    - [x] Phase 2-2: Define TypeScript Interfaces for Holiday & Schedule Models
-    - [x] Phase 2-3: Develop Data Fetching Utilities with Error Handling
-    - [x] Phase 2-4: Implement Local Caching Logic for Performance Optimization
+    - [] Phase 2-1: Research & Integrate Public Holiday APIs (KR/JP)
+    - [] Phase 2-2: Define TypeScript Interfaces for Holiday & Schedule Models
+    - [] Phase 2-3: Develop Data Fetching Utilities with Error Handling
+    - [] Phase 2-4: Implement Local Caching Logic for Performance Optimization
 
 - **Phase 3**: Core Business & Comparison Logic
-    - [x] Phase 3-1: Develop "Cross-Border Holiday Comparison" Engine
-    - [x] Phase 3-2: Implement Long-term Vacation Detection (Golden Week, Chuseok, etc.)
-    - [x] Phase 3-3: Build Context-Aware Alert Logic (Business Risk Assessment)
-    - [x] Phase 3-4: Create Scheduling Recommendation Algorithm
+    - [] Phase 3-1: Develop "Cross-Border Holiday Comparison" Engine
+    - [] Phase 3-2: Implement Long-term Vacation Detection (Golden Week, Chuseok, etc.)
+    - [] Phase 3-3: Build Context-Aware Alert Logic (Business Risk Assessment)
+    - [] Phase 3-4: Create Scheduling Recommendation Algorithm
 
 - **Phase 4**: Advanced Web Interface & UX Development
-    - [x] Phase 4-1: Build Interactive Dual-Calendar Dashboard UI
-    - [x] Phase 4-2: Implement Real-time Schedule Conflict Visualization
-    - [x] Phase 4-3: Develop Business Email Template Generator (KR/JP Bilingual)
-    - [x] Phase 4-4: Implement Dynamic Calendar Navigation
-    - [x] Phase 4-5: User-Defined Schedule Management & Data Persistence
-    - [x] Phase 4-6: Integrate Gemini AI for Smart Email Generation
+    - [] Phase 4-1: Build Interactive Dual-Calendar Dashboard UI
+    - [] Phase 4-2: Implement Real-time Schedule Conflict Visualization
+    - [] Phase 4-3: Develop Business Email Template Generator (KR/JP Bilingual)
+    - [] Phase 4-4: Implement Dynamic Calendar Navigation
+    - [] Phase 4-5: User-Defined Schedule Management & Data Persistence
+    - [] Phase 4-6: Integrate Gemini AI for Smart Email Generation
 
 - **Phase 5**: Deployment, Documentation & Portfolio Finalization
-    - [x] Phase 5-1: Cloud Deployment & CI/CD Pipeline Setup (Vercel)
-    - [x] Phase 5-2: Performance Optimization (Server-side Rendering & Static Generation)
-    - [x] Phase 5-3: Comprehensive Technical Documentation (README & API Docs)
-    - [x] Phase 5-4: Global Localization & UX Optimization
-    - [x] Phase 5-5: Code Refactoring & TypeScript Strict Mode Audit
-    - [x] Phase 5-6: Final Project Retrospective
+    - [] Phase 5-1: Cloud Deployment & CI/CD Pipeline Setup (Vercel)
+    - [] Phase 5-2: Performance Optimization (Server-side Rendering & Static Generation)
+    - [] Phase 5-3: Comprehensive Technical Documentation (README & API Docs)
+    - [] Phase 5-4: Global Localization & UX Optimization
+    - [] Phase 5-5: Code Refactoring & TypeScript Strict Mode Audit
+    - [] Phase 5-6: Final Project Retrospective
