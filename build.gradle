@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.2' // Java 21 지원
+    id 'org.springframework.boot' version '3.4.2'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -9,44 +9,31 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21) // JDK 21 설정 확인
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
-}
-
+// [핵심] 창고 주소를 dependencies 바로 위에서 한 번 더 선언합니다.
 repositories {
     mavenCentral()
-    // Spring AI는 현재 마일스톤 단계이므로 전용 저장소 필요
-    maven { url 'https://repo.spring.io/milestone' }
+    maven {
+        url 'https://repo.spring.io/milestone'
+        allowInsecureProtocol = false // 보안 연결 강제
+    }
+    maven { url 'https://repo.spring.io/snapshot' }
 }
 
 dependencies {
-    // 1. Web & API (REST API 구축의 핵심)
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-
-    // 2. Spring AI (Google Gemini API 연동을 위한 핵심 엔진)
-    // Spring AI의 최신 마일스톤 버전 사용
+    // [중요] 버전 뒤에 공백이나 마침표가 없는지 다시 확인!
     implementation 'org.springframework.ai:spring-ai-google-ai-spring-boot-starter:1.0.0-M5'
 
-    // 3. Database & JPA (분석 기록 저장용)
+    // 나머지 필수 라이브러리
+    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    runtimeOnly 'com.mysql:mysql-connector-j' // MySQL 사용 기준
-
-    // 4. Lombok (Boilerplate 코드 제거로 생산성 향상)
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-
-    // 5. Validation (입력값 검증 - 비즈니스 매너 체크의 첫걸음)
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-    // 6. Test (JUnit5 기반 테스트 환경)
+    runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
