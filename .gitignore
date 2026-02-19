@@ -21,7 +21,6 @@ bin/
 
 # --- Kotona Project Specific (보안 및 데이터) ---
 # 이 파일들이 깃허브에 올라가지 않도록 주의
-.env
 application-secret.yml
 application-api.yml
 
@@ -32,3 +31,6 @@ docker/db/data/
 # OS Specific
 .DS_Store
 Thumbs.db
+
+# Security
+.env
