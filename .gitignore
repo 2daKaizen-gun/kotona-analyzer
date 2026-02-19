@@ -34,3 +34,4 @@ Thumbs.db
 
 # Security
 .env
+*.json
