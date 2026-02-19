@@ -24,8 +24,8 @@
 ## ✅ Milestone
 - **Phase 1**: Project Foundation & Backend Environment Setup
     - [x] Phase 1-1: Initialize GitHub Repository & Project Board
-    - [] Phase 1-2: Setup Spring Boot 3.x & Java 17 Development Environment
-    - [] Phase 1-3: Database Schema Design & Containerization (Docker with PostgreSQL/MySQL)
+    - [x] Phase 1-2: Setup Spring Boot 3.x & Java 17 Development Environment
+    - [x] Phase 1-3: Database Schema Design & Containerization (Docker with PostgreSQL/MySQL)
     - [] Phase 1-4: Security Configuration (API Key Management & .env Setup)
 
 - **Phase 2**: AI Integration & Core Analysis Engine Development
