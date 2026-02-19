@@ -1,49 +1,31 @@
-README.md
+# --- Java & Build Tools ---
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
+target/
+*.class
+*.log
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
+# --- IDE Specific (IntelliJ, VS Code, STS) ---
 .idea
 *.iws
 *.iml
 *.ipr
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-### VS Code ###
 .vscode/
+.classpath
+.project
+.settings
+.factorypath
+bin/
 
-# --- Kotona Project Specific ---
-
-# API Keys & Environment Variables
+# --- Kotona Project Specific (보안 및 데이터) ---
+# 이 파일들이 깃허브에 올라가지 않도록 주의
 .env
 application-secret.yml
 application-api.yml
 
-# Docker Data (DB 데이터가 깃허브에 올라가는 것을 방지)
+# Docker DB 데이터
 mysql_data/
 docker/db/data/
 

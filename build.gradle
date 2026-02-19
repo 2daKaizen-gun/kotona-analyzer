@@ -21,7 +21,6 @@ configurations {
 
 repositories {
     mavenCentral()
-    // 이제 Milestone 리포지토리는 필요 없으므로 삭제해도 무방합니다.
 }
 
 dependencies {
@@ -30,7 +29,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    // ✨ Spring AI 대신 구글 공식 Gemini/Vertex AI SDK 추가
+    // ✨ Spring AI 대신 훨씬 안정적인 구글 공식 Gemini/Vertex AI SDK
     implementation 'com.google.cloud:google-cloud-vertexai:1.15.0'
 
     compileOnly 'org.projectlombok:lombok'
