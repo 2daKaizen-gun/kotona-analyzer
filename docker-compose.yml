@@ -3,10 +3,10 @@ services:
     image: mysql:8.0
     container_name: kotona-mysql
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       MYSQL_DATABASE: kotona_db
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: 1234
       MYSQL_USER: user
       MYSQL_PASSWORD: user123
     volumes:

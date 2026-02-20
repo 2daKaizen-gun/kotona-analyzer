@@ -3,20 +3,24 @@ spring:
     name: analyzer
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: DB_URL=jdbc:mysql://127.0.0.1:3307/kotona_db?serverTimezone=Asia/Seoul
+    username: root
+    password: '1234'
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
+    # ddl-auto와 show-sql은 jpa 바로 밑
     hibernate:
-      ddl-auto: update  # 엔티티 변경 시 테이블 자동 업데이트
-    show-sql: true      # 콘솔에 SQL 로그 출력
+      ddl-auto: update
+    show-sql: true
+    # Hibernate 전용 상세 설정
     properties:
       hibernate:
         format_sql: true
+        # DB 연결이 불안정할 때를 대비해 MySQL 방언을 강제로 지정
+        dialect: org.hibernate.dialect.MySQL8Dialect
 
-# 나중에 서비스에서 쓸 수 있도록 커스텀 변수 등록
+# 커스텀 변수 (제미나이 설정)
 gemini:
   project-id: ${GCP_PROJECT_ID}
   api-key: ${GEMINI_API_KEY}
