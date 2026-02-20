@@ -1,3 +1,22 @@
 spring:
   application:
     name: analyzer
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # 엔티티 변경 시 테이블 자동 업데이트
+    show-sql: true      # 콘솔에 SQL 로그 출력
+    properties:
+      hibernate:
+        format_sql: true
+
+# 나중에 서비스에서 쓸 수 있도록 커스텀 변수 등록
+gemini:
+  project-id: ${GCP_PROJECT_ID}
+  api-key: ${GEMINI_API_KEY}
