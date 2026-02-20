@@ -12,7 +12,7 @@ public class GeminiController {
 
     private final GeminiService geminiService;
 
-    // 테스트 URL: http://localhost:8080/api/v1/analyze?text=お疲れ
+    // 테스트 URL: http://localhost:8081/api/v1/analyze?text=お疲れ
     @GetMapping("/api/v1/analyze")
     public String analyze(@RequestParam String text) {
         return geminiService.analyzeJapaneseNuance(text);

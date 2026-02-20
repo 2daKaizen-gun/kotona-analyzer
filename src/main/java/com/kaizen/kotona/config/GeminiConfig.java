@@ -38,6 +38,6 @@ public class GeminiConfig {
 
     @Bean
     public GenerativeModel generativeModel(VertexAI vertexAI) {
-        return new GenerativeModel("gemini-flash-latest", vertexAI);
+        return new GenerativeModel("gemini-2.5-flash", vertexAI);
     }
 }
