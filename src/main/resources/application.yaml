@@ -3,9 +3,11 @@ spring:
     name: analyzer
 
   datasource:
-    url: DB_URL=jdbc:mysql://127.0.0.1:3307/kotona_db?serverTimezone=Asia/Seoul
+    hikari:
+      connection-timeout: 5000 # 5초만 기다리고 바로 에러 내뱉게 설정
+    url: jdbc:mysql://127.0.0.1:3307/kotona_db?serverTimezone=Asia/Seoul
     username: root
-    password: '1234'
+    password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
