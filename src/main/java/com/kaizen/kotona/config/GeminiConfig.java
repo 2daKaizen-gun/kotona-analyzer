@@ -25,7 +25,6 @@ public class GeminiConfig {
         return new VertexAI.Builder()
                 .setProjectId(projectId)
                 .setLocation(location)
-                .setApiKey(apiKey)
                 .build();
     }
 
