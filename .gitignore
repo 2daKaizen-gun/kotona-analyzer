@@ -37,4 +37,4 @@ Thumbs.db
 *.json
 
 # Google Cloud Service Account Key (Security)
-google-key.json
+src/main/resources/google-key.json
