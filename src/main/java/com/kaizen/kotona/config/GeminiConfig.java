@@ -9,6 +9,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class GeminiConfig {
 
+    @Value("${gemini.api-key}")
+    // .env에서 읽어온 키
+    private String apiKey;
+
     @Value("${gemini.project-id}")
     private String projectId;
 
@@ -18,7 +22,11 @@ public class GeminiConfig {
     @Bean
     public VertexAI vertexAI() {
         // VertexAI 클라이언트 생성
-        return new VertexAI(projectId,location);
+        return new VertexAI.Builder()
+                .setProjectId(projectId)
+                .setLocation(location)
+                .setApiKey(apiKey)
+                .build();
     }
 
     @Bean

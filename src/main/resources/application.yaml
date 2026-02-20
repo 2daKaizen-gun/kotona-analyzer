@@ -26,3 +26,7 @@ spring:
 gemini:
   project-id: ${GCP_PROJECT_ID}
   api-key: ${GEMINI_API_KEY}
+
+# 유령 서버 피해 이동
+server:
+  port: 8081
