@@ -1,17 +1,17 @@
 package com.kaizen.kotona.config;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.IOException;
 
 @Configuration
 public class GeminiConfig {
-
-    @Value("${gemini.api-key}")
-    // .env에서 읽어온 키
-    private String apiKey;
 
     @Value("${gemini.project-id}")
     private String projectId;
@@ -20,11 +20,16 @@ public class GeminiConfig {
     private String location;
 
     @Bean
-    public VertexAI vertexAI() {
-        // VertexAI 클라이언트 생성
+    public VertexAI vertexAI() throws IOException {
+        // 리소스 폴더에서 직접 JSON 파일을 읽어옴
+        ClassPathResource resource = new ClassPathResource("google-key.json");
+        GoogleCredentials credentials = GoogleCredentials.fromStream(resource.getInputStream());
+
+        // 정보 직접 세팅
         return new VertexAI.Builder()
                 .setProjectId(projectId)
                 .setLocation(location)
+                .setCredentials(credentials)
                 .build();
     }
 
