@@ -31,4 +31,25 @@
    - communication_channel: SLACK (채팅), EMAIL (이메일), VERBAL (구두)
 
 5. Output JSON Schema
+
+
+    {
+        "score": "integer (1-10)",
+        "evaluation": {
+            "summary": "string",
+            "keigo_check": "boolean",
+            "cushion_phrase_check": "boolean"
+        },
+        "feedback": {
+            "issues": ["list of strings"],
+            "cultural_nuance": "string"
+        },
+        "suggestions": [
+            {
+            "text": "string",
+            "level": "standard/highest"
+            }
+        ]
+    }
+
 6. Few-Shot Examples (Training the AI)
