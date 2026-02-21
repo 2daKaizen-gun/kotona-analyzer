@@ -26,5 +26,9 @@
     - Explain the cultural "Why" behind the suggestions.
 
 4. Contextual Variables (Input Parameters)
+   - user_input: 사용자가 입력한 일본어 문구
+   - relationship_type: INTERNAL (사내), EXTERNAL (사외), INTERVIEW (면접)
+   - communication_channel: SLACK (채팅), EMAIL (이메일), VERBAL (구두)
+
 5. Output JSON Schema
 6. Few-Shot Examples (Training the AI)
