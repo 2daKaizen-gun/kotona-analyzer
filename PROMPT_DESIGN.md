@@ -53,3 +53,6 @@
     }
 
 6. Few-Shot Examples (Training the AI)
+   - Input: "よろしく" (Relationship: External)
+   - Analysis: Score 2/10. Too casual for business. Lacks honorifics.
+   - Improvement: "よろしくお願いいたします。"
