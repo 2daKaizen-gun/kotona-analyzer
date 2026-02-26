@@ -18,4 +18,11 @@ public class JapaneseTextNormalizer {
         normalized = normalized.trim().replaceAll("\\s+", " ");
         return normalized;
     }
+
+    // 최소한의 유효성 검사
+    public static boolean isValid(String input) {
+        if (input == null || input.length() < 1) return false;
+        // 문장 내 일본어, 알파벳, 숫자가 하나라도 포함인지 확인
+        return VALID_CHARS.matcher(input).find();
+    }
 }
