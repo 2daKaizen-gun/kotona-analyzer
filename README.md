@@ -30,7 +30,7 @@
 
 - **Phase 2**: AI Integration & Core Analysis Engine Development
     - [x] Phase 2-1: Design and Implement an AI-driven Japanese Business Nuance Analysis Engine
-    - [] Phase 2-2: Design 'Role-based Prompts' for Japanese Business Context
+    - [x] Phase 2-2: Design 'Role-based Prompts' for Japanese Business Context
     - [] Phase 2-3: Implement AI Response Parsing & Error Handling
     - [] Phase 2-4: Text Pre-processing & Japanese Token Analysis
 
