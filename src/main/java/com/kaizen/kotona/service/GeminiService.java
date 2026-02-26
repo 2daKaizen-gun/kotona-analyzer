@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import com.kaizen.kotona.dto.NuanceResponseDTO;
+import com.kaizen.kotona.utils.JapaneseTextNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,14 @@ public class GeminiService {
     private final ObjectMapper objectMapper; // JSON 파싱용
 
     public NuanceResponseDTO analyzeJapaneseNuance(String userInput) {
+        // 입력값 정규화
+        String cleanInput = JapaneseTextNormalizer.normalize(userInput);
+
+        // 유효하지 않은 입력이면 즉시 컷함(AI API 호출 방지)
+        if (!JapaneseTextNormalizer.isValid(cleanInput)) {
+            throw new IllegalArgumentException("분석할 수 없는 문장입니다. 올바른 일본어를 입력하세요.");
+        }
+
         // PROMPT_DESIGN.md 기반 마스터 프롬프트
         String prompt = String.format("""
             # Role
@@ -41,7 +50,7 @@ public class GeminiService {
                 "feedback": { "issues": ["string"], "cultural_nuance": "string" },
                 "suggestions": [{ "text": "string", "level": "standard/highest" }]
             }
-            """, userInput);
+            """, cleanInput);
 
         try {
             // AI에게 요청을 보내고 응답을 받음
