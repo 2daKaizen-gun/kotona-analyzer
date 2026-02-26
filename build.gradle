@@ -40,6 +40,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // 일본어 형태소 분석기 Kuromoji (ipadic 사전 포함 버전)
+    implementation 'com.atilika.kuromoji:kuromoji-ipadic:0.9.0'
 }
 
 tasks.named('test') {
