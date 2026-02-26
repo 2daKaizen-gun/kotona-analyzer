@@ -9,5 +9,13 @@ public class JapaneseTextNormalizer {
 
     public static String normalize(String input) {
         if (input == null || input.isBlank()) return "";
+
+        // NFKC 정규화 (전각 알파벳, 숫자를 반각으로, 반각 가타카나를 전각으로 통일)
+        // 일본어 처리 표준
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFKC);
+
+        // 불필요한 공백 제거
+        normalized = normalized.trim().replaceAll("\\s+", " ");
+        return normalized;
     }
 }
