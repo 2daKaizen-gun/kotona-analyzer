@@ -35,4 +35,14 @@ public class JapaneseTokenService {
                 .map(Token::getSurface)
                 .collect(Collectors.toList());
     }
+
+    // 문장 정중체 포함 확인, 하이브리드 검증 핵심 로직
+    public boolean hasPoliteEnding(String text) {
+        return tokenizer.tokenize(text).stream()
+                .anyMatch(token -> {
+                    String features = token.getAllFeatures();
+                    // 'です' 또는 'ます'를 포함하는 조동사인지 체크
+                    return features.contains("特殊・デス") || features.contains("特殊・マス");
+                });
+    }
 }
