@@ -20,6 +20,10 @@ public class GeminiService {
     private final GenerativeModel generativeModel;
     private final ObjectMapper objectMapper; // JSON 파싱용
 
+    // 형태소 분석 및 검증 서비스
+    private final JapaneseTokenService tokenService;
+    private final AnalysisValidator analysisValidator;
+
     public NuanceResponseDTO analyzeJapaneseNuance(String userInput) {
         // 입력값 정규화
         String cleanInput = JapaneseTextNormalizer.normalize(userInput);
@@ -28,6 +32,9 @@ public class GeminiService {
         if (!JapaneseTextNormalizer.isValid(cleanInput)) {
             throw new IllegalArgumentException("분석할 수 없는 문장입니다. 올바른 일본어를 입력하세요.");
         }
+
+        // 형태소 분석을 통한 정중어 사전 체크(Token Analysis)
+        boolean hasPoliteTokens = tokenService.hasPoliteEnding(cleanInput);
 
         // PROMPT_DESIGN.md 기반 마스터 프롬프트
         String prompt = String.format("""
