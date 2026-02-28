@@ -37,27 +37,7 @@ public class GeminiService {
         boolean hasPoliteTokens = tokenService.hasPoliteEnding(cleanInput);
 
         // PROMPT_DESIGN.md 기반 마스터 프롬프트
-        String prompt = String.format("""
-            # Role
-            You are a "Business Japanese Communication Expert" with 20 years of experience.
-            
-            # Task
-            Analyze the following text based on Japanese business etiquette.
-            
-            # User Input: "%s"
-            
-            # Constraints
-            - Respond ONLY in valid JSON format.
-            - Follow the structure defined in PROMPT_DESIGN.md.
-            
-            # Output JSON Schema
-            {
-                "score": 1-10,
-                "evaluation": { "summary": "string", "keigo_check": boolean, "cushion_phrase_check": boolean },
-                "feedback": { "issues": ["string"], "cultural_nuance": "string" },
-                "suggestions": [{ "text": "string", "level": "standard/highest" }]
-            }
-            """, cleanInput);
+        String prompt = createPrompt(cleanInput);
 
         try {
             // AI에게 요청을 보내고 응답을 받음
@@ -69,7 +49,12 @@ public class GeminiService {
                 throw new RuntimeException("AI가 응답 생성하지 못하였습니다.");
             }
 
-            return parseJson(rawText);
+            // JSON 파싱
+            NuanceResponseDTO aiResult = parseJson(rawText);
+
+            // 하이브리드 검증 (Cross-Validation)
+            // AI 결과와 직접 분석한 형태소 데이터 대조하여 최종 결과 반환
+            return analysisValidator.validate(aiResult, hasPoliteTokens);
 
         } catch (Exception e) {
             // 구글 세이프티 필터 등에 걸렸을 경우의 에러 메시지 처리
@@ -79,6 +64,10 @@ public class GeminiService {
 
             throw new RuntimeException("분석 중 오류가 발생했습니다: " + e.getMessage());
         }
+    }
+
+    private String createPrompt(String cleanInput) {
+        return
     }
 
     private NuanceResponseDTO parseJson(String text) {
