@@ -67,7 +67,11 @@ public class GeminiService {
     }
 
     private String createPrompt(String cleanInput) {
-        return
+        return String.format("""
+                
+                
+                
+                """, cleanInput);
     }
 
     private NuanceResponseDTO parseJson(String text) {
