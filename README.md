@@ -32,7 +32,7 @@
     - [x] Phase 2-1: Design and Implement an AI-driven Japanese Business Nuance Analysis Engine
     - [x] Phase 2-2: Design 'Role-based Prompts' for Japanese Business Context
     - [x] Phase 2-3: Implement AI Response Parsing & Error Handling
-    - [] Phase 2-4: Text Pre-processing & Japanese Token Analysis
+    - [x] Phase 2-4: Text Pre-processing & Japanese Token Analysis
 
 - **Phase 3**: Core Business Logic & Scoring Algorithm
     - [] Phase 3-1: Develop Scoring Logic for 'Indirectness' and 'Etiquette'
