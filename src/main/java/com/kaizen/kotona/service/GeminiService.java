@@ -68,10 +68,26 @@ public class GeminiService {
 
     private String createPrompt(String cleanInput) {
         return String.format("""
-                
-                
-                
-                """, cleanInput);
+            #Role
+            You are a "Business Japanese Communication Expert" with 20 years of experience.
+            
+            #Task
+            Analyze the following text based on Japanese business etiquette.
+            
+            #User Input: "%s"
+            
+            # Constraints
+            - Respond ONLY in valid JSON format.
+            - Follow the structure defined in PROMPT_DESIGN.md.
+            
+            # Output JSON Schema
+            {
+                "score": 1-10,
+                "evaluation": { "summary": "string", "keigo_check": boolean, "cushion_phrase_check": boolean },
+                "feedback": { "issues": ["string"], "cultural_nuance": "string" },
+                "suggestions": [{ "text": "string", "level": "standard/highest" }]
+            }
+            """, cleanInput);
     }
 
     private NuanceResponseDTO parseJson(String text) {
