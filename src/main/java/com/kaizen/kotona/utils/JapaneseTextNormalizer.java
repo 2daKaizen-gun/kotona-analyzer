@@ -4,24 +4,21 @@ import java.text.Normalizer;
 import java.util.regex.Pattern;
 
 public class JapaneseTextNormalizer {
-    // 일본어, 기본 문장 부호만 허용하는 정규식 (히라가나, 가타카나, 한자, 숫자, 알파벳)
-    private static final Pattern VALID_CHARS = Pattern.compile("^[\\\\u3040-\\\\u309F\\\\u30A0-\\\\u30FF\\\\u4E00-\\\\u9FFF0-9a-zA-Z\\\\s.,!?、。！？]+$");
+    // 일본어(히라가나, 가타카나, 한자)가 포함되어 있는지 확인하는 패턴
+    private static final Pattern VALID_CHARS = Pattern.compile("[\\u3040-\\u309F\\u30A0-\\u30FF\\u4E00-\\u9FFF]");
 
     public static String normalize(String input) {
         if (input == null || input.isBlank()) return "";
 
-        // NFKC 정규화 (전각 알파벳, 숫자를 반각으로, 반각 가타카나를 전각으로 통일)
-        // 일본어 처리 표준
+        // 전각/반각 표준화
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFKC);
-
-        // 불필요한 공백 제거
-        normalized = normalized.trim().replaceAll("\\s+", " ");
-        return normalized;
+        // 앞뒤 공백 제거
+        return normalized.trim();
     }
 
     // 최소한의 유효성 검사
     public static boolean isValid(String input) {
-        if (input == null || input.length() < 1) return false;
+        if (input == null || input.isBlank()) return false;
         // 문장 내 일본어, 알파벳, 숫자가 하나라도 포함인지 확인
         return VALID_CHARS.matcher(input).find();
     }
