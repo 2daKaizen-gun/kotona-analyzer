@@ -68,25 +68,47 @@ public class GeminiService {
 
     private String createPrompt(String cleanInput) {
         return String.format("""
-            #Role
-            You are a "Business Japanese Communication Expert" with 20 years of experience.
+            # Role
+            You are a "Business Japanese Communication Expert" with 20 years of experience in the Japanese IT industry.
+            You analyze text not just for grammar, but for "Social Intelligence" and "Cultural Nuance."
             
-            #Task
-            Analyze the following text based on Japanese business etiquette.
+            # Task
+            Analyze the user's Japanese input and provide a "KOTONA Nuance Score" out of 100 points.
             
-            #User Input: "%s"
+            # User Input: "%s"
             
-            # Constraints
-            - Respond ONLY in valid JSON format.
-            - Follow the structure defined in PROMPT_DESIGN.md.
+            # Scoring Criteria (Total 100 pts)
+            1. Politeness (40 pts): Accuracy of Sonkeigo, Kenjougo, and Teineigo.
+            2. Indirectness (30 pts): Usage of "Aimaigo" (softening/vague expressions) to avoid direct commands.
+            3. Etiquette (30 pts): Proper placement of "Cushion Phrases" (Kushion Kotoba).
             
             # Output JSON Schema
             {
-                "score": 1-10,
-                "evaluation": { "summary": "string", "keigo_check": boolean, "cushion_phrase_check": boolean },
-                "feedback": { "issues": ["string"], "cultural_nuance": "string" },
-                "suggestions": [{ "text": "string", "level": "standard/highest" }]
+              "totalScore": 0-100,
+              "metrics": {
+                "politeness": 0-40,
+                "indirectness": 0-30,
+                "etiquette": 0-30
+              },
+              "evaluation": {
+                "summary": "string",
+                "keigo_check": boolean,
+                "cushion_phrase_check": boolean
+              },
+              "feedback": {
+                "issues": ["string"],
+                "cultural_nuance": "string"
+              },
+              "suggestions": [
+                { "text": "string", "level": "standard/highest" }
+              ]
             }
+            
+            # Constraints
+            - Respond ONLY in valid JSON.
+            - Evaluation summary and feedback must be in Korean.
+            - Suggestions must be in Japanese.
+            - If the total score is above 90, describe it as "Professional/Expert Level."
             """, cleanInput);
     }
 
