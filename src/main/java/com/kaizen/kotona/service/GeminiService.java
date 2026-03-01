@@ -109,7 +109,7 @@ public class GeminiService {
               },
               "suggestions": [
                 { "text": "string", "level": "standard/highest" }
-              ]
+              ],
               "sentiment": {
                   "polarity": "Positive/Neutral/Negative",
                   "confidence": 0.0-1.0,
