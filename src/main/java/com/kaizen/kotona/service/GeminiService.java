@@ -82,6 +82,10 @@ public class GeminiService {
             2. Indirectness (30 pts): Usage of "Aimaigo" (softening/vague expressions) to avoid direct commands.
             3. Etiquette (30 pts): Proper placement of "Cushion Phrases" (Kushion Kotoba).
             
+            # Special Task: Honne Extraction
+            Japanese business communication often uses "Tatemae" (social facade).\s
+            Your job is to reveal the "Honne" (true intent) hidden behind the polite expressions.
+    
             # Output JSON Schema
             {
               "totalScore": 0-100,
