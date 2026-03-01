@@ -14,7 +14,7 @@ public class AnalysisValidator {
      * @return 최종 신뢰도 점수 또는 조정된 DTO
      */
     public NuanceResponseDTO validate(NuanceResponseDTO aiResponse, boolean hasPoliteEnding) {
-        int finalScore = aiResponse.score();
+        int finalScore = aiResponse.totalScore();
         // 검증 로직 예시: AI 점수는 높으나(ex 8 이상), 실제 문장에 '입니다/합니다'가 없는 경우
         if(finalScore >= 8 && !hasPoliteEnding) {
             log.warn("검증 경고: AI 점수는 높으나 정중어(です/ます) 토큰이 발견되지 않음.");
@@ -28,6 +28,7 @@ public class AnalysisValidator {
         // 최종적으로 조정된 값 담은 DTO 반환
         return new NuanceResponseDTO(
                 finalScore,
+                aiResponse.metrics(),
                 aiResponse.evaluation(),
                 aiResponse.feedback(),
                 aiResponse.suggestions()
