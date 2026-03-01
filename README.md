@@ -35,7 +35,7 @@
     - [x] Phase 2-4: Text Pre-processing & Japanese Token Analysis
 
 - **Phase 3**: Core Business Logic & Scoring Algorithm
-    - [] Phase 3-1: Develop Scoring Logic for 'Indirectness' and 'Etiquette'
+    - [x] Phase 3-1: Develop Scoring Logic for 'Indirectness' and 'Etiquette'
     - [] Phase 3-2: Implement Sentiment Analysis for Extracting 'Honne'
     - [] Phase 3-3: Build Context-Aware Risk Detection (Soft-rejection signals)
     - [] Phase 3-4: Develop Category Classification Engine
