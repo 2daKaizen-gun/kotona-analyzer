@@ -83,9 +83,13 @@ public class GeminiService {
             3. Etiquette (30 pts): Proper placement of "Cushion Phrases" (Kushion Kotoba).
             
             # Special Task: Honne Extraction
-            Japanese business communication often uses "Tatemae" (social facade).\s
+            Japanese business communication often uses "Tatemae" (social facade).
             Your job is to reveal the "Honne" (true intent) hidden behind the polite expressions.
     
+            # Analysis Guide for Honne
+            - If the input is "検討" (We will consider it), the Honne is often "No" or "Low priority."
+            - If the input is "善処" (We will handle it properly), the Honne is often "We will do nothing for now."
+
             # Output JSON Schema
             {
               "totalScore": 0-100,
@@ -106,6 +110,15 @@ public class GeminiService {
               "suggestions": [
                 { "text": "string", "level": "standard/highest" }
               ]
+              "sentiment": {
+                  "polarity": "Positive/Neutral/Negative",
+                  "confidence": 0.0-1.0,
+                  "honne": {
+                      "tatemae": "표면적인 문구의 의미 (Korean)",
+                      "trueIntent": "행간에 숨겨진 실제 의도 (Korean)",
+                      "actionItem": "사용자가 이 상황에서 취해야 할 권장 행동 (Korean)"
+                  }
+              }
             }
             
             # Constraints
