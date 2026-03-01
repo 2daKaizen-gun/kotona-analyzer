@@ -47,7 +47,8 @@ public class AnalysisValidator {
                 new MetricsDTO(p, i, e),
                 aiResponse.evaluation(),
                 aiResponse.feedback(),
-                aiResponse.suggestions()
+                aiResponse.suggestions(),
+                aiResponse.sentiment()
         );
     }
 }
