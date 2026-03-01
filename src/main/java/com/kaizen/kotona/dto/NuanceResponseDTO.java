@@ -10,5 +10,14 @@ public record NuanceResponseDTO(
         MetricsDTO metrics,
         EvaluationDTO evaluation,
         FeedbackDTO feedback,
-        List<SuggestionDTO> suggestions
+        List<SuggestionDTO> suggestions,
+        SentimentDTO sentiment // 감정 및 본심 분석 데이터
+) {}
+
+public record SentimentDTO(
+
+) {}
+
+public record HonneDTO(
+
 ) {}
