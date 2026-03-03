@@ -15,8 +15,11 @@ public class GeminiController {
 
     // 반환 타입을 String에서 NuanceResponseDTO로 변경
     @GetMapping("/analyze")
-    public NuanceResponseDTO analyze(@RequestParam(name = "text") String text) {
+    public NuanceResponseDTO analyze(
+            @RequestParam String text,
+            // relationshipType 추가
+            @RequestParam(defaultValue = "INTERNAL") String relationshipType) {
         // 서비스가 DTO를 반환하므로 바로 return이 가능
-        return geminiService.analyzeJapaneseNuance(text);
+        return geminiService.analyzeJapaneseNuance(text, relationshipType);
     }
 }
