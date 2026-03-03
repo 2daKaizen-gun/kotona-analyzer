@@ -69,27 +69,25 @@ public class GeminiService {
     private String createPrompt(String cleanInput) {
         return String.format("""
             # Role
-            You are a "Business Japanese Communication Expert" with 20 years of experience in the Japanese IT industry.
-            You analyze text not just for grammar, but for "Social Intelligence" and "Cultural Nuance."
+            You are a "Business Japanese Communication Expert" with 20 years of experience.
+            You are specialized in detecting "Soft Rejection" signals in Japanese IT business contexts.
             
             # Task
-            Analyze the user's Japanese input and provide a "KOTONA Nuance Score" out of 100 points.
+            1. Analyze the "KOTONA Nuance Score" (100 pts scale).
+            2. Extract hidden "Honne" (True intent).
+            3. [NEW] Perform "Risk Detection" to identify potential business failure or rejection.
             
             # User Input: "%s"
             
             # Scoring Criteria (Total 100 pts)
-            1. Politeness (40 pts): Accuracy of Sonkeigo, Kenjougo, and Teineigo.
-            2. Indirectness (30 pts): Usage of "Aimaigo" (softening/vague expressions) to avoid direct commands.
-            3. Etiquette (30 pts): Proper placement of "Cushion Phrases" (Kushion Kotoba).
+            1. Politeness (40 pts): Keigo accuracy.
+            2. Indirectness (30 pts): "Aimaigo" (Vagueness) level.
+            3. Etiquette (30 pts): Cushion phrases usage.
             
-            # Special Task: Honne Extraction
-            Japanese business communication often uses "Tatemae" (social facade).
-            Your job is to reveal the "Honne" (true intent) hidden behind the polite expressions.
-    
-            # Analysis Guide for Honne
-            - If the input is "検討" (We will consider it), the Honne is often "No" or "Low priority."
-            - If the input is "善処" (We will handle it properly), the Honne is often "We will do nothing for now."
-
+            # Risk Detection Guide (Red Flags)
+            - Detect if phrases like "難しい" (Difficult), "検討" (Consider), "確認します" (Will check) are used to avoid commitment.
+            - Evaluate the "Risk Level" based on how vague the response is compared to the request.
+            
             # Output JSON Schema
             {
               "totalScore": 0-100,
@@ -114,18 +112,22 @@ public class GeminiService {
                   "polarity": "Positive/Neutral/Negative",
                   "confidence": 0.0-1.0,
                   "honne": {
-                      "tatemae": "표면적인 문구의 의미 (Korean)",
-                      "trueIntent": "행간에 숨겨진 실제 의도 (Korean)",
-                      "actionItem": "사용자가 이 상황에서 취해야 할 권장 행동 (Korean)"
+                      "tatemae": "표면적 의미 (Korean)",
+                      "trueIntent": "숨겨진 본심 (Korean)",
+                      "actionItem": "권장 행동 (Korean)"
                   }
+              },
+              "riskAnalysis": {
+                  "riskLevel": "SAFE/CAUTION/DANGER",
+                  "redFlags": ["감지된 위험 신호 리스트 (Korean)"],
+                  "copingStrategy": "위기 돌파를 위한 비즈니스 전략 제안 (Korean)"
               }
             }
             
             # Constraints
             - Respond ONLY in valid JSON.
-            - Evaluation summary and feedback must be in Korean.
+            - All explanations/feedback must be in Korean.
             - Suggestions must be in Japanese.
-            - If the total score is above 90, describe it as "Professional/Expert Level."
             """, cleanInput);
     }
 
