@@ -38,7 +38,8 @@
     - [x] Phase 3-1: Develop Scoring Logic for 'Indirectness' and 'Etiquette'
     - [x] Phase 3-2: Implement Sentiment Analysis for Extracting 'Honne'
     - [x] Phase 3-3: Build Context-Aware Risk Detection (Soft-rejection signals)
-    - [] Phase 3-4: Develop Category Classification Engine
+    - [] Phase 3-4: Implement Centralized Error Handling with GlobalExceptionHandler
+    - [] Phase 3-5: Develop Category Classification Engine
 
 - **Phase 4**: Response Generation & Data Management
     - [] Phase 4-1: Implement Smart Reply Generator for Various Scenarios
