@@ -11,7 +11,7 @@ public record NuanceResponseDTO(
         EvaluationDTO evaluation,
         FeedbackDTO feedback,
         List<SuggestionDTO> suggestions,
-        SentimentDTO sentiment // 감정 및 본심 분석 데이터
+        SentimentDTO sentiment, // 감정 및 본심 분석 데이터
         RiskAnalysisDTO riskAnalysis // 위기 감지 데이터
 ) {}
 

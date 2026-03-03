@@ -24,7 +24,7 @@ public class GeminiService {
     private final JapaneseTokenService tokenService;
     private final AnalysisValidator analysisValidator;
 
-    public NuanceResponseDTO analyzeJapaneseNuance(String userInput) {
+    public NuanceResponseDTO analyzeJapaneseNuance(String userInput, String relationshipType) {
         // 입력값 정규화
         String cleanInput = JapaneseTextNormalizer.normalize(userInput);
 
@@ -54,7 +54,7 @@ public class GeminiService {
 
             // 하이브리드 검증 (Cross-Validation)
             // AI 결과와 직접 분석한 형태소 데이터 대조하여 최종 결과 반환
-            return analysisValidator.validate(aiResult, cleanInput, hasPoliteTokens);
+            return analysisValidator.validate(aiResult, cleanInput, relationshipType, hasPoliteTokens);
 
         } catch (Exception e) {
             // 구글 세이프티 필터 등에 걸렸을 경우의 에러 메시지 처리
