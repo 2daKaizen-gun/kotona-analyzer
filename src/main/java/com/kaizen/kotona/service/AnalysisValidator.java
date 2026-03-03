@@ -5,7 +5,9 @@ import com.kaizen.kotona.dto.NuanceResponseDTO;
 import com.kaizen.kotona.dto.RiskAnalysisDTO;
 import com.kaizen.kotona.utils.EtiquetteConstants;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.digester.ArrayStack;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -41,7 +43,33 @@ public class AnalysisValidator {
 
         // 리스크 가중치 산출 로직
         // 공식: Risk Score = Σ(Signal_i * W_i)
+        double riskScore = 0.0;
+        List<String> detectedRedFlags = new ArrayList<>();
 
+        if (cleanInput.contains("難しい")) { riskScore += 0.8; detectedRedFlags.add("'어렵다(難しい)' 시그널 감지"); }
+        if (cleanInput.contains("検討")) { riskScore += 0.5; detectedRedFlags.add("'검토(検討)' 시그널 감지"); }
+        if (cleanInput.contains("考えておく")) { riskScore += 0.6; detectedRedFlags.add("'생각해 보겠다'는 모호한 응답"); }
+
+        // 컨텍스트 가중치($W$) 적용
+        double multiplier = switch (relationshipType != null ? relationshipType : "INTERNAL") {
+            case "EXTERNAL" -> 1.2;  // 사외 관계는 위험도 증폭
+            case "INTERVIEW" -> 1.5; // 면접은 치명적
+            default -> 1.0;          // 사내는 기본값
+        };
+
+        double finalRiskScore = riskScore * multiplier;
+
+        // 리스크 등급 최종 판정
+        String finalRiskLevel = "SAFE";
+        if (finalRiskScore >= 0.7) finalRiskLevel = "DANGER";
+        else if (finalRiskScore >= 0.3) finalRiskLevel = "CAUTION";
+
+        // AI가 보낸 리스크 분석 데이터와 우리가 계산한 등급을 병합
+        RiskAnalysisDTO validatedRisk = new RiskAnalysisDTO(
+                finalRiskLevel,
+                detectedRedFlags.isEmpty() ? aiResponse.riskAnalysis().redFlags() : detectedRedFlags,
+                aiResponse.riskAnalysis().copingStrategy()
+        );
 
         // 최종적으로 조정된 값 담은 DTO 반환
         return new NuanceResponseDTO(
@@ -50,7 +78,8 @@ public class AnalysisValidator {
                 aiResponse.evaluation(),
                 aiResponse.feedback(),
                 aiResponse.suggestions(),
-                aiResponse.sentiment()
+                aiResponse.sentiment(),
+                validatedRisk
         );
     }
 }
