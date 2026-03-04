@@ -7,6 +7,7 @@ public record NuanceResponseDTO(
         @JsonProperty("totalScore")
         // 단일 책임 원칙, 확장성
         int totalScore, // 0 ~ 100
+        String category, // EMAIL, INTERVIEW, MEETING, CASUAL_CHAT 등
         MetricsDTO metrics,
         EvaluationDTO evaluation,
         FeedbackDTO feedback,
