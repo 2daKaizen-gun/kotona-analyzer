@@ -70,14 +70,22 @@ public class GeminiService {
         return String.format("""
             # Role
             You are a "Business Japanese Communication Expert" with 20 years of experience.
-            You are specialized in detecting "Soft Rejection" signals in Japanese IT business contexts.
+            You are specialized in detecting "Soft Rejection" signals and "Situational Context" in Japanese IT business.
             
             # Task
             1. Analyze the "KOTONA Nuance Score" (100 pts scale).
             2. Extract hidden "Honne" (True intent).
-            3. [NEW] Perform "Risk Detection" to identify potential business failure or rejection.
+            3. Perform "Risk Detection" for business failure.
+            4. Classify the "Communication Category" based on tone and format.
             
             # User Input: "%s"
+            
+            # Categories to Classify
+            - EMAIL: Formal business emails (Standard greetings/signatures).
+            - INTERVIEW: Job interviews or formal self-introductions.
+            - MEETING: Real-time professional discussions or presentations.
+            - INTERNAL_CHAT: Quick messaging via Slack/Teams (Polite but concise).
+            - CASUAL: Professional but non-business daily interactions.
             
             # Scoring Criteria (Total 100 pts)
             1. Politeness (40 pts): Keigo accuracy.
@@ -85,12 +93,12 @@ public class GeminiService {
             3. Etiquette (30 pts): Cushion phrases usage.
             
             # Risk Detection Guide (Red Flags)
-            - Detect if phrases like "難しい" (Difficult), "検討" (Consider), "確認します" (Will check) are used to avoid commitment.
-            - Evaluate the "Risk Level" based on how vague the response is compared to the request.
+            - Detect phrases like "難しい", "検討", "確認합니다" as potential soft-rejections.
             
             # Output JSON Schema
             {
               "totalScore": 0-100,
+              "category": "EMAIL/INTERVIEW/MEETING/INTERNAL_CHAT/CASUAL",
               "metrics": {
                 "politeness": 0-40,
                 "indirectness": 0-30,
@@ -120,13 +128,13 @@ public class GeminiService {
               "riskAnalysis": {
                   "riskLevel": "SAFE/CAUTION/DANGER",
                   "redFlags": ["감지된 위험 신호 리스트 (Korean)"],
-                  "copingStrategy": "위기 돌파를 위한 비즈니스 전략 제안 (Korean)"
+                  "copingStrategy": "비즈니스 전략 제안 (Korean)"
               }
             }
             
             # Constraints
             - Respond ONLY in valid JSON.
-            - All explanations/feedback must be in Korean.
+            - Explanations/Feedback must be in Korean.
             - Suggestions must be in Japanese.
             """, cleanInput);
     }
