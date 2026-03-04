@@ -65,6 +65,14 @@ public class AnalysisValidator {
         if (finalRiskScore >= 0.7) finalRiskLevel = "DANGER";
         else if (finalRiskScore >= 0.3) finalRiskLevel = "CAUTION";
 
+        // 카테고리별 적합도 판정
+        // 상황 따라 Summary 보정
+        String category = aiResponse.category();
+        String originalSummary = aiResponse.evaluation().summary();
+        String adaptiveSummary = originalSummary;
+
+
+
         // AI가 보낸 리스크 분석 데이터와 우리가 계산한 등급을 병합
         RiskAnalysisDTO validatedRisk = new RiskAnalysisDTO(
                 finalRiskLevel,
@@ -75,6 +83,7 @@ public class AnalysisValidator {
         // 최종적으로 조정된 값 담은 DTO 반환
         return new NuanceResponseDTO(
                 finalTotal,
+                aiResponse.category(),
                 new MetricsDTO(p, i, e),
                 aiResponse.evaluation(),
                 aiResponse.feedback(),
