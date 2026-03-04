@@ -71,7 +71,11 @@ public class AnalysisValidator {
         String originalSummary = aiResponse.evaluation().summary();
         String adaptiveSummary = originalSummary;
 
-
+        if ("INTERVIEW".equals(category) && finalTotal < 90) {
+            adaptiveSummary = "[주의: 면접 상황] " + originalSummary + " (면접에서는 더 높은 수준의 경어가 요구됩니다.)";
+        } else if ("INTERNAL_CHAT".equals(category) && finalTotal >= 70) {
+            adaptiveSummary = "[우수: 사내 채팅] " + originalSummary + " (사내 소통으로써 적절한 표현입니다.)";
+        }
 
         // AI가 보낸 리스크 분석 데이터와 우리가 계산한 등급을 병합
         RiskAnalysisDTO validatedRisk = new RiskAnalysisDTO(
@@ -83,7 +87,7 @@ public class AnalysisValidator {
         // 최종적으로 조정된 값 담은 DTO 반환
         return new NuanceResponseDTO(
                 finalTotal,
-                aiResponse.category(),
+                category,
                 new MetricsDTO(p, i, e),
                 aiResponse.evaluation(),
                 aiResponse.feedback(),
