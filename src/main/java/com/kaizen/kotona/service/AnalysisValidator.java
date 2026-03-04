@@ -1,5 +1,6 @@
 package com.kaizen.kotona.service;
 
+import com.kaizen.kotona.dto.EvaluationDTO;
 import com.kaizen.kotona.dto.MetricsDTO;
 import com.kaizen.kotona.dto.NuanceResponseDTO;
 import com.kaizen.kotona.dto.RiskAnalysisDTO;
@@ -89,7 +90,7 @@ public class AnalysisValidator {
                 finalTotal,
                 category,
                 new MetricsDTO(p, i, e),
-                aiResponse.evaluation(),
+                new EvaluationDTO(adaptiveSummary, aiResponse.evaluation().keigoCheck(), aiResponse.evaluation().cushionPhraseCheck()),
                 aiResponse.feedback(),
                 aiResponse.suggestions(),
                 aiResponse.sentiment(),
