@@ -97,6 +97,12 @@ public class GeminiService {
             - Analyze phrases like "難しい", "検討", "確認" as potential "Soft-Rejections."
             - Evaluate risk levels (SAFE/CAUTION/DANGER) based on how much the speaker avoids a clear commitment.
             
+            # Smart Reply Generation Strategy
+            Generate 3 different response options based on the following scenarios:
+            1. Clarification: A response to confirm the "Honne" (Ask for specific deadlines/details).
+            2. Soft Acceptance: A polite way to accept even if the risk is CAUTION.
+            3. Counter-proposal: A strategic way to propose an alternative when DANGER (rejection) is detected.
+
             # Output JSON Schema
             {
               "totalScore": 0-100,
@@ -131,7 +137,15 @@ public class GeminiService {
                   "riskLevel": "SAFE/CAUTION/DANGER",
                   "redFlags": ["감지된 위험 신호 리스트 (Korean)"],
                   "copingStrategy": "비즈니스 전략 제안 (Korean)"
-              }
+              },
+              "smartReplies": [
+                 {
+                   "scenario": "Clarification / Soft Landing / Counter-proposal",
+                   "content": "실제 사용할 수 있는 정중한 일본어 답장 문구",
+                   "description": "이 답장의 의도와 기대 효과 (Korean)",
+                   "nuanceLevel": "Standard / Soft / Firm"
+                 }
+              ]
             }
             
             # Constraints
