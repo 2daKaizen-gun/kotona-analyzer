@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AnalysisHistoryService {
@@ -33,5 +35,17 @@ public class AnalysisHistoryService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("데이터 저장 중 직렬화 오류가 발생했습니다.", e);
         }
+    }
+
+    // 분석 이력 전체 목록 조회
+    @Transactional(readOnly = true)
+    public List<AnalysisHistory> getHistoryList() {
+        return repository.findAllByCreatedAtDesc();
+    }
+
+    // 특정 이력 삭제
+    @Transactional
+    public void deleteHistory(Long id) {
+
     }
 }
