@@ -46,6 +46,9 @@ public class AnalysisHistoryService {
     // 특정 이력 삭제
     @Transactional
     public void deleteHistory(Long id) {
-
+        if(!repository.existsById(id)) {
+            throw new IllegalArgumentException("해당 이력 존재하지 않습니다. ID: " + id);
+        }
+        repository.deleteById(id);
     }
 }
