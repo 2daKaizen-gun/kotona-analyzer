@@ -93,7 +93,8 @@ public class AnalysisValidator {
                 aiResponse.feedback(),
                 aiResponse.suggestions(),
                 aiResponse.sentiment(),
-                validatedRisk
+                validatedRisk,
+                aiResponse.smartReplies()
         );
     }
 }
