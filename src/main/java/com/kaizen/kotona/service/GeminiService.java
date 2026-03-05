@@ -77,6 +77,7 @@ public class GeminiService {
             2. Extract hidden "Honne" (True intent).
             3. Perform "Risk Detection" for business failure.
             4. Classify the "Communication Category" based on tone and format.
+            5. Generate "Smart Replies" that provide strategic ways to respond to the detected situation.
             
             # User Input: "%s"
             
@@ -93,7 +94,8 @@ public class GeminiService {
             3. Etiquette (30 pts): Cushion phrases usage.
             
             # Risk Detection Guide (Red Flags)
-            - Detect phrases like "難しい", "検討", "確認합니다" as potential soft-rejections.
+            - Analyze phrases like "難しい", "検討", "確認" as potential "Soft-Rejections."
+            - Evaluate risk levels (SAFE/CAUTION/DANGER) based on how much the speaker avoids a clear commitment.
             
             # Output JSON Schema
             {
