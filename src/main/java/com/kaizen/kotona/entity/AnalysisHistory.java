@@ -4,6 +4,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.Builder;
+import org.springframework.data.annotation.CreatedDate;
+
+import java.time.LocalDateTime;
 
 public class AnalysisHistory {
 
@@ -20,4 +24,17 @@ public class AnalysisHistory {
 
     @Column(columnDefinition = "LONGTEXT")
     private String fullAnalysisJson; // 전체 분석 결과 DTO를 JSON 문자열로 저장
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdAt; // 분석 일시
+
+    @Builder
+    public AnalysisHistory(String userInput, int totalScore, String category, String riskLevel, String fullAnalysisJson) {
+        this.userInput = userInput;
+        this.totalScore = totalScore;
+        this.category = category;
+        this.riskLevel = riskLevel;
+        this.fullAnalysisJson = fullAnalysisJson;
+    }
 }
