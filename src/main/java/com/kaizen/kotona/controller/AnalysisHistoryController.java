@@ -15,9 +15,14 @@ public class AnalysisHistoryController {
     private final AnalysisHistoryService historyService;
 
     // 분석 이력 전체 목록 조회
-
+    @GetMapping
+    public List<AnalysisHistory> getAllHistory() {
+        return historyService.getHistoryList();
+    }
 
     // 특정 이력 삭제
-
-
+    @DeleteMapping("/{id}")
+    public void deleteHistory(@PathVariable Long id) {
+        historyService.deleteHistory(id);
+    }
 }
