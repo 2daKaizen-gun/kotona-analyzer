@@ -3,6 +3,7 @@ package com.kaizen.kotona.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -38,6 +39,13 @@ public class GeminiConfig {
 
     @Bean
     public GenerativeModel generativeModel(VertexAI vertexAI) {
-        return new GenerativeModel("gemini-2.5-flash", vertexAI);
+        // 복잡한 JSON 생성위해 타임아웃, 토큰 제한 설정
+        GenerationConfig config = GenerationConfig.newBuilder()
+                .setMaxOutputTokens(2048)
+                .setTemperature(0.7f)
+                .build();
+
+        return new GenerativeModel("gemini-2.5-flash", vertexAI)
+                .withGenerationConfig(config);
     }
 }
