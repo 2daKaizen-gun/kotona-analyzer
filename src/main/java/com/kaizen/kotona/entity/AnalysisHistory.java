@@ -1,14 +1,14 @@
 package com.kaizen.kotona.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.Builder;
+import jakarta.persistence.*;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
-
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "analysis_history")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AnalysisHistory {
 
     @Id
