@@ -40,7 +40,7 @@ public class AnalysisHistoryService {
     // 분석 이력 전체 목록 조회
     @Transactional(readOnly = true)
     public List<AnalysisHistory> getHistoryList() {
-        return repository.findAllByCreatedAtDesc();
+        return repository.findByOrderByCreatedAtDesc();
     }
 
     // 특정 이력 삭제
