@@ -23,6 +23,7 @@ public class GeminiService {
     // 형태소 분석 및 검증 서비스
     private final JapaneseTokenService tokenService;
     private final AnalysisValidator analysisValidator;
+    private final AnalysisHistoryService historyService; // 저장 로직 연결
 
     public NuanceResponseDTO analyzeJapaneseNuance(String userInput, String relationshipType) {
         // 입력값 정규화
@@ -52,9 +53,13 @@ public class GeminiService {
             // JSON 파싱
             NuanceResponseDTO aiResult = parseJson(rawText);
 
-            // 하이브리드 검증 (Cross-Validation)
-            // AI 결과와 직접 분석한 형태소 데이터 대조하여 최종 결과 반환
-            return analysisValidator.validate(aiResult, cleanInput, relationshipType, hasPoliteTokens);
+            // 하이브리드 검증 (Validator 호출)
+            NuanceResponseDTO validatedResult = analysisValidator.validate(aiResult, cleanInput, relationshipType, hasPoliteTokens);
+
+            // DB에 저장
+            historyService.saveHistory(cleanInput, validatedResult);
+
+            return validatedResult;
 
         } catch (Exception e) {
             // 구글 세이프티 필터 등에 걸렸을 경우의 에러 메시지 처리
