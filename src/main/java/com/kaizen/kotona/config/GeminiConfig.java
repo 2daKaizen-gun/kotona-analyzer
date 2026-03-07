@@ -41,7 +41,7 @@ public class GeminiConfig {
     public GenerativeModel generativeModel(VertexAI vertexAI) {
         // 복잡한 JSON 생성위해 타임아웃, 토큰 제한 설정
         GenerationConfig config = GenerationConfig.newBuilder()
-                .setMaxOutputTokens(2048) // 토큰 늘리기
+                .setMaxOutputTokens(1024) // 토큰 늘리기
                 .setTemperature(0.7f) // 창의적인 답장 생성 위한 온도 조절
                 .build();
 
