@@ -12,15 +12,16 @@ spring:
 
   jpa:
     # ddl-auto와 show-sql은 jpa 바로 밑
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    # Hibernate 전용 상세 설정
-    properties:
+    jpa:
       hibernate:
-        format_sql: true
-        # DB 연결이 불안정할 때를 대비해 MySQL 방언을 강제로 지정
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        ddl-auto: update
+      show-sql: true
+      properties:
+        hibernate:
+          format_sql: true
+          # 특정 버전을 명시하기보다 최신 버전용 공통 Dialect 권장
+          dialect: org.hibernate.dialect.MySQLDialect
+          # MySQL 8.0 이상이면 명시하지 않아도 JPA가 자동으로 잘 잡음
 
 # 커스텀 변수 (제미나이 설정)
 gemini:
