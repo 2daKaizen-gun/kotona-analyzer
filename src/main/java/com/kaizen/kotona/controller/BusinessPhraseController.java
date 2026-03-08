@@ -19,4 +19,10 @@ public class BusinessPhraseController {
     public List<BusinessPhrase> getAllPhrases() {
         return service.getAllPhrases();
     }
+
+    // 상황별 숙어 필터링 조회 (GET http://localhost:8081/api/phrases/search?situation=EMAIL)
+    @GetMapping("/search")
+    public List<BusinessPhrase> getPhrasesBySituation(@RequestParam String situation) {
+        return service.getPhrasesBySituation(situation);
+    }
 }
