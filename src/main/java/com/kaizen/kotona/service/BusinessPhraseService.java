@@ -16,7 +16,7 @@ public class BusinessPhraseService {
     private final BusinessPhraseRepository repository;
 
     // 모든 숙어 가져오기
-    private List<BusinessPhrase> getAllPhrases() {
+    public List<BusinessPhrase> getAllPhrases() {
         return repository.findAllByPolitenessLevelDesc();
     }
 
