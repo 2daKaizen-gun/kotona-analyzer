@@ -1,3 +1,9 @@
+-- 사용할 데이터베이스 선택
+USE kotona;
+
+-- 기존 데이터를 다 지우고 다시 넣음
+TRUNCATE TABLE business_phrase;
+
 -- 초기 데이터 (일본 IT 실무 필수 숙어)
 -- 1. 비즈니스 이메일/채팅 핵심 표현(EMAIL)
 INSERT INTO business_phrase (phrase, meaning, situation, politeness_level, usage_example) VALUES
