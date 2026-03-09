@@ -14,3 +14,11 @@ CREATE TABLE IF NOT EXISTS analysis_history (
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 일본어 비즈니스 숙어 사전 테이블
+CREATE TABLE IF NOT EXISTS business_phrase (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    phrase VARCHAR(255) NOT NULL, -- 일본어 숙어 표현
+    meaning VARCHAR(255) NOT NULL, -- 한국어 뜻
+    situation VARCHAR(100), -- 사용 상황 (EMAIL, MEETING, NEGOTIATION 등)
+    politeness_level INT, -- 정중도 단계
+    usage_example TEXT -- 실제 활용 예시 문장
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
