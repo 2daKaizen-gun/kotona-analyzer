@@ -17,7 +17,7 @@ public class BusinessPhraseService {
 
     // 모든 숙어 가져오기
     public List<BusinessPhrase> getAllPhrases() {
-        return repository.findAllByPolitenessLevelDesc();
+        return repository.findAllByOrderByPolitenessLevelDesc();
     }
 
     // 특정 상황 (ex: 면접) 숙어만 가져오기

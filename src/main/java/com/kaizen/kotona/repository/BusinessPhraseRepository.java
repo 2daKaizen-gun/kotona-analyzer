@@ -10,5 +10,5 @@ public interface BusinessPhraseRepository extends JpaRepository<BusinessPhrase, 
     List<BusinessPhrase> findBySituation(String situation);
 
     // 정중도 높은 순서대로 전체 목록 가져오는 기능
-    List<BusinessPhrase> findAllByPolitenessLevelDesc();
+    List<BusinessPhrase> findAllByOrderByPolitenessLevelDesc();
 }
