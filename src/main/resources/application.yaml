@@ -2,6 +2,11 @@ spring:
   application:
     name: analyzer
 
+  # [추가] MySQL 같은 외부 DB에서도 schema.sql, data.sql을 읽게 합니다.
+  sql:
+    init:
+      mode: always
+
   datasource:
     hikari:
       connection-timeout: 5000 # 5초만 기다리고 바로 에러 내뱉게 설정
@@ -11,17 +16,16 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
-    # ddl-auto와 show-sql은 jpa 바로 밑
-    jpa:
+    # 기존의 jpa: jpa: 중첩을 제거하고 하나로
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    # Hibernate가 테이블을 체크한 '뒤'에 SQL 파일을 실행하게 함
+    defer-datasource-initialization: true
+    properties:
       hibernate:
-        ddl-auto: update
-      show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
-          # 특정 버전을 명시하기보다 최신 버전용 공통 Dialect 권장
-          dialect: org.hibernate.dialect.MySQLDialect
-          # MySQL 8.0 이상이면 명시하지 않아도 JPA가 자동으로 잘 잡음
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
 
 # 커스텀 변수 (제미나이 설정)
 gemini:
