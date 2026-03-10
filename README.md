@@ -45,7 +45,7 @@
     - [x] Phase 4-1: Implement Smart Reply Generator for Various Scenarios
     - [x] Phase 4-2: Develop CRUD APIs & Data Persistence for Analysis History
     - [x] Phase 4-3: Construct Japanese Business Phrase Library (Logic & DB Automation)
-    - [] Phase 4-4: API Documentation Automation via Swagger
+    - [x] Phase 4-4: API Documentation Automation via Swagger
 
 - **Phase 5**: Quality Assurance & Portfolio Finalization
     - [] Phase 5-1: Execute Unit Testing for Core Logic using JUnit5
