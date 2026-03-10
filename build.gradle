@@ -43,6 +43,9 @@ dependencies {
 
     // 일본어 형태소 분석기 Kuromoji (ipadic 사전 포함 버전)
     implementation 'com.atilika.kuromoji:kuromoji-ipadic:0.9.0'
+
+    //Swagger UI & OpenAPI 3.0
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 }
 
 tasks.named('test') {
