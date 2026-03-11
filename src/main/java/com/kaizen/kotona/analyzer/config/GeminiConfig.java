@@ -1,0 +1,52 @@
+package com.kaizen.kotona.analyzer.config;
+
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.vertexai.Transport;
+import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.vertexai.api.GenerationConfig;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.IOException;
+
+@Configuration
+public class GeminiConfig {
+
+    @Value("${gemini.project-id}")
+    private String projectId;
+
+    @Value("${gemini.location:us-central1}")
+    private String location;
+
+    @Bean
+    public VertexAI vertexAI() throws IOException {
+        // 리소스 폴더에서 직접 JSON 파일을 읽어옴
+        ClassPathResource resource = new ClassPathResource("google-key.json");
+        GoogleCredentials credentials = GoogleCredentials.fromStream(resource.getInputStream())
+                .createScoped("https://www.googleapis.com/auth/cloud-platform");
+
+        // 정보 직접 세팅
+        return new VertexAI.Builder()
+                .setProjectId(projectId)
+                .setLocation(location)
+                .setCredentials(credentials)
+                .setTransport(Transport.REST) // gRPC 대신 REST를 사용하도록 강제
+                .build();
+    }
+
+    @Bean
+    public GenerativeModel generativeModel(VertexAI vertexAI) {
+        // 복잡한 JSON 생성위해 타임아웃, 토큰 제한 설정
+        GenerationConfig config = GenerationConfig.newBuilder()
+                .setMaxOutputTokens(2048) // 토큰 늘리기
+                .setTemperature(0.7f) // 창의적인 답장 생성 위한 온도 조절
+                .setResponseMimeType("application/json") // JSON 포멧 강제 설정
+                .build();
+
+        return new GenerativeModel("gemini-2.0-flash", vertexAI)
+                .withGenerationConfig(config);
+    }
+}
