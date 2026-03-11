@@ -1,6 +1,7 @@
 package com.kotona.analyzer;
 
 import static org.mockito.BDDMockito.*;
+import static org.assertj.core.api.Assertions.*;
 
 import com.kaizen.kotona.entity.BusinessPhrase;
 import com.kaizen.kotona.repository.BusinessPhraseRepository;
@@ -36,5 +37,13 @@ class BusinessPhraseServiceTest {
 
         // 테스트할 메서드 실행
         List<BusinessPhrase> result = service.getAllPhrases();
+
+        // AssertJ 사용한 결과 검증
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getPolitenessLevel()).isEqualTo(5);
+        // 메서드 호출 횟수 검증
+        verify(repository, times(1)).findAllByOrderByPolitenessLevelDesc();
     }
+
+
 }
