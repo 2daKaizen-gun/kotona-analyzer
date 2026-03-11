@@ -1,6 +1,7 @@
 package com.kaizen.kotona.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "business_phrase") // DB Table name
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor // 모든 필드 인자로 받는 생성자 (테스트 코드용)
 public class BusinessPhrase {
 
     @Id
