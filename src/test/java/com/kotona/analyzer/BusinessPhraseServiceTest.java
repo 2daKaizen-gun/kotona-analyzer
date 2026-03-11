@@ -45,5 +45,18 @@ class BusinessPhraseServiceTest {
         verify(repository, times(1)).findAllByOrderByPolitenessLevelDesc();
     }
 
+    @Test
+    @DisplayName("특정 상황(EMAIL)으로 검색 시 해당 데이터만 반환되어야 함.")
+    void getPhrasesBySituationTest() {
+        // given
+        String situation = "EMAIL";
+        BusinessPhrase phrase = new BusinessPhrase(1L, "承知いたしました", "알겠습니다", "EMAIL", 5, "예시1");
+        given(repository.findBySituation(situation)).willReturn(List.of(phrase));
 
+        // when
+        List<BusinessPhrase> result = service.getPhrasesBySituation(situation);
+
+        // then
+        assertThat(result).allMatch(p->p.getSituation().equals("EMAIL"));
+    }
 }
