@@ -5,6 +5,10 @@ on:
   push:
     branches: [ "main" ]
 
+# 깃허브 액션이 Node.js 24를 사용하도록 강제
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
