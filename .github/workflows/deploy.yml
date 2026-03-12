@@ -53,10 +53,13 @@ jobs:
             chmod +x ./gradlew
             ./gradlew clean bootJar -x test --no-daemon
 
-            # 5. 보안 및 환경 변수 주입 실행
             nohup java -jar \
               -DGCP_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}" \
               -DGEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
               -Dspring.datasource.password="root" \
               -Dgoogle.key.path="$HOME/app/google-key.json" \
-              build/libs/*.jar > app.log 2>&1 &
+              build/libs/*.jar > app.log 2>&1 < /dev/null &
+            
+            # 세션이 즉시 종료될 수 있도록 약간의 대기 후 종료
+            sleep 2
+            exit 0
