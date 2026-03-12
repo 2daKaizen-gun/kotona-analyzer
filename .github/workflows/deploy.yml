@@ -5,13 +5,18 @@ on:
   push:
     branches: [ "main" ]
 
-# 깃허브 액션이 Node.js 24를 사용하도록 강제
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
+    # 깃허브 액션이 Node.js 24를 사용하도록 강제
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    # 401 에러 방지를 위해 명시적 권한을 부여
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       # GitHub 레포지토리의 코드를 가져옴
@@ -41,23 +46,21 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            # 서버에 앱이 위치할 디렉토리 생성
-            mkdir -p ~/app
-            cd ~/app
-
-            # 기존에 실행 중인 서버 프로세스 종료 (있을 경우만)
-            PID=$(pgrep -f "app.jar" || true)
-            if [ -n "$PID" ]; then
-              echo "Stopping existing application (PID: $PID)..."
-              kill -15 $PID
+            APP_DIR="$HOME/app"
+            if [ ! -d "$APP_DIR/.git" ]; then
+              git clone https://github.com/${{ github.repository }}.git $APP_DIR
+            else
+              cd $APP_DIR && git pull origin main
+            fi
+            cd $APP_DIR
+            CURRENT_PID=$(pgrep -f "app.jar" | grep -v "$$" || true)
+            if [ -n "$CURRENT_PID" ]; then
+              kill -15 $CURRENT_PID
               sleep 5
             fi
-            
-            # 현재는 가장 심플한 Git Pull & Build 방식으로 진행
-            git pull origin main
             chmod +x ./gradlew
             ./gradlew bootJar -x test
-
+            
             # 백그라운드에서 애플리케이션 실행
             # 로그는 app.log에 기록
             nohup java -jar build/libs/*.jar > app.log 2>&1 &
