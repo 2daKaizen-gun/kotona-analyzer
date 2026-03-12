@@ -9,11 +9,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 코드 가져오기 (v5)
       - name: Checkout Code
         uses: actions/checkout@v5
 
-      # 2. JDK 21 설정 및 빌드 속도 향상을 위한 캐싱 (v5)
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -21,19 +19,19 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      # 3. Gradle 빌드 (테스트 제외로 빌드 시간 단축)
       - name: Build with Gradle
         run: |
           chmod +x ./gradlew
           ./gradlew bootJar -x test --no-daemon
 
-      # 4. Native SSH 설정을 이용한 파일 전송 및 서버 재시작
       - name: Deploy and Restart Server via Native SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} "mkdir -p ~/app"
+
           scp -o StrictHostKeyChecking=no -C build/libs/*.jar ec2-user@${{ secrets.EC2_HOST }}:~/app/app.jar
 
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
