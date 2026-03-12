@@ -63,4 +63,3 @@ jobs:
               --spring.datasource.password="root" \
               --google.key.path="$HOME/app/google-key.json" \
               > ~/app/app.log 2>&1 &
-          EOF
