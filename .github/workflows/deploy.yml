@@ -10,11 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 코드 체크아웃
       - name: Checkout code
         uses: actions/checkout@v5
 
-      # 2. JDK 21 설정 및 Gradle 캐싱
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -22,7 +20,6 @@ jobs:
           distribution: 'corretto'
           cache: 'gradle'
 
-      # 3. Native SCP를 위한 SSH Key 설정
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
         with:
@@ -30,19 +27,19 @@ jobs:
           known_hosts: 'just-placeholder'
           if_key_exists: replace
 
-      # 4. 빌드 (메모리 절약)
       - name: Build with Gradle
         run: |
           chmod +x ./gradlew
           ./gradlew clean bootJar -x test --no-daemon
 
-      # 5. Fast SCP 전송 (Native 방식)
+      # 최적화된 고속 전송
       - name: Fast SCP Transfer
         run: |
+        # 디렉토리 생성
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} "mkdir -p ~/app/current"
-          scp -o StrictHostKeyChecking=no build/libs/*.jar ec2-user@${{ secrets.EC2_HOST }}:~/app/current/app.jar
+        # -C 옵션으로 압축 전송, 정확한 파일명(app.jar) 지정하여 중복 전송 방지
+          scp -o StrictHostKeyChecking=no -C build/libs/app.jar ec2-user@${{ secrets.EC2_HOST }}:~/app/current/app.jar
 
-      # 6. 서버 재시작
       - name: Restart Server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -50,14 +47,12 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 기존 프로세스 종료
             CURRENT_PID=$(pgrep -f "app.jar" || true)
             if [ -n "$CURRENT_PID" ]; then
               kill -15 $CURRENT_PID
               sleep 5
             fi
 
-            # 환경변수 설정 및 실행
             export GCP_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
             export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
             
