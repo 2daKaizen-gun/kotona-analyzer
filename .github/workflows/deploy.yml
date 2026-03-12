@@ -46,21 +46,26 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
+            ! type git > /dev/null 2>&1 && sudo dnf install -y git
+            ! type java > /dev/null 2>&1 && sudo dnf install -y java-21-amazon-corretto-devel
+
             APP_DIR="$HOME/app"
+            REPO_URL="https://github.com/2daKaizen-gun/kotona-analyzer.git"
+
             if [ ! -d "$APP_DIR/.git" ]; then
-              git clone https://github.com/${{ github.repository }}.git $APP_DIR
+              rm -rf $APP_DIR
+              git clone $REPO_URL $APP_DIR
             else
               cd $APP_DIR && git pull origin main
             fi
+
             cd $APP_DIR
             CURRENT_PID=$(pgrep -f "app.jar" | grep -v "$$" || true)
             if [ -n "$CURRENT_PID" ]; then
-              kill -15 $CURRENT_PID
+              kill -15 $CURRENT_PID 2>/dev/null || true
               sleep 5
             fi
+
             chmod +x ./gradlew
             ./gradlew bootJar -x test
-            
-            # 백그라운드에서 애플리케이션 실행
-            # 로그는 app.log에 기록
             nohup java -jar build/libs/*.jar > app.log 2>&1 &
