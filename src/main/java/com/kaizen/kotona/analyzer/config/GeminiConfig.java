@@ -8,7 +8,9 @@ import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 
 import java.io.IOException;
 
@@ -21,10 +23,17 @@ public class GeminiConfig {
     @Value("${gemini.location:us-central1}")
     private String location;
 
+    // 추가: 실행 시 주입받은 키 경로 (기본값은 resources 내부)
+    @Value("${google.key.path:classpath:google-key.json}")
+    private String keyPath;
+
     @Bean
     public VertexAI vertexAI() throws IOException {
-        // 리소스 폴더에서 직접 JSON 파일을 읽어옴
-        ClassPathResource resource = new ClassPathResource("google-key.json");
+        // [수정 핵심] ClassPathResource 대신 ResourceLoader를 사용합니다.
+        ResourceLoader resourceLoader = new DefaultResourceLoader();
+        Resource resource = resourceLoader.getResource(keyPath);
+
+        // credentials 생성
         GoogleCredentials credentials = GoogleCredentials.fromStream(resource.getInputStream())
                 .createScoped("https://www.googleapis.com/auth/cloud-platform");
 
