@@ -44,13 +44,14 @@ jobs:
               sleep 5
             fi
 
-            export GCP_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
-            export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+            nohup java -DGCP_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}" \
+                       -DGEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+                       -Dgemini.project-id="${{ secrets.GCP_PROJECT_ID }}" \
+                       -Dgemini.api-key="${{ secrets.GEMINI_API_KEY }}" \
+                       -jar ~/app/app.jar \
+                       --spring.datasource.password="root" \
+                       --google.key.path="$HOME/app/google-key.json" \
+                       > ~/app/app.log 2>&1 &
           
-            nohup java -jar ~/app/app.jar \
-              --spring.datasource.password="root" \
-              --google.key.path="$HOME/app/google-key.json" \
-              > ~/app/app.log 2>&1 &
-          
-            echo "Successfully deployed KOTONA project!"
+            echo "Successfully deployed KOTONA project with Injected Secrets!"
           EOF
