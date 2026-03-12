@@ -43,6 +43,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 10m
           script: |
             ! type java > /dev/null 2>&1 && sudo dnf install -y java-21-amazon-corretto-devel
             CURRENT_PID=$(pgrep -f "app.jar" || true)
