@@ -1,51 +1,26 @@
 name: KOTONA CI/CD Pipeline
 
-# main 브랜치에 코드가 push될 때 실행
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
-    # 깃허브 액션이 Node.js 24를 사용하도록 강제
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-    # 401 에러 방지를 위해 명시적 권한을 부여
-    permissions:
-      contents: write
-      packages: write
-
     steps:
-      # GitHub 레포지토리의 코드를 가져옴
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v5
 
-      # Java 21 환경을 세팅
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      # Gradle 빌드 권한을 부여하고 Jar 파일을 빌드
-      # 테스트는 로컬에서 확인했으므로 빌드 속도를 위해 제외(-x test)
-      - name: Build with Gradle
-        run: |
-          chmod +x ./gradlew
-          ./gradlew bootJar -x test
-
-      # 빌드된 Jar 파일을 AWS EC2로 전송하고 실행
-      - name: Deploy to EC2 via SSH
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user  # Amazon Linux 2023 기본 계정
+          username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
           script: |
+            # 1. 필수 환경 확인
             ! type git > /dev/null 2>&1 && sudo dnf install -y git
             ! type java > /dev/null 2>&1 && sudo dnf install -y java-21-amazon-corretto-devel
 
@@ -55,17 +30,33 @@ jobs:
             if [ ! -d "$APP_DIR/.git" ]; then
               rm -rf $APP_DIR
               git clone $REPO_URL $APP_DIR
-            else
-              cd $APP_DIR && git pull origin main
             fi
 
             cd $APP_DIR
+
+            # 2. 코드 동기화 최적화
+            # 빌드 파일 충돌 방지를 위한 로컬 초기화
+            git reset --hard HEAD
+            git clean -fd
+            git pull origin main
+
+            # 3. 자원 확보 
+            ./gradlew --stop || true
+            
             CURRENT_PID=$(pgrep -f "app.jar" | grep -v "$$" || true)
             if [ -n "$CURRENT_PID" ]; then
               kill -15 $CURRENT_PID 2>/dev/null || true
               sleep 5
             fi
 
+            # 4. 메모리 절약형 빌드
             chmod +x ./gradlew
-            ./gradlew bootJar -x test
-            nohup java -jar build/libs/*.jar > app.log 2>&1 &
+            ./gradlew clean bootJar -x test --no-daemon
+
+            # 5. 보안 및 환경 변수 주입 실행
+            nohup java -jar \
+              -DGCP_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}" \
+              -DGEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+              -Dspring.datasource.password="root" \
+              -Dgoogle.key.path="$HOME/app/google-key.json" \
+              build/libs/*.jar > app.log 2>&1 &
