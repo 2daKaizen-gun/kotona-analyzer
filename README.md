@@ -35,7 +35,17 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 
 - **KOTONA-Analyzer Architecture (Mermaid)**
 ```mermaid
-
+graph TD
+  User((User/Client)) -->|REST Request| EC2[AWS EC2 Instance]
+  subgraph "Spring Boot Server (Analyzer)"
+    EC2 -->|Spring Security| Controller[Analyzer Controller]
+    Controller -->|Business Logic| Service[Gemini Service]
+    Service -->|Prompt Engineering| Gemini[Gemini 2.0 Flash]
+    Service -->|Auth| GCP[Google Cloud IAM]
+  end
+  Gemini -->|Structured JSON| Service
+  Service -->|DTO Mapping| Controller
+  Controller -->|JSON Response| User
 ```
 
 ## ⚙️ 주요 기능 (Key Features)
