@@ -54,6 +54,12 @@ graph TD
 - **Smart Reply**: 상대방의 의도를 존중하면서도 명확한 의사를 전달하는 비즈니스 답안 초안 생성.
 
 ## 🛠 Tech Stack
+- **Framework**: Spring Boot 3.4.x (Java 21)
+- **Language**: Java
+- **Styling**: Swagger UI (OpenAPI 3.0)
+- **AI/LLM**: ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white) | Vertex AI SDK
+- **Deployment**: AWS EC2 (Amazon Linux 2023) | GitHub Actions CI/CD
+- **Libraries**: Spring Data JPA | Google Auth Library | Lombok
 
 ## 🏗 Architecture
 - 객체지향적 설계를 통한 분석 로직의 확장성 확보.
