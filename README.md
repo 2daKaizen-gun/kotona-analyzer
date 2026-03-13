@@ -1,8 +1,42 @@
 # 📋 KOTONA-Analyzer: Omotenashi AI Assist (Analyzer)
 
-An AI-driven Japanese business communication analyzer that deciphers "Honne" (true intent) and "Tatemae" (public face) to provide culturally nuanced response strategies and etiquette scores for non-native IT engineers.
+An AI-driven Japanese business communication analyzer that deciphers "本音" (true intent) and "建前" (public face) to provide culturally nuanced response strategies and etiquette scores for non-native IT engineers.
 
 ## 🎯 Background & Motivation
+- **The Context**
+  - Success in the Japanese IT market goes beyond language proficiency; it requires the ability to "read the air" (空気を読む). Understanding the hidden nuances in professional communication is a critical skill for global engineers.
+
+- **The Problem**
+  1. 敬語 Complexity: Even with JLPT N2/N1, mastering the subtle levels of honorifics (尊敬語, 謙譲語) in real-time business contexts is extremely challenging.
+
+  2. Cultural Blind Spots: Missing the "本音" (true intent) behind a polite "建前" (public face) often leads to project delays or misunderstandings with Japanese clients.
+
+  3. Production Readiness: Many AI tools are restricted to local environments, making it difficult for developers to provide a reliable, always-on solution for professional teams.
+
+- **The Solution**
+  1. 
+
+  2. 
+
+  3. 
+
+- **Data Source**: 
+
+- **Key Features**
+  1. 
+
+  2. 
+
+  3. 
+
+  4. 
+
+  5. 
+
+- **KOTONA-Analyzer Architecture (Mermaid)**
+```mermaid
+
+```
 
 ## ⚙️ 주요 기능 (Key Features)
 - **Nuance Analysis**: 입력된 문장의 완곡함과 정중함을 분석하여 '진의(本音)' 도출.
