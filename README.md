@@ -141,3 +141,10 @@ Moving from simple API calls to a structured Spring Boot architecture, I mastere
 
 ### 🌏 Bridging Markets
 As an aspiring IT solution engineer for the Japanese market, KOTONA represents my unique strength: the ability to translate complex cultural nuances into technical specifications. This tool is a testament to my readiness to contribute to the Japanese IT ecosystem.
+
+## ✨ Contact
+- **Live API Docs (Swagger)**: http://18.220.206.238:8081/swagger-ui/index.html
+
+- **GitHub Repository**: https://github.com/2daKaizen-gun/kotona-analyzer
+
+- **Email**: hkys1223@gmail.com
