@@ -57,12 +57,12 @@ graph TD
 - **Smart Reply**: Generates business response drafts that convey clear intent while maintaining respect for the recipient.
 
 ## 🛠 Tech Stack
-- **Framework**: Spring Boot 3.4.x (Java 21)
+- **Framework**: ![Spring Boot](https://img.shields.io/badge/spring-%236DB33F.svg?style=for-the-badge&logo=springboot&logoColor=white)
 - **Language**: ![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
-- **Styling**: Swagger UI (OpenAPI 3.0)
+- **Styling**: ![Swagger](https://img.shields.io/badge/-Swagger-%23C1E1C1?style=for-the-badge&logo=swagger&logoColor=black) (OpenAPI 3.0)
 - **AI/LLM**: ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white) | Vertex AI SDK
-- **Deployment**: AWS EC2 (Amazon Linux 2023) | GitHub Actions CI/CD
-- **Libraries**: Spring Data JPA | Google Auth Library | Lombok
+- **Deployment**: ![AWS](https://img.shields.io/badge/AWS%20EC2-%23FF9900.svg?style=for-the-badge&logo=amazonec2&logoColor=white) | ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232088FF.svg?style=for-the-badge&logo=githubactions&logoColor=white) (CI/CD)
+- **Libraries**: ![Hibernate](https://img.shields.io/badge/Hibernate-59666C?style=for-the-badge&logo=Hibernate&logoColor=white) | ![Lombok](https://img.shields.io/badge/Lombok-BC1A26?style=for-the-badge&logo=Lombok&logoColor=white)
 
 ## 🏗 Architecture
 - Ensuring scalability of analysis logic through object-oriented design.
