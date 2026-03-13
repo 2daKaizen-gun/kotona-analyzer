@@ -1,5 +1,5 @@
 # 📋 KOTONA-Analyzer: Omotenashi AI Assist (Analyzer)
-  "「言葉」ではなく「本音」を読み解く"
+  **"「言葉」ではなく「本音」を読み解く"**
 
 An AI-driven Japanese business communication analyzer that deciphers "本音" (true intent) and "建前" (public face) to provide culturally nuanced response strategies and etiquette scores for non-native IT engineers.
 
@@ -136,7 +136,7 @@ graph TD
 
   - **Beyond the Language**: While translators break language barriers, I have come to believe that engineers are the ones who must bridge cultural divides.
 
-  - **Collaboration over Information**: Realizing that 'trust between people' is more important than mere data transmission, I explored how technology can support and build that trust.
+  - **Collaboration over Information**: Realizing that **trust between people** is more important than mere data transmission, I explored how technology can support and build that trust.
 
 ## 🧐 Final Project Retrospective
 
