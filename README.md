@@ -123,5 +123,12 @@ graph TD
 - **Security**: Zero hardcoded secrets (100% Secret Management via GitHub/GCP)
 
 ## 🧐 Self-Reflection
+- **Technical Growth**
+  - **Backend Orchestration**: Mastered the full-cycle of a Spring Boot application, from building complex AI logic with Vertex AI to deploying it on a professional AWS environment using automated CI/CD pipelines.
+
+  - **Architecture for Scalability**: Learned how to design "Production-ready" systems by decoupling sensitive credentials from the codebase and managing external resources effectively.
+
+- **Problem-Solving Mindset**
+  - **Cultural Solutionist**: Confirmed that IT solutions are most powerful when they solve deep-rooted social or cultural friction. By quantifying "おもてなし," I realized how technology can lower the barrier for global talent.
 
 ## 🧐 Final Project Retrospective
