@@ -14,24 +14,24 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
   3. Production Readiness: Many AI tools are restricted to local environments, making it difficult for developers to provide a reliable, always-on solution for professional teams.
 
 - **The Solution**
-  1. 
+  1. Nuance Deciphering Engine: An AI-powered logic that breaks down messages into politeness, indirectness, and etiquette scores.
 
-  2. 
+  2. Honne/Tatemae Extraction: Automatically identifies the sender's true intention and suggests appropriate action items.
 
-  3. 
+  3. Enterprise-Grade Deployment: A robust CI/CD pipeline ensuring the analyzer is always accessible via a secure cloud environment.
 
-- **Data Source**: 
+- **Data Source**: Gemini 2.0 Flash API (Vertex AI SDK), Google Cloud IAM, Spring Boot Backend.
 
 - **Key Features**
-  1. 
+  1. Honne/Tatemae Analysis: Separates public face from true intent to prevent business communication risks.
 
-  2. 
+  2. Nuance Scoring: Quantifies Politeness, Indirectness, and Etiquette for objective evaluation.
 
-  3. 
+  3. Smart Response Generator: Provides 3 levels of response (Standard, Soft, Firm) based on cultural context.
 
-  4. 
+  4. Risk & Coping Strategy: Identifies "Red Flags" in communication and suggests professional coping strategies.
 
-  5. 
+  5. Auto-Deployment (CI/CD): Zero-downtime deployment logic using GitHub Actions and AWS EC2.
 
 - **KOTONA-Analyzer Architecture (Mermaid)**
 ```mermaid
