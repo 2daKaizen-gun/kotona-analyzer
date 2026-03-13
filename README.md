@@ -98,6 +98,20 @@ graph TD
     - [] Phase 5-4: Final Project Retrospective & Achievement Summary
 
 ## 🔥 Troubleshooting & Lessons Learned
+**1. External Resource Path Resolution (Classpath vs FileSystem)**
+- **Challenge**: The application failed to find google-key.json on the EC2 server because it was looking inside the JAR file (Classpath).
+
+- **Resolution**: Replaced ClassPathResource with ResourceLoader and FileSystemResource, allowing the app to dynamically load keys from either the internal resources (Dev) or external server paths (Prod) via environment variables.
+
+**2. Secret Injection in CI/CD Pipeline**
+- **Challenge**: Sensitive API keys and Project IDs were not being correctly passed to the Java process via shell exports in GitHub Actions.
+
+- **Resolution**: Switched to JVM System Properties (-D flags) during the execution phase, ensuring that all secrets are directly and securely injected into the Spring context during startup.
+
+**3. Network & Security Group Configuration**
+- **Challenge**: Connection timed out and Permission denied errors during initial deployment.
+
+- **Resolution**: Conducted a security audit on AWS Security Groups, mapping the correct inbound ports (8081 for Spring Boot) and ensuring the SSH key (.pem) permissions were restricted to 600 to prevent unauthorized access.
 
 ## 📈 Results
 
