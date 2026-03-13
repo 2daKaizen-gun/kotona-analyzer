@@ -58,7 +58,7 @@ graph TD
 
 ## 🛠 Tech Stack
 - **Framework**: Spring Boot 3.4.x (Java 21)
-- **Language**: Java
+- **Language**: ![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
 - **Styling**: Swagger UI (OpenAPI 3.0)
 - **AI/LLM**: ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white) | Vertex AI SDK
 - **Deployment**: AWS EC2 (Amazon Linux 2023) | GitHub Actions CI/CD
