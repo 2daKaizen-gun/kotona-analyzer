@@ -129,6 +129,15 @@ graph TD
   - **Architecture for Scalability**: Learned how to design "Production-ready" systems by decoupling sensitive credentials from the codebase and managing external resources effectively.
 
 - **Problem-Solving Mindset**
-  - **Cultural Solutionist**: Confirmed that IT solutions are most powerful when they solve deep-rooted social or cultural friction. By quantifying "おもてなし," I realized how technology can lower the barrier for global talent.
+  - **Cultural Solutionist**: Confirmed that IT solutions are most powerful when they solve deep-rooted social or cultural friction. By quantifying "おもてなし" I realized how technology can lower the barrier for global talent.
 
 ## 🧐 Final Project Retrospective
+
+### 💡Engineering for Reliability
+This project was built with a core focus on 'Reliability'. By resolving critical pathing and secret injection issues during Phase 5, I proved that AI-driven services can be stable and secure in a cloud environment. The transition from local testing to a live AWS instance demonstrated my ability to handle real-world infrastructure challenges.
+
+### 🚀 Technical Evolution: Beyond Coding
+Moving from simple API calls to a structured Spring Boot architecture, I mastered the nuances of JVM management and automated deployment. Dealing with the transition from Classpath to FileSystem resources taught me the importance of environment-aware development.
+
+### 🌏 Bridging Markets
+As an aspiring IT solution engineer for the Japanese market, KOTONA represents my unique strength: the ability to translate complex cultural nuances into technical specifications. This tool is a testament to my readiness to contribute to the Japanese IT ecosystem.
