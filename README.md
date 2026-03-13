@@ -1,7 +1,8 @@
 # 📋 KOTONA-Analyzer: 🇯🇵 Omotenashi AI Assist (Analyzer)
 >  **"「言葉」ではなく「本音」を読み解く"**
 
-**KOTONA** [こと (Speech) + な (Nuance)]: A technological bridge designed to connect diverse (異なる) cultures by deciphering the profound context beyond literal speech.
+> **KOTONA** [こと (Speech) + な (Nuance)]: A technological bridge designed to connect diverse (異なる) cultures by deciphering the profound context beyond literal speech.
+
 An AI-driven Japanese business communication analyzer that deciphers "本音" (true intent) and "建前" (public face) to provide culturally nuanced response strategies and etiquette scores for non-native IT engineers.
 
 ## 🎯 Background & Motivation
