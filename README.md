@@ -1,9 +1,12 @@
 # 📋 KOTONA-Analyzer: Omotenashi AI Assist (Analyzer)
-
+  "「言葉」ではなく「本音」を読み解く"
+--
 An AI-driven Japanese business communication analyzer that deciphers "本音" (true intent) and "建前" (public face) to provide culturally nuanced response strategies and etiquette scores for non-native IT engineers.
 
 ## 🎯 Background & Motivation
-- **The Context**
+- **The Context**: "Engineering with Respect"
+  - Japanese business etiquette, centered on consideration for others and indirect expressions, is a beautiful and delicate culture. However, for non-native engineers, failing to grasp these subtle nuances can lead to unintended misunderstandings during collaboration.
+
   - Success in the Japanese IT market goes beyond language proficiency; it requires the ability to "read the air" (空気を読む). Understanding the hidden nuances in professional communication is a critical skill for global engineers.
 
 - **The Problem**
@@ -16,14 +19,14 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 - **The Solution**
   1. Nuance Deciphering Engine: An AI-powered logic that breaks down messages into politeness, indirectness, and etiquette scores.
 
-  2. Honne/Tatemae Extraction: Automatically identifies the sender's true intention and suggests appropriate action items.
+  2. 本音/建前 Extraction: Automatically identifies the sender's true intention and suggests appropriate action items.
 
   3. Enterprise-Grade Deployment: A robust CI/CD pipeline ensuring the analyzer is always accessible via a secure cloud environment.
 
 - **Data Source**: Gemini 2.0 Flash API (Vertex AI SDK), Google Cloud IAM, Spring Boot Backend.
 
 - **Key Features**
-  1. Honne/Tatemae Analysis: Separates public face from true intent to prevent business communication risks.
+  1. 本音/建前 Analysis: Separates public face from true intent to prevent business communication risks.
 
   2. Nuance Scoring: Quantifies Politeness, Indirectness, and Etiquette for objective evaluation.
 
@@ -48,10 +51,10 @@ graph TD
   Controller -->|JSON Response| User
 ```
 
-## ⚙️ 주요 기능 (Key Features)
-- **Nuance Analysis**: 입력된 문장의 완곡함과 정중함을 분석하여 '진의(本音)' 도출.
-- **Manner Scoring**: 일본 비즈니스 관습에 기반한 매너 점수 및 개선 포인트 가이드.
-- **Smart Reply**: 상대방의 의도를 존중하면서도 명확한 의사를 전달하는 비즈니스 답안 초안 생성.
+## ⚙️ Key Features
+- **Nuance Analysis**: Derives the true intent (本音) by analyzing the indirectness and politeness of the input text.
+- **Manner Scoring**: Provides manner scores and improvement guides based on Japanese business customs.
+- **Smart Reply**: Generates business response drafts that convey clear intent while maintaining respect for the recipient.
 
 ## 🛠 Tech Stack
 - **Framework**: Spring Boot 3.4.x (Java 21)
@@ -62,8 +65,8 @@ graph TD
 - **Libraries**: Spring Data JPA | Google Auth Library | Lombok
 
 ## 🏗 Architecture
-- 객체지향적 설계를 통한 분석 로직의 확장성 확보.
-- 가독성 높은 API 명세 및 테스트 코드 중심 개발.
+- Ensuring scalability of analysis logic through object-oriented design.
+- Developing with a focus on highly readable API specifications and test-driven principles.
 
 ## ✅ Milestone
 - **Phase 1**: Project Foundation & Backend Environment Setup
@@ -94,7 +97,7 @@ graph TD
 - **Phase 5**: Quality Assurance & Portfolio Finalization
     - [x] Phase 5-1: Execute Unit Testing for Core Logic using JUnit5
     - [x] Phase 5-2: Cloud Deployment & CI/CD Pipeline Configuration
-    - [] Phase 5-3: Comprehensive Technical Documentation (README & Diagrams)
+    - [x] Phase 5-3: Comprehensive Technical Documentation (README & Diagrams)
     - [] Phase 5-4: Final Project Retrospective & Achievement Summary
 
 ## 🔥 Troubleshooting & Lessons Learned
@@ -129,7 +132,11 @@ graph TD
   - **Architecture for Scalability**: Learned how to design "Production-ready" systems by decoupling sensitive credentials from the codebase and managing external resources effectively.
 
 - **Problem-Solving Mindset**
-  - **Cultural Solutionist**: Confirmed that IT solutions are most powerful when they solve deep-rooted social or cultural friction. By quantifying "おもてなし" I realized how technology can lower the barrier for global talent.
+  - **Cultural Solutionist**: Confirmed that IT solutions are most powerful when they solve deep-rooted social or cultural friction. By quantifying "おもてなし", I realized how technology can lower the barrier for global talent.
+
+  - **Beyond the Language**: While translators break language barriers, I have come to believe that engineers are the ones who must bridge cultural divides.
+
+  - **Collaboration over Information**: Realizing that 'trust between people' is more important than mere data transmission, I explored how technology can support and build that trust.
 
 ## 🧐 Final Project Retrospective
 
@@ -140,7 +147,7 @@ This project was built with a core focus on 'Reliability'. By resolving critical
 Moving from simple API calls to a structured Spring Boot architecture, I mastered the nuances of JVM management and automated deployment. Dealing with the transition from Classpath to FileSystem resources taught me the importance of environment-aware development.
 
 ### 🌏 Bridging Markets
-As an aspiring IT solution engineer for the Japanese market, KOTONA represents my unique strength: the ability to translate complex cultural nuances into technical specifications. This tool is a testament to my readiness to contribute to the Japanese IT ecosystem.
+As an aspiring IT solution engineer for the Japanese market, KOTONA represents my unique strength: the ability to translate complex cultural nuances into technical specifications.
 
 ## ✨ Contact
 - **Live API Docs (Swagger)**: http://18.220.206.238:8081/swagger-ui/index.html
