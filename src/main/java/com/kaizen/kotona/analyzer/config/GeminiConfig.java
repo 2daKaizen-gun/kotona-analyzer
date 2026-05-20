@@ -55,7 +55,7 @@ public class GeminiConfig {
                 .setResponseMimeType("application/json") // JSON 포멧 강제 설정
                 .build();
 
-        return new GenerativeModel("gemini-2.0-flash", vertexAI)
+        return new GenerativeModel("gemini-2.5-flash-lite", vertexAI)
                 .withGenerationConfig(config);
     }
 }

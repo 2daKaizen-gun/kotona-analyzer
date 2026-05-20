@@ -9,10 +9,10 @@ spring:
 
   datasource:
     hikari:
-      connection-timeout: 5000 # 5초만 기다리고 바로 에러 내뱉게 설정
-    url: jdbc:mysql://localhost:3306/kotona?serverTimezone=Asia/Seoul
+      connection-timeout: 5000
+    url: jdbc:mysql://localhost:3306/kotona?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true
     username: root
-    password: root
+    password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
