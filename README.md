@@ -25,7 +25,7 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 
   3. Enterprise-Grade Deployment: A robust CI/CD pipeline ensuring the analyzer is always accessible via a secure cloud environment.
 
-- **Data Source**: Gemini 2.0 Flash API (Vertex AI SDK), Google Cloud IAM, Spring Boot Backend.
+- **Data Source**: Gemini 2.5 Flash Lite API (Vertex AI SDK), Google Cloud IAM, Spring Boot Backend.
 
 - **Key Features**
   1. 本音/建前 Analysis: Separates public face from true intent to prevent business communication risks.
@@ -45,7 +45,7 @@ graph TD
   subgraph "Spring Boot Server (Analyzer)"
     EC2 -->|Spring Security| Controller[Analyzer Controller]
     Controller -->|Business Logic| Service[Gemini Service]
-    Service -->|Prompt Engineering| Gemini[Gemini 2.0 Flash]
+    Service -->|Prompt Engineering| Gemini[Gemini 2.5 Flash Lite]
     Service -->|Auth| GCP[Google Cloud IAM]
   end
   Gemini -->|Structured JSON| Service
@@ -62,7 +62,6 @@ graph TD
 - **Framework**: ![Spring Boot](https://img.shields.io/badge/spring-%236DB33F.svg?style=for-the-badge&logo=springboot&logoColor=white)
 - **Language**: ![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
 - **Database**: ![MySQL](https://img.shields.io/badge/mysql-4479A1.svg?style=for-the-badge&logo=mysql&logoColor=white) | ![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white) | ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
-- **Styling**: ![Swagger](https://img.shields.io/badge/-Swagger-%23Clojure?style=for-the-badge&logo=swagger&logoColor=white)
 - **AI/LLM**: ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white) | ![Vertex AI](https://img.shields.io/badge/Vertex%20AI-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
 - **Cloud & Deployment**: ![AWS](https://img.shields.io/badge/AWS%20EC2-%23FF9900.svg?style=for-the-badge&logo=amazonec2&logoColor=white) | ![GCP](https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white) | ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 - **OS & Environment**: ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) (Amazon Linux 2023)
@@ -123,7 +122,7 @@ graph TD
 ## 📈 Results
 - **Deployment**: 100% Automated CI/CD Pipeline (Push to Deploy)
 
-- **API Response Time**: < 1.5s (Optimized via Gemini Flash REST Transport)
+- **API Response Time**: < 1.5s (Optimized via Gemini 2.5 Flash Lite REST Transport for maximum efficiency)
 
 - **Uptime**: 99.9% (Managed via nohup and background process monitoring)
 
