@@ -47,7 +47,7 @@ jobs:
             nohup java -Dgemini.project-id="${{ secrets.GCP_PROJECT_ID }}" \
                        -Dgemini.api-key="${{ secrets.GEMINI_API_KEY }}" \
                        -jar ~/app/app.jar \
-                       --spring.datasource.password="root" \
+                       --spring.datasource.password="1234" \
                        --google.key.path="file:/home/ec2-user/app/google-key.json" \
                        > ~/app/app.log 2>&1 &
           
