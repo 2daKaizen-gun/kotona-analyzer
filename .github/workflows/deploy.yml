@@ -3,6 +3,8 @@ name: KOTONA CI/CD Pipeline
 on:
   push:
     branches: [ "main" ]
+  # EC2 배포는 자동이 아니라 수동(Run workflow)으로만 실행
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -25,6 +27,8 @@ jobs:
           ./gradlew bootJar -x test --no-daemon
 
       - name: Deploy and Restart Server via Native SSH
+        # push 시에는 빌드까지만 검증하고, EC2 배포는 수동 실행일 때만 수행
+        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
