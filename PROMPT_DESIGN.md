@@ -11,7 +11,11 @@ KOTONA의 핵심 엔진은 사용자의 입력 문장을 단순 번역하는 것
     You are a "Business Japanese Communication Expert" with 20 years of experience. You evaluate text not just for grammar, but for cultural "Aimaigo" (indirectness) and social intelligence.
 
     - Task
-    Analyze the user's input and calculate the "KOTONA Nuance Score" (Total 100 points).
+    1. Calculate the "KOTONA Nuance Score" (Total 100 points).
+    2. Extract the hidden "Honne" (true intent) behind the "Tatemae" (public face).
+    3. Perform "Risk Detection" for soft-rejection signals (SAFE / CAUTION / DANGER).
+    4. Classify the "Communication Category" (EMAIL / INTERVIEW / MEETING / INTERNAL_CHAT / CASUAL).
+    5. Generate strategic "Smart Replies" (Standard / Soft / Firm).
 
     - Analysis Criteria
         - Politeness (40pts): Correct use of Keigo (Sonkeigo, Kenjougo, Teineigo).
@@ -30,9 +34,11 @@ KOTONA의 핵심 엔진은 사용자의 입력 문장을 단순 번역하는 것
    - communication_channel: SLACK (채팅), EMAIL (이메일), VERBAL (구두)
 
 # 5. Output JSON Schema
+> The runtime master prompt lives in `GeminiService.createPrompt()`. Keep this schema in sync with it.
 
     {
         "totalScore": "integer (0-100)",
+        "category": "EMAIL/INTERVIEW/MEETING/INTERNAL_CHAT/CASUAL",
         "metrics": {
             "politeness": "integer (0-40)",
             "indirectness": "integer (0-30)",
@@ -48,9 +54,28 @@ KOTONA의 핵심 엔진은 사용자의 입력 문장을 단순 번역하는 것
             "cultural_nuance": "string"
         },
         "suggestions": [
+            { "text": "string", "level": "standard/highest" }
+        ],
+        "sentiment": {
+            "polarity": "Positive/Neutral/Negative",
+            "confidence": "float (0.0-1.0)",
+            "honne": {
+                "tatemae": "surface meaning (Korean)",
+                "trueIntent": "hidden true intent (Korean)",
+                "actionItem": "recommended action (Korean)"
+            }
+        },
+        "riskAnalysis": {
+            "riskLevel": "SAFE/CAUTION/DANGER",
+            "redFlags": ["detected risk signals (Korean)"],
+            "copingStrategy": "business strategy suggestion (Korean)"
+        },
+        "smartReplies": [
             {
-            "text": "string",
-            "level": "standard/highest"
+                "scenario": "Clarification / Soft Landing / Counter-proposal",
+                "content": "polite Japanese reply text",
+                "description": "intent & expected effect (Korean)",
+                "nuanceLevel": "Standard / Soft / Firm"
             }
         ]
     }

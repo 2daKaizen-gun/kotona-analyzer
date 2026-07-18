@@ -138,13 +138,13 @@ docker compose up -d --build
 - **Resolution**: Conducted a security audit on AWS Security Groups, mapping the correct inbound ports (8081 for Spring Boot) and ensuring the SSH key (.pem) permissions were restricted to 600 to prevent unauthorized access.
 
 ## 📈 Results
-- **Deployment**: 100% Automated CI/CD Pipeline (Push to Deploy)
+- **Deployment**: Portable — one-command local run via `docker compose up` (app + MySQL); GitHub Actions builds on every push and deploys to EC2 on manual dispatch
 
 - **API Response Time**: < 1.5s (Optimized via Gemini 2.5 Flash Lite REST Transport for maximum efficiency)
 
-- **Uptime**: 99.9% (Managed via nohup and background process monitoring)
+- **Portability**: No single-cloud lock-in — runs anywhere Docker runs, enabling zero-downtime migration off the retired EC2 free tier
 
-- **Security**: Zero hardcoded secrets (100% Secret Management via GitHub/GCP)
+- **Security**: Zero hardcoded secrets (env-based injection); paid `/analyze` endpoint protected by API-key filter + per-IP rate limiting
 
 ## 🧐 Self-Reflection
 - **Technical Growth**
@@ -171,7 +171,8 @@ Moving from simple API calls to a structured Spring Boot architecture, I mastere
 As an aspiring IT solution engineer for the Japanese market, KOTONA represents my unique strength: the ability to translate complex cultural nuances into technical specifications.
 
 ## ✨ Contact
-- **Live API Docs (Swagger)**: http://34.236.43.185:8081/swagger-ui/index.html
+- **API Docs (Swagger, local)**: `http://localhost:8081/swagger-ui/index.html` — run via `docker compose up`
+  > The AWS EC2 live instance was retired after the free tier ended; the app now runs locally via Docker (app + MySQL).
 
 - **GitHub Repository**: https://github.com/2daKaizen-gun/kotona-analyzer
 
