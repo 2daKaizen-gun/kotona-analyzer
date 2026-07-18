@@ -3,11 +3,41 @@ services:
     image: mysql:8.0
     container_name: kotona-mysql
     ports:
-      - "3307:3306"
+      - "3306:3306"
     environment:
-      MYSQL_DATABASE: kotona_db
-      MYSQL_ROOT_PASSWORD: 1234
-      MYSQL_USER: user
-      MYSQL_PASSWORD: user123
+      MYSQL_DATABASE: kotona
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-1234}
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      # 앱이 DB 준비 전에 붙어서 죽는 것을 방지
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-1234}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  app:
+    build: .
+    container_name: kotona-app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    # .env 의 GCP_PROJECT_ID, GEMINI_API_KEY 등을 그대로 주입
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: kotona
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-1234}
+      # google-key.json 을 이미지에 굽지 않고 런타임에 마운트해서 사용
+      GOOGLE_KEY_PATH: file:/app/google-key.json
+    volumes:
+      - ./src/main/resources/google-key.json:/app/google-key.json:ro
+
+volumes:
+  mysql_data:

@@ -10,9 +10,11 @@ spring:
   datasource:
     hikari:
       connection-timeout: 5000
-    url: jdbc:mysql://127.0.0.1:3306/kotona?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true
-    username: root
-    password: "1234"
+    # DB 접속 정보는 환경변수로 주입(없으면 로컬 개발 기본값 사용).
+    # 컨테이너 실행 시 DB_HOST=db 로 오버라이드된다.
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:kotona}?serverTimezone=Asia/Seoul&createDatabaseIfNotExist=true&characterEncoding=UTF-8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:1234}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:

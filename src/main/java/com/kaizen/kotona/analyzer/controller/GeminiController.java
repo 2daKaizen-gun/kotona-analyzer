@@ -1,10 +1,12 @@
 package com.kaizen.kotona.analyzer.controller;
 
+import com.kaizen.kotona.analyzer.dto.AnalyzeRequestDTO;
 import com.kaizen.kotona.analyzer.service.GeminiService;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -13,13 +15,12 @@ public class GeminiController {
 
     private final GeminiService geminiService;
 
-    // 반환 타입을 String에서 NuanceResponseDTO로 변경
-    @GetMapping("/analyze")
-    public NuanceResponseDTO analyze(
-            @RequestParam String text,
-            // relationshipType 추가
-            @RequestParam(defaultValue = "INTERNAL") String relationshipType) {
-        // 서비스가 DTO를 반환하므로 바로 return이 가능
-        return geminiService.analyzeJapaneseNuance(text, relationshipType);
+    // DB 저장 + 유료 AI 호출이 일어나는 '상태 변경' 요청이므로 GET이 아닌 POST 사용.
+    // (GET은 프록시/브라우저가 캐싱·프리페치·로그에 남겨 부작용/비용 문제를 유발)
+    @PostMapping("/analyze")
+    public NuanceResponseDTO analyze(@Valid @RequestBody AnalyzeRequestDTO request) {
+        return geminiService.analyzeJapaneseNuance(
+                request.text(),
+                request.relationshipTypeOrDefault());
     }
 }

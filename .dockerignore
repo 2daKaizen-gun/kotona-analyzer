@@ -1,0 +1,24 @@
+# 빌드 컨텍스트에서 제외 (이미지 경량화 + 시크릿이 이미지에 굽히는 것 방지)
+
+# 시크릿 (런타임에 마운트/환경변수로 주입)
+.env
+*.pem
+**/google-key.json
+
+# 빌드 산출물 / 캐시
+.gradle/
+build/
+out/
+target/
+
+# 로컬 DB 데이터 (컨테이너 볼륨 사용)
+mysql_data/
+
+# VCS / IDE
+.git/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

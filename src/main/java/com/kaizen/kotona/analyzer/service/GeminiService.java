@@ -61,13 +61,18 @@ public class GeminiService {
 
             return validatedResult;
 
+        } catch (IllegalArgumentException e) {
+            // 입력 검증 실패는 그대로 전달 (400 처리)
+            throw e;
         } catch (Exception e) {
-            // 구글 세이프티 필터 등에 걸렸을 경우의 에러 메시지 처리
-            if (e.getMessage().contains("Safety")) {
+            // 구글 세이프티 필터 등에 걸렸을 경우의 에러 메시지 처리 (message가 null일 수 있어 방어)
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("Safety")) {
                 throw new RuntimeException("입력 내용이 부적절하여 분석이 차단되었습니다.");
             }
 
-            throw new RuntimeException("분석 중 오류가 발생했습니다: " + e.getMessage());
+            log.error("Gemini 분석 중 오류 발생", e);
+            throw new RuntimeException("분석 중 오류가 발생했습니다: " + msg);
         }
     }
 
