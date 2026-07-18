@@ -3,7 +3,9 @@ services:
     image: mysql:8.0
     container_name: kotona-mysql
     ports:
-      - "3306:3306"
+      # 호스트의 로컬 MySQL(3306)과 충돌 방지: 외부 노출은 3307.
+      # 앱 컨테이너는 내부 네트워크(db:3306)로 접속하므로 영향 없음.
+      - "3307:3306"
     environment:
       MYSQL_DATABASE: kotona
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-1234}
