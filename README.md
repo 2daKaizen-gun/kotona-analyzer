@@ -36,14 +36,14 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 
   4. Risk & Coping Strategy: Identifies "Red Flags" in communication and suggests professional coping strategies.
 
-  5. Auto-Deployment (CI/CD): Zero-downtime deployment logic using GitHub Actions and AWS EC2.
+  5. Portable Deployment: Runs fully locally via a single `docker compose up` (app + MySQL), with an optional GitHub Actions pipeline that builds on every push and deploys to AWS EC2 on manual dispatch.
 
 - **KOTONA-Analyzer Architecture (Mermaid)**
 ```mermaid
 graph TD
-  User((User/Client)) -->|REST Request| EC2[AWS EC2 Instance]
+  User((User/Client)) -->|REST Request| Host[Host: Local Docker / AWS EC2]
   subgraph "Spring Boot Server (Analyzer)"
-    EC2 -->|Spring Security| Controller[Analyzer Controller]
+    Host -->|API Key Filter + Rate Limit| Controller[Analyzer Controller]
     Controller -->|Business Logic| Service[Gemini Service]
     Service -->|Prompt Engineering| Gemini[Gemini 2.5 Flash Lite]
     Service -->|Auth| GCP[Google Cloud IAM]
@@ -52,6 +52,24 @@ graph TD
   Service -->|DTO Mapping| Controller
   Controller -->|JSON Response| User
 ```
+
+## 🚀 Getting Started (Local, Dockerized)
+The whole stack (Spring Boot app + MySQL) runs locally with a single command — no cloud dependency. This is the primary way to run KOTONA after the AWS free tier.
+
+```bash
+# 1) Set secrets (create .env in project root)
+#    GCP_PROJECT_ID=...
+#    GEMINI_API_KEY=...
+#    API_KEY=<your-api-key>     # optional: protects POST /analyze when set
+# 2) Place the GCP service account key at src/main/resources/google-key.json
+# 3) Run everything
+docker compose up -d --build
+```
+- API base: `http://localhost:8081`
+- Swagger UI: `http://localhost:8081/swagger-ui/index.html`
+- Analyze (POST): `POST /analyze` with body `{ "text": "...", "relationshipType": "EMAIL" }` and header `X-API-KEY: <API_KEY>` when configured.
+
+> Security: `/analyze` is protected by an **API Key filter** (`X-API-KEY`, enforced only when `API_KEY` is set) and a **per-IP rate limiter**. `GET`-based analysis was replaced by `POST` since the call mutates state (DB write) and invokes a paid AI API.
 
 ## ⚙️ Key Features
 - **Nuance Analysis**: Derives the true intent (本音) by analyzing the indirectness and politeness of the input text.
