@@ -41,6 +41,15 @@ gemini:
   max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:8000}
   temperature: ${GEMINI_TEMPERATURE:0.7}
 
+# 애플리케이션 보안 설정
+app:
+  # 리버스 프록시(nginx, ALB 등) 뒤에 있을 때만 true.
+  # 직접 노출된 서버에서 켜면 X-Forwarded-For 위조로 rate limit 을 우회당한다.
+  trust-forwarded-for: ${TRUST_FORWARDED_FOR:false}
+  cors:
+    # 콤마 구분. 프론트 배포 후 실제 도메인으로 교체할 것.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+
 # 유령 서버 피해 이동
 server:
   port: 8081

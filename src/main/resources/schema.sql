@@ -16,9 +16,18 @@ CREATE TABLE IF NOT EXISTS analysis_history (
 -- 일본어 비즈니스 숙어 사전 테이블
 CREATE TABLE IF NOT EXISTS business_phrase (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    phrase VARCHAR(255) NOT NULL, -- 일본어 숙어 표현
+    phrase VARCHAR(255) NOT NULL UNIQUE, -- 일본어 숙어 표현 (중복 삽입 방지용 유니크)
     meaning VARCHAR(255) NOT NULL, -- 한국어 뜻
     situation VARCHAR(100), -- 사용 상황 (EMAIL, MEETING, NEGOTIATION 등)
     politeness_level INT, -- 정중도 단계
     usage_example TEXT -- 실제 활용 예시 문장
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 과거 TRUNCATE 방식에서 넘어온 중복 행 정리.
+-- 같은 phrase 가 여러 개면 가장 먼저 들어온 행(최소 id)만 남긴다.
+-- 중복이 없으면 아무것도 지우지 않으므로 매 부팅 실행해도 안전하다.
+-- (이 정리가 끝나야 Hibernate 가 phrase 에 유니크 인덱스를 만들 수 있다)
+DELETE dup FROM business_phrase dup
+    JOIN business_phrase keep
+      ON dup.phrase = keep.phrase
+     AND dup.id > keep.id;

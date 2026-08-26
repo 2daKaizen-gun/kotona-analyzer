@@ -16,7 +16,8 @@ public class BusinessPhrase {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    // UNIQUE: data.sql 의 INSERT IGNORE 가 재시작 시 중복 삽입을 막는 근거가 된다.
+    @Column(nullable = false, unique = true)
     private String phrase; // 일본어 숙어
 
     @Column(nullable = false)
