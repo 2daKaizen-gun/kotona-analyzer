@@ -140,8 +140,9 @@ public class GeminiService {
             // (감싸면 업스트림 원문이 500 응답 본문으로 그대로 새어 나간다.)
             throw e;
         } catch (Exception e) {
+            // 원인 메시지에는 내부 경로·벤더 응답이 섞일 수 있으므로 로그에만 남긴다.
             log.error("Gemini 분석 중 오류 발생", e);
-            throw new RuntimeException("분석 중 오류가 발생했습니다: " + e.getMessage());
+            throw new RuntimeException("분석 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
         }
     }
 

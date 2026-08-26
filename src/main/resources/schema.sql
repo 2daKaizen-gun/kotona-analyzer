@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS analysis_history (
     full_analysis_json LONGTEXT, -- AI가 준 전체 JSON 데이터
     risk_level VARCHAR(20), -- 위험도(SAFE, CAUTION, DANGER)
     total_score INT, -- 종합 점수
-    original_text TEXT -- 분석 대상 원문
+    user_input TEXT NOT NULL -- 분석 대상 원문 (엔티티 AnalysisHistory.userInput 과 일치)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 일본어 비즈니스 숙어 사전 테이블
