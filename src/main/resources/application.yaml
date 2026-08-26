@@ -29,10 +29,17 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
 
-# 커스텀 변수 (제미나이 설정)
+# 커스텀 변수 (Gemini / Google AI Studio 설정)
 gemini:
-  project-id: ${GCP_PROJECT_ID}
-  api-key: ${GEMINI_API_KEY}
+  # GEMINI_API_KEY 환경변수(.env 포함)에서 주입된다. 미설정 시 기동 단계에서 실패한다.
+  # 발급: https://aistudio.google.com/apikey (결제 계정 불필요, 무료 티어)
+  api-key: ${GEMINI_API_KEY:}
+  # gemini-2.5-flash 는 신규 키에 더 이상 제공되지 않는다(404). 3.6-flash 가 현행 무료 티어 모델.
+  model: ${GEMINI_MODEL:gemini-3.6-flash}
+  # low | high — 비우면 모델 기본값. 낮출수록 응답이 빠르다.
+  thinking-level: ${GEMINI_THINKING_LEVEL:low}
+  max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:8000}
+  temperature: ${GEMINI_TEMPERATURE:0.7}
 
 # 유령 서버 피해 이동
 server:

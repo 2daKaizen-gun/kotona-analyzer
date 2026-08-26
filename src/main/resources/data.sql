@@ -1,5 +1,5 @@
--- 사용할 데이터베이스 선택
-USE kotona;
+-- 접속한 datasource 의 DB 를 그대로 사용한다.
+-- (USE 문을 두면 DB_NAME 을 바꿨을 때 엉뚱한 DB 를 건드린다)
 
 -- 기존 데이터를 다 지우고 다시 넣음
 TRUNCATE TABLE business_phrase;
@@ -13,10 +13,10 @@ INSERT INTO business_phrase (phrase, meaning, situation, politeness_level, usage
 
 -- 2. 미팅/구두 보고 시 필수 표현 (MEETING)
 INSERT INTO business_phrase (phrase, meaning, situation, politeness_level, usage_example) VALUES
-('左様でございますか', '그러하십니까? (정중한 맞장구)', 'MEETING', 4, '左様でございますか。詳細について伺ってもよろ직후니까요.'),
-('恐縮でございますが', '죄송합니다만 / 실례지만 (쿠션어)', 'CUSHION', 5, '恐縮でございますが, もう一度ご説明いただけますでしょうか。');
+('左様でございますか', '그러하십니까? (정중한 맞장구)', 'MEETING', 4, '左様でございますか。詳細について伺ってもよろしいでしょうか。'),
+('恐縮でございますが', '죄송합니다만 / 실례지만 (쿠션어)', 'CUSHION', 5, '恐縮でございますが、もう一度ご説明いただけますでしょうか。');
 
 -- 3. IT 실무/프로젝트 상황 (PROJECT)
 INSERT INTO business_phrase (phrase, meaning, situation, politeness_level, usage_example) VALUES
 ('念のため', '만약을 위해 (확인 강조)', 'CONFIRMATION', 2, '念のため、修正したソースコードを共有いたします。'),
-('お手数ですが', '번거로우시겠지만 (요청 시 필수)', 'REQUEST', 4, 'お手数ですが, サーバーの再起動をお願いいたします。');
+('お手数ですが', '번거로우시겠지만 (요청 시 필수)', 'REQUEST', 4, 'お手数ですが、サーバーの再起動をお願いいたします。');

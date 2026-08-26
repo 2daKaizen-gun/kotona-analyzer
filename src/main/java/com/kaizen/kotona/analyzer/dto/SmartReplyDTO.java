@@ -1,8 +1,17 @@
 package com.kaizen.kotona.analyzer.dto;
 
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+
 public record SmartReplyDTO(
-   String scenario, // 수락(Accept), 거절(Refuse), 확인(Clarification) 등
-   String content, // 실제 일본어 답장 문구
-   String description, // 답장을 썼을 때의 기대 효과 (Korean)
-   String nuanceLevel // Standard / Soft / Firm (강도)
+   @JsonPropertyDescription("답장 시나리오. \"Clarification\", \"Soft Acceptance\", \"Counter-proposal\" 중 하나.")
+   String scenario,
+
+   @JsonPropertyDescription("실제로 보낼 수 있는 정중한 답장 문구. 반드시 일본어로 작성한다.")
+   String content,
+
+   @JsonPropertyDescription("이 답장의 의도와 기대 효과. 한국어로 작성한다.")
+   String description,
+
+   @JsonPropertyDescription("어조의 강도. \"Standard\", \"Soft\", \"Firm\" 중 하나.")
+   String nuanceLevel
 ) {}

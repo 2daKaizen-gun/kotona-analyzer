@@ -20,11 +20,23 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     private final Map<String, Window> buckets = new ConcurrentHashMap<>();
 
+    /**
+     * X-Forwarded-For 신뢰 여부. 리버스 프록시 뒤에 있을 때만 true 로 둔다.
+     * 직접 노출된 서버에서 이걸 신뢰하면 공격자가 헤더만 바꿔가며 제한을 무한 우회한다.
+     */
+    private final boolean trustForwardedFor;
+
+    public RateLimitInterceptor(boolean trustForwardedFor) {
+        this.trustForwardedFor = trustForwardedFor;
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response,
                              Object handler) throws IOException {
         long now = System.currentTimeMillis();
+        evictExpired(now);
+
         Window window = buckets.compute(clientIp(request), (ip, current) -> {
             if (current == null || now - current.windowStart >= WINDOW_MS) {
                 return new Window(now);
@@ -44,11 +56,18 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     private String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+        if (trustForwardedFor) {
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                return forwarded.split(",")[0].trim();
+            }
         }
         return request.getRemoteAddr();
+    }
+
+    /** 만료된 버킷을 지운다. 없으면 접속한 IP 수만큼 맵이 무한히 커진다. */
+    private void evictExpired(long now) {
+        buckets.entrySet().removeIf(entry -> now - entry.getValue().windowStart >= WINDOW_MS);
     }
 
     private static final class Window {

@@ -3,10 +3,12 @@ package com.kaizen.kotona.analyzer.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "analysis_history")
+@EntityListeners(AuditingEntityListener.class) // 없으면 createdAt 이 항상 null 로 저장된다
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AnalysisHistory {

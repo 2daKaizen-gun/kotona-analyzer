@@ -32,8 +32,12 @@ dependencies {
     // .env 파일을 읽기 위한 라이브러리
     implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 
-    // =안정적인 구글 공식 Gemini/Vertex AI SDK
-    implementation 'com.google.cloud:google-cloud-vertexai:1.15.0'
+    // Google Gen AI SDK (AI Studio API 키 방식 — Vertex AI/서비스 계정 불필요)
+    implementation 'com.google.genai:google-genai:1.68.0'
+
+    // DTO record 트리 → JSON Schema 자동 생성 (Gemini responseSchema 용)
+    implementation 'com.github.victools:jsonschema-generator:4.38.0'
+    implementation 'com.github.victools:jsonschema-module-jackson:4.38.0'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'

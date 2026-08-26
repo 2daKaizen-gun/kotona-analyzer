@@ -48,12 +48,8 @@ jobs:
               sleep 5
             fi
 
-            nohup java -Dgemini.project-id="${{ secrets.GCP_PROJECT_ID }}" \
-                       -Dgemini.api-key="${{ secrets.GEMINI_API_KEY }}" \
-                       -jar ~/app/app.jar \
-                       --spring.datasource.password="1234" \
-                       --google.key.path="file:/home/ec2-user/app/google-key.json" \
-                       > ~/app/app.log 2>&1 &
+            # 시크릿은 -D 플래그(=ps 로 전체 노출) 대신 환경변수로 주입한다.
+            GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" API_KEY="${{ secrets.API_KEY }}" DB_PASSWORD="${{ secrets.DB_PASSWORD }}" nohup java -jar ~/app/app.jar > ~/app/app.log 2>&1 &
           
             echo "Successfully deployed KOTONA project with Injected Secrets!"
           EOF
