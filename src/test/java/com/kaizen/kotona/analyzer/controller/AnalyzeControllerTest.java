@@ -15,8 +15,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(GeminiController.class)
-class GeminiControllerTest {
+@WebMvcTest(AnalyzeController.class)
+class AnalyzeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

@@ -1,61 +1,38 @@
 package com.kaizen.kotona.analyzer.config;
 
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.GenerationConfig;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.genai.Client;
+import com.google.genai.types.Schema;
+import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.utils.NuanceSchemaFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 
-import java.io.IOException;
-
+/**
+ * Gemini(Google AI Studio) 설정.
+ *
+ * <p>Vertex AI 가 아니라 AI Studio 경로를 쓴다. 서비스 계정 JSON 키도, GCP 프로젝트도,
+ * 결제 계정도 필요 없고 API 키 하나로 끝난다(무료 티어 사용 가능).
+ */
 @Configuration
 public class GeminiConfig {
 
-    @Value("${gemini.project-id}")
-    private String projectId;
-
-    @Value("${gemini.location:us-central1}")
-    private String location;
-
-    // 추가: 실행 시 주입받은 키 경로 (기본값은 resources 내부)
-    @Value("${google.key.path:classpath:google-key.json}")
-    private String keyPath;
+    @Value("${gemini.api-key:}")
+    private String apiKey;
 
     @Bean
-    public VertexAI vertexAI() throws IOException {
-        // [수정 핵심] ClassPathResource 대신 ResourceLoader를 사용합니다.
-        ResourceLoader resourceLoader = new DefaultResourceLoader();
-        Resource resource = resourceLoader.getResource(keyPath);
-
-        // credentials 생성
-        GoogleCredentials credentials = GoogleCredentials.fromStream(resource.getInputStream())
-                .createScoped("https://www.googleapis.com/auth/cloud-platform");
-
-        // 정보 직접 세팅
-        return new VertexAI.Builder()
-                .setProjectId(projectId)
-                .setLocation(location)
-                .setCredentials(credentials)
-                .setTransport(Transport.REST) // gRPC 대신 REST를 사용하도록 강제
-                .build();
+    public Client genAiClient() {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException(
+                    "GEMINI_API_KEY 가 설정되지 않았습니다. .env 또는 환경변수에 추가하세요. "
+                            + "(https://aistudio.google.com/apikey 에서 발급)");
+        }
+        return Client.builder().apiKey(apiKey).build();
     }
 
+    /** 응답 강제용 JSON 스키마. DTO 트리에서 파생되므로 기동 시 한 번만 만들어 재사용한다. */
     @Bean
-    public GenerativeModel generativeModel(VertexAI vertexAI) {
-        // 복잡한 JSON 생성위해 타임아웃, 토큰 제한 설정
-        GenerationConfig config = GenerationConfig.newBuilder()
-                .setMaxOutputTokens(2048) // 토큰 늘리기
-                .setTemperature(0.7f) // 창의적인 답장 생성 위한 온도 조절
-                .setResponseMimeType("application/json") // JSON 포멧 강제 설정
-                .build();
-
-        return new GenerativeModel("gemini-2.5-flash-lite", vertexAI)
-                .withGenerationConfig(config);
+    public Schema nuanceResponseSchema() {
+        return Schema.fromJson(NuanceSchemaFactory.build(NuanceResponseDTO.class).toString());
     }
 }

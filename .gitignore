@@ -34,10 +34,6 @@ Thumbs.db
 
 # Security
 .env
-*.json
-
-# Google Cloud Service Account Key (Security)
-src/main/resources/google-key.json
 
 # .pem 숨김
 *.pem

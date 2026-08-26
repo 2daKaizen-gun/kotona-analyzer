@@ -1,14 +1,17 @@
 package com.kaizen.kotona.analyzer.exception;
 
+import com.google.genai.errors.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 import java.util.Objects;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -29,18 +32,27 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", messageOf(e)));
     }
 
+    /**
+     * Gemini API 오류 매핑. 429(쿼터/레이트리밋)는 그대로 429 로,
+     * 나머지는 502 로 내보낸다. 업스트림 원문에는 내부 메시지가 담기므로
+     * 클라이언트에 그대로 전달하지 않고 로그에만 남긴다.
+     */
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<?> handleGeminiError(ApiException e) {
+        log.error("Gemini API 호출 실패 (code={})", e.code(), e);
+
+        if (e.code() == 429) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "AI API 호출 한도를 초과했습니다. 잠시 후 다시 시도하세요."));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(Map.of("error", "AI 분석 서비스에 일시적인 문제가 발생했습니다. 서버 로그를 확인하세요."));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleRuntimeException(RuntimeException e) {
-        String message = messageOf(e);
-
-        // API 할당량 초과시 429 상태코드로 변환 (message가 null이어도 안전)
-        if (message.contains("Too many Requests") || message.contains("Resource has been exhausted")) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(Map.of("error", "API 한도 초과, 1분 뒤 재시작 요망"));
-        }
-
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", message));
+                .body(Map.of("error", messageOf(e)));
     }
 
     private String messageOf(Throwable e) {

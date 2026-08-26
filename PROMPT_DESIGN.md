@@ -29,56 +29,25 @@ KOTONA의 핵심 엔진은 사용자의 입력 문장을 단순 번역하는 것
         - Suggest 2-3 improved alternatives with "standard" and "highest" levels.
 
 # 4. Contextual Variables (Input Parameters)
-   - user_input: 사용자가 입력한 일본어 문구
+   - user_input: 사용자가 입력한 일본어 문구 — 유저 메시지로 전달
    - relationship_type: INTERNAL (사내), EXTERNAL (사외), INTERVIEW (면접)
+     - 유저 메시지의 `# Relationship Context` 로 모델에 전달되고,
+       동시에 `AnalysisValidator` 의 리스크 가중치($W$: 1.0 / 1.2 / 1.5)로도 쓰인다
    - communication_channel: SLACK (채팅), EMAIL (이메일), VERBAL (구두)
+     - 현재 요청 바디에는 없고, 모델이 `category` 로 역추론한다
 
 # 5. Output JSON Schema
-> The runtime master prompt lives in `GeminiService.createPrompt()`. Keep this schema in sync with it.
-
-    {
-        "totalScore": "integer (0-100)",
-        "category": "EMAIL/INTERVIEW/MEETING/INTERNAL_CHAT/CASUAL",
-        "metrics": {
-            "politeness": "integer (0-40)",
-            "indirectness": "integer (0-30)",
-            "etiquette": "integer (0-30)"
-        },
-        "evaluation": {
-            "summary": "string",
-            "keigo_check": "boolean",
-            "cushion_phrase_check": "boolean"
-        },
-        "feedback": {
-            "issues": ["list of strings"],
-            "cultural_nuance": "string"
-        },
-        "suggestions": [
-            { "text": "string", "level": "standard/highest" }
-        ],
-        "sentiment": {
-            "polarity": "Positive/Neutral/Negative",
-            "confidence": "float (0.0-1.0)",
-            "honne": {
-                "tatemae": "surface meaning (Korean)",
-                "trueIntent": "hidden true intent (Korean)",
-                "actionItem": "recommended action (Korean)"
-            }
-        },
-        "riskAnalysis": {
-            "riskLevel": "SAFE/CAUTION/DANGER",
-            "redFlags": ["detected risk signals (Korean)"],
-            "copingStrategy": "business strategy suggestion (Korean)"
-        },
-        "smartReplies": [
-            {
-                "scenario": "Clarification / Soft Landing / Counter-proposal",
-                "content": "polite Japanese reply text",
-                "description": "intent & expected effect (Korean)",
-                "nuanceLevel": "Standard / Soft / Firm"
-            }
-        ]
-    }
+> **스키마는 더 이상 프롬프트에 기술하지 않는다.**
+> `NuanceSchemaFactory` 가 `NuanceResponseDTO` record 트리에서 JSON Schema 를 생성하고,
+> Gemini 의 `responseSchema` 가 모델 응답이 그 스키마를 지키도록 API 레벨에서 강제한다.
+>
+> - 스키마 원본: `dto/NuanceResponseDTO.java` 및 그 하위 record 들
+> - 필드 의미/허용값: 각 필드의 `@JsonPropertyDescription` 이 그대로 스키마 `description` 으로 전달된다
+> - 결과적으로 `required`, `additionalProperties: false` 까지 자동 적용되므로
+>   마크다운 코드펜스 제거나 수동 JSON 파싱 방어 코드가 필요 없다
+>
+> 필드를 추가/변경하려면 **DTO 만 고치면 된다.** 프롬프트와 문서를 동기화할 필요가 없다.
+> 런타임 시스템 프롬프트(역할·과업·채점 기준)는 `service/GeminiService.SYSTEM_PROMPT` 에 있다.
 
 # 6. Few-Shot Examples (Training the AI)
     - Example 1

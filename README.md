@@ -25,7 +25,7 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 
   3. Enterprise-Grade Deployment: A robust CI/CD pipeline ensuring the analyzer is always accessible via a secure cloud environment.
 
-- **Data Source**: Gemini 2.5 Flash Lite API (Vertex AI SDK), Google Cloud IAM, Spring Boot Backend.
+- **Data Source**: Gemini via Google AI Studio (Google Gen AI Java SDK) with schema-enforced JSON output, Spring Boot Backend.
 
 - **Key Features**
   1. 本音/建前 Analysis: Separates public face from true intent to prevent business communication risks.
@@ -43,12 +43,12 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 graph TD
   User((User/Client)) -->|REST Request| Host[Host: Local Docker / AWS EC2]
   subgraph "Spring Boot Server (Analyzer)"
-    Host -->|API Key Filter + Rate Limit| Controller[Analyzer Controller]
+    Host -->|API Key Filter + Rate Limit| Controller[Analyze Controller]
     Controller -->|Business Logic| Service[Gemini Service]
-    Service -->|Prompt Engineering| Gemini[Gemini 2.5 Flash Lite]
-    Service -->|Auth| GCP[Google Cloud IAM]
+    Service -->|Prompt + responseSchema| Gemini[Gemini - Google AI Studio API]
+    Service -->|Hybrid Validation| Validator[Kuromoji + Rule Validator]
   end
-  Gemini -->|Structured JSON| Service
+  Gemini -->|Schema-guaranteed JSON| Service
   Service -->|DTO Mapping| Controller
   Controller -->|JSON Response| User
 ```
@@ -58,16 +58,21 @@ The whole stack (Spring Boot app + MySQL) runs locally with a single command —
 
 ```bash
 # 1) Set secrets (create .env in project root)
-#    GCP_PROJECT_ID=...
-#    GEMINI_API_KEY=...
-#    API_KEY=<your-api-key>     # optional: protects POST /analyze when set
-# 2) Place the GCP service account key at src/main/resources/google-key.json
-# 3) Run everything
+#    GEMINI_API_KEY=...             # required: https://aistudio.google.com/apikey
+#    API_KEY=<your-api-key>         # optional: protects POST /analyze when set
+#    GEMINI_MODEL=gemini-2.5-flash  # optional: default. Free tier eligible.
+# 2) Run everything (no service account key file, no GCP project, no billing account)
 docker compose up -d --build
 ```
 - API base: `http://localhost:8081`
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 - Analyze (POST): `POST /analyze` with body `{ "text": "...", "relationshipType": "EMAIL" }` and header `X-API-KEY: <API_KEY>` when configured.
+
+> **API route note**: KOTONA talks to Gemini through the **AI Studio** endpoint (a plain API key), not Vertex AI.
+> That is what removes the service-account JSON, the GCP project, the billing account, and the recurring
+> terms-of-service re-acceptance. `GEMINI_MODEL` defaults to `gemini-2.5-flash`, which is free-tier eligible.
+> Note that free-tier traffic may be used by Google to improve their products — use a paid tier for real
+> client correspondence.
 
 > Security: `/analyze` is protected by an **API Key filter** (`X-API-KEY`, enforced only when `API_KEY` is set) and a **per-IP rate limiter**. `GET`-based analysis was replaced by `POST` since the call mutates state (DB write) and invokes a paid AI API.
 
@@ -80,8 +85,8 @@ docker compose up -d --build
 - **Framework**: ![Spring Boot](https://img.shields.io/badge/spring-%236DB33F.svg?style=for-the-badge&logo=springboot&logoColor=white)
 - **Language**: ![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
 - **Database**: ![MySQL](https://img.shields.io/badge/mysql-4479A1.svg?style=for-the-badge&logo=mysql&logoColor=white) | ![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white) | ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
-- **AI/LLM**: ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white) | ![Vertex AI](https://img.shields.io/badge/Vertex%20AI-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
-- **Cloud & Deployment**: ![AWS](https://img.shields.io/badge/AWS%20EC2-%23FF9900.svg?style=for-the-badge&logo=amazonec2&logoColor=white) | ![GCP](https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white) | ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
+- **AI/LLM**: ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white) | ![AI Studio](https://img.shields.io/badge/AI%20Studio-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
+- **Cloud & Deployment**: ![AWS](https://img.shields.io/badge/AWS%20EC2-%23FF9900.svg?style=for-the-badge&logo=amazonec2&logoColor=white) | ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 - **OS & Environment**: ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) (Amazon Linux 2023)
 - **Libraries**: ![Swagger](https://img.shields.io/badge/-Swagger-%23Clojure?style=for-the-badge&logo=swagger&logoColor=white) | ![Hibernate](https://img.shields.io/badge/Hibernate-59666C?style=for-the-badge&logo=Hibernate&logoColor=white) | ![Lombok](https://img.shields.io/badge/Lombok-BC1A26?style=for-the-badge&logo=Lombok&logoColor=white) | ![JUnit5](https://img.shields.io/badge/JUnit5-25A162?style=for-the-badge&logo=junit5&logoColor=white)
 
@@ -122,33 +127,42 @@ docker compose up -d --build
     - [x] Phase 5-4: Final Project Retrospective & Achievement Summary
 
 ## 🔥 Troubleshooting & Lessons Learned
-**1. External Resource Path Resolution (Classpath vs FileSystem)**
-- **Challenge**: The application failed to find google-key.json on the EC2 server because it was looking inside the JAR file (Classpath).
+**1. External Resource Path Resolution (Classpath vs FileSystem)** *(historical — resolved by removing the key file entirely)*
+- **Challenge**: The application failed to find the GCP service-account key on the EC2 server because it was looking inside the JAR file (Classpath).
 
-- **Resolution**: Replaced ClassPathResource with ResourceLoader and FileSystemResource, allowing the app to dynamically load keys from either the internal resources (Dev) or external server paths (Prod) via environment variables.
+- **Resolution (then)**: Replaced ClassPathResource with ResourceLoader, allowing the app to load the key from internal resources (Dev) or an external server path (Prod).
+
+- **Resolution (now)**: The whole class of problem disappeared when the backend moved to the AI Studio endpoint — API-key auth needs no key file, so there is nothing to resolve a path for and nothing that can be accidentally baked into the JAR.
 
 **2. Secret Injection in CI/CD Pipeline**
-- **Challenge**: Sensitive API keys and Project IDs were not being correctly passed to the Java process via shell exports in GitHub Actions.
+- **Challenge**: Sensitive API keys were not being correctly passed to the Java process via shell exports in GitHub Actions.
 
-- **Resolution**: Switched to JVM System Properties (-D flags) during the execution phase, ensuring that all secrets are directly and securely injected into the Spring context during startup.
+- **Resolution**: Secrets are injected as **environment variables** on the remote launch command. An earlier version used JVM system properties (`-D` flags), but those land in the process command line where any user on the box can read them via `ps` — environment variables are readable only by the process owner.
 
 **3. Network & Security Group Configuration**
 - **Challenge**: Connection timed out and Permission denied errors during initial deployment.
 
 - **Resolution**: Conducted a security audit on AWS Security Groups, mapping the correct inbound ports (8081 for Spring Boot) and ensuring the SSH key (.pem) permissions were restricted to 600 to prevent unauthorized access.
 
+**4. Choosing the Right Door to the Same Model (Vertex AI vs. AI Studio)**
+- **Challenge**: The original integration reached Gemini through **Vertex AI**, which demanded a GCP project, an IAM service account, a downloaded JSON key, an active billing account, and repeated terms-of-service re-acceptance — heavy machinery for what is ultimately one text-in/JSON-out call. The friction was blamed on the model; it actually belonged to the access path.
+
+- **Resolution**: Switched to the **AI Studio** endpoint via the Google Gen AI Java SDK. Same model family, but authentication collapses to a single API key with no billing account required, and the free tier covers this workload. Along the way the response contract was hardened: the JSON Schema is now generated from the `NuanceResponseDTO` record tree and enforced by `responseSchema`, which deleted both the hand-written schema block in the prompt and the markdown-fence-stripping regex that used to guard against malformed JSON.
+
+- **Lesson**: When a dependency feels heavy, check whether you are on the wrong on-ramp before you replace the destination.
+
 ## 📈 Results
 - **Deployment**: Portable — one-command local run via `docker compose up` (app + MySQL); GitHub Actions builds on every push and deploys to EC2 on manual dispatch
 
-- **API Response Time**: < 1.5s (Optimized via Gemini 2.5 Flash Lite REST Transport for maximum efficiency)
+- **API Response Time**: depends on the configured model — override `GEMINI_MODEL` (e.g. `gemini-2.5-flash-lite`) when latency matters more than analysis depth
 
 - **Portability**: No single-cloud lock-in — runs anywhere Docker runs, enabling zero-downtime migration off the retired EC2 free tier
 
-- **Security**: Zero hardcoded secrets (env-based injection); paid `/analyze` endpoint protected by API-key filter + per-IP rate limiting
+- **Security**: Zero hardcoded secrets and zero key files on disk — a single `GEMINI_API_KEY` env var replaced the GCP service-account JSON; the `/analyze` endpoint is protected by an API-key filter + per-IP rate limiting
 
 ## 🧐 Self-Reflection
 - **Technical Growth**
-  - **Backend Orchestration**: Mastered the full-cycle of a Spring Boot application, from building complex AI logic with Vertex AI to deploying it on a professional AWS environment using automated CI/CD pipelines.
+  - **Backend Orchestration**: Mastered the full-cycle of a Spring Boot application, from building complex AI logic on a generative model API to deploying it on a professional AWS environment using automated CI/CD pipelines.
 
   - **Architecture for Scalability**: Learned how to design "Production-ready" systems by decoupling sensitive credentials from the codebase and managing external resources effectively.
 
