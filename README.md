@@ -53,6 +53,16 @@ graph TD
   Controller -->|JSON Response| User
 ```
 
+## 🧩 Repositories
+KOTONA is split across two repositories:
+
+| Repo | Role |
+|---|---|
+| **kotona-analyzer** (this repo) | Spring Boot API — analysis engine, hybrid validation, Gemini integration |
+| **[kotona-web](https://github.com/2daKaizen-gun/kotona-web)** | Next.js frontend — talks to this API through a server-side BFF so the API key never reaches the browser |
+
+The frontend generates its TypeScript types from this service's OpenAPI spec (`GET /v3/api-docs`), so a field added to `NuanceResponseDTO` propagates without being declared twice.
+
 ## 🚀 Getting Started (Local, Dockerized)
 The whole stack (Spring Boot app + MySQL) runs locally with a single command — no cloud dependency. This is the primary way to run KOTONA after the AWS free tier.
 
