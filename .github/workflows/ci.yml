@@ -10,6 +10,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # AnalyzerApplicationTests 는 실제 컨텍스트를 띄우므로 DB 가 있어야 한다.
+    # H2 로 대체하지 않는 이유: schema.sql 이 ENGINE=InnoDB 와 다중 테이블
+    # DELETE ... JOIN 을 쓰는 MySQL 전용 SQL 이라, 다른 엔진에서 통과시켜 봐야
+    # 운영에서 그 SQL 이 도는지는 여전히 검증되지 않는다.
+    # 값은 application.yaml 의 기본값(kotona / root / 1234 / 3306)과 맞춰 두어
+    # 워크플로에 별도 환경변수를 주입할 필요가 없게 했다.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: kotona
+          MYSQL_ROOT_PASSWORD: 1234
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -p1234"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+          --health-start-period=20s
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
