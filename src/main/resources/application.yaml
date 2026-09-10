@@ -36,8 +36,12 @@ gemini:
   api-key: ${GEMINI_API_KEY:}
   # gemini-2.5-flash 는 신규 키에 더 이상 제공되지 않는다(404). 3.6-flash 가 현행 무료 티어 모델.
   model: ${GEMINI_MODEL:gemini-3.6-flash}
-  # low | high — 비우면 모델 기본값. 낮출수록 응답이 빠르다.
-  thinking-level: ${GEMINI_THINKING_LEVEL:low}
+  # low | high — 비우면 모델 기본값.
+  # low 로 두면 응답은 빨라지지만 일본어 답장 중간에 한국어·영어가 섞여 나온다
+  # ("予算や schedule 面で", "ご 불명한 점"). 같은 응답 안에서 한국어 설명과 일본어 문장을
+  # 동시에 쓰게 하는 구조라 코드 스위칭이 일어나고, AnalysisValidator 가 그 항목을 버리는
+  # 탓에 답장이 3개에서 1개로 줄었다. high 로 올리면 이 현상이 사라진다.
+  thinking-level: ${GEMINI_THINKING_LEVEL:high}
   max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:8000}
   temperature: ${GEMINI_TEMPERATURE:0.7}
 

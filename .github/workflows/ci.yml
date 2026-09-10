@@ -1,0 +1,63 @@
+name: KOTONA CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # AnalyzerApplicationTests 는 실제 컨텍스트를 띄우므로 DB 가 있어야 한다.
+    # H2 로 대체하지 않는 이유: schema.sql 이 ENGINE=InnoDB 와 다중 테이블
+    # DELETE ... JOIN 을 쓰는 MySQL 전용 SQL 이라, 다른 엔진에서 통과시켜 봐야
+    # 운영에서 그 SQL 이 도는지는 여전히 검증되지 않는다.
+    # 값은 application.yaml 의 기본값(kotona / root / 1234 / 3306)과 맞춰 두어
+    # 워크플로에 별도 환경변수를 주입할 필요가 없게 했다.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: kotona
+          MYSQL_ROOT_PASSWORD: 1234
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -p1234"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+          --health-start-period=20s
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      # bootJar 대신 build 를 쓴다 — 테스트까지 함께 돌려야 CI 로서 의미가 있다.
+      # 시크릿이 필요한 경로는 테스트에 없으므로 별도 주입 없이 통과한다.
+      - name: Build and Test
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --no-daemon
+
+      # 실패 원인을 로그만 보고 좇지 않도록 리포트를 남긴다.
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/reports/tests/test
+          if-no-files-found: ignore
+
+# 이전에는 이 워크플로가 수동 실행(workflow_dispatch) 시 AWS EC2 로 배포까지 했다.
+# 무료 티어가 끝나 인스턴스를 회수하면서 배포 잡을 걷어내고 CI 만 남겼다.
+# 배포 파이프라인의 형태는 git history 와 README 의 Troubleshooting 절에 남아 있다.

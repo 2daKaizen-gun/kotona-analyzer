@@ -36,12 +36,12 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 
   4. Risk & Coping Strategy: Identifies "Red Flags" in communication and suggests professional coping strategies.
 
-  5. Portable Deployment: Runs fully locally via a single `docker compose up` (app + MySQL), with an optional GitHub Actions pipeline that builds on every push and deploys to AWS EC2 on manual dispatch.
+  5. Portable Deployment: Runs fully locally via a single `docker compose up` (app + MySQL), with a GitHub Actions pipeline that builds and tests on every push. It previously deployed to AWS EC2 on manual dispatch; that instance was retired when the free tier ended.
 
 - **KOTONA-Analyzer Architecture (Mermaid)**
 ```mermaid
 graph TD
-  User((User/Client)) -->|REST Request| Host[Host: Local Docker / AWS EC2]
+  User((User/Client)) -->|REST Request| Host[Host: Local Docker]
   subgraph "Spring Boot Server (Analyzer)"
     Host -->|API Key Filter + Rate Limit| Controller[Analyze Controller]
     Controller -->|Business Logic| Service[Gemini Service]
@@ -99,6 +99,8 @@ docker compose up -d --build
 - **Cloud & Deployment**: ![AWS](https://img.shields.io/badge/AWS%20EC2-%23FF9900.svg?style=for-the-badge&logo=amazonec2&logoColor=white) | ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 - **OS & Environment**: ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) (Amazon Linux 2023)
 - **Libraries**: ![Swagger](https://img.shields.io/badge/-Swagger-%23Clojure?style=for-the-badge&logo=swagger&logoColor=white) | ![Hibernate](https://img.shields.io/badge/Hibernate-59666C?style=for-the-badge&logo=Hibernate&logoColor=white) | ![Lombok](https://img.shields.io/badge/Lombok-BC1A26?style=for-the-badge&logo=Lombok&logoColor=white) | ![JUnit5](https://img.shields.io/badge/JUnit5-25A162?style=for-the-badge&logo=junit5&logoColor=white)
+
+> The AWS EC2 and Amazon Linux entries record where this ran in production until the free tier ended. The deployment target is gone; the app now runs anywhere Docker does.
 
 ## 🏗 Architecture
 - Ensuring scalability of analysis logic through object-oriented design.
@@ -162,9 +164,9 @@ docker compose up -d --build
 - **Lesson**: When a dependency feels heavy, check whether you are on the wrong on-ramp before you replace the destination.
 
 ## 📈 Results
-- **Deployment**: Portable — one-command local run via `docker compose up` (app + MySQL); GitHub Actions builds on every push and deploys to EC2 on manual dispatch
+- **Deployment**: Portable — one-command local run via `docker compose up` (app + MySQL); GitHub Actions builds and runs the test suite on every push. The EC2 deployment job was removed with the instance; the pipeline that ran it is in the git history
 
-- **API Response Time**: depends on the configured model — override `GEMINI_MODEL` (e.g. `gemini-2.5-flash-lite`) when latency matters more than analysis depth
+- **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
 - **Portability**: No single-cloud lock-in — runs anywhere Docker runs, enabling zero-downtime migration off the retired EC2 free tier
 

@@ -84,7 +84,19 @@ public class GeminiService {
 
             # Constraints
             - Explanations, feedback, and strategy fields must be written in Korean.
-            - "suggestions[].text" and "smartReplies[].content" must be written in Japanese.
+            - "suggestions[].text" and "smartReplies[].content" are sent verbatim by the user.
+              Write them in Japanese ONLY — every word, with no Korean and no English.
+              Two mistakes to avoid, both of which make the sentence unusable:
+              1. Annotating a foreign word with its Japanese equivalent in parentheses.
+                 Never write "가르쳐(教えて)" or "communication(お願い申し上げます)".
+                 Write "教えて" and "お願い申し上げます".
+              2. Letting a foreign word stand in for a Japanese one.
+                 Never write "予算や schedule 面で" or "ご dynamic 指定".
+                 Write "予算やスケジュール面で" and "ご指定".
+              A loanword belongs in katakana, not in Latin letters. Latin letters are
+              acceptable only for established acronyms and proper nouns (IT, URL, Slack).
+              If a non-Japanese word comes to mind, write the Japanese wording instead —
+              do not annotate it, and do not leave it in.
             """;
 
     public NuanceResponseDTO analyzeJapaneseNuance(String userInput, String relationshipType) {
