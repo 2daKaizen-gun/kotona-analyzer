@@ -4,7 +4,10 @@ import com.kaizen.kotona.analyzer.dto.EvaluationDTO;
 import com.kaizen.kotona.analyzer.dto.MetricsDTO;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.dto.RiskAnalysisDTO;
+import com.kaizen.kotona.analyzer.dto.SmartReplyDTO;
+import com.kaizen.kotona.analyzer.dto.SuggestionDTO;
 import com.kaizen.kotona.analyzer.utils.EtiquetteConstants;
+import com.kaizen.kotona.analyzer.utils.JapaneseOutputSanitizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
@@ -109,11 +112,48 @@ public class AnalysisValidator {
                 new MetricsDTO(p, i, e),
                 new EvaluationDTO(adaptiveSummary, aiResponse.evaluation().keigoCheck(), aiResponse.evaluation().cushionPhraseCheck()),
                 aiResponse.feedback(),
-                aiResponse.suggestions(),
+                sanitizeSuggestions(aiResponse.suggestions()),
                 aiResponse.sentiment(),
                 validatedRisk,
-                aiResponse.smartReplies()
+                sanitizeSmartReplies(aiResponse.smartReplies())
         );
+    }
+
+    // 사용자가 그대로 복사해 보내는 두 필드(suggestions[].text, smartReplies[].content)는
+    // 순수 일본어여야 한다. 모델은 두 가지 방식으로 이를 어긴다 —
+    //   1) "가르쳐(教えて)" 처럼 외국어 낱말에 괄호로 일본어를 덧붙여 스스로 고치거나,
+    //   2) "予算や schedule 面で" 처럼 일본어 낱말 자리를 외국어가 그냥 차지한다.
+    // 1번은 괄호를 펴서 살리고, 2번은 기계적으로 되살릴 방법이 없으므로 그 항목을 버린다.
+    // 깨진 문장을 그대로 보여 주는 것보다 개수가 줄어드는 편이 낫다(프론트가 빈 목록을 감당한다).
+
+    private List<SuggestionDTO> sanitizeSuggestions(List<SuggestionDTO> suggestions) {
+        if (suggestions == null) return List.of();
+
+        List<SuggestionDTO> kept = new ArrayList<>();
+        for (SuggestionDTO suggestion : suggestions) {
+            String text = JapaneseOutputSanitizer.unwrapGlosses(suggestion.text());
+            if (JapaneseOutputSanitizer.containsForeignWord(text)) {
+                log.warn("일본어 대안 문장에 외국어가 남아 제외한다: {}", text);
+                continue;
+            }
+            kept.add(new SuggestionDTO(text, suggestion.level()));
+        }
+        return List.copyOf(kept);
+    }
+
+    private List<SmartReplyDTO> sanitizeSmartReplies(List<SmartReplyDTO> smartReplies) {
+        if (smartReplies == null) return List.of();
+
+        List<SmartReplyDTO> kept = new ArrayList<>();
+        for (SmartReplyDTO reply : smartReplies) {
+            String content = JapaneseOutputSanitizer.unwrapGlosses(reply.content());
+            if (JapaneseOutputSanitizer.containsForeignWord(content)) {
+                log.warn("추천 답장에 외국어가 남아 제외한다: {}", content);
+                continue;
+            }
+            kept.add(new SmartReplyDTO(reply.scenario(), content, reply.description(), reply.nuanceLevel()));
+        }
+        return List.copyOf(kept);
     }
 
     /** 소프트 리젝션 키워드와 가중치. 프롬프트의 Risk Detection Guide 와 같은 목록을 본다. */
