@@ -44,8 +44,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 // 정확한 오리진뿐 아니라 https://*.vercel.app 같은 패턴도 받는다.
                 .allowedOriginPatterns(allowedOrigins)
-                // PUT 엔드포인트는 없으므로 허용하지 않는다.
-                .allowedMethods("GET", "POST", "DELETE", "OPTIONS")
+                // PUT 은 사전 수정(PUT /api/phrases/{id})에 쓴다.
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .maxAge(3600);
     }

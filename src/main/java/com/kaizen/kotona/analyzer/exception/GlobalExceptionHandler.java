@@ -1,13 +1,20 @@
 package com.kaizen.kotona.analyzer.exception;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.google.genai.errors.ApiException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -33,6 +40,54 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 본문을 읽을 수 없음 → 400. 깨진 JSON 이거나, enum 필드(situation 등)에 허용되지 않은 값이 온 경우다.
+     * 아래 RuntimeException 핸들러로 떨어지면 500 이 되고 Jackson 내부 메시지가 그대로 샌다.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleUnreadable(HttpMessageNotReadableException e) {
+        if (e.getMostSpecificCause() instanceof InvalidFormatException ife
+                && ife.getTargetType() != null && ife.getTargetType().isEnum()) {
+            return badRequest(fieldName(ife.getPath()) + " 은(는) 다음 중 하나여야 합니다: "
+                    + allowedValues(ife.getTargetType()));
+        }
+        return badRequest("요청 본문을 읽을 수 없습니다. JSON 형식을 확인하세요.");
+    }
+
+    /** 쿼리·경로 파라미터 타입 불일치 → 400 (예: /search?situation=EMIAL, /api/phrases/abc) */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        Class<?> type = e.getRequiredType();
+        if (type != null && type.isEnum()) {
+            return badRequest(e.getName() + " 은(는) 다음 중 하나여야 합니다: " + allowedValues(type));
+        }
+        return badRequest(e.getName() + " 값의 형식이 올바르지 않습니다.");
+    }
+
+    /** 없는 숙어 id → 404 */
+    @ExceptionHandler(PhraseNotFoundException.class)
+    public ResponseEntity<?> handleNotFound(PhraseNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", messageOf(e)));
+    }
+
+    /** 이미 등록된 표현 → 409 */
+    @ExceptionHandler(DuplicatePhraseException.class)
+    public ResponseEntity<?> handleDuplicate(DuplicatePhraseException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", messageOf(e)));
+    }
+
+    /**
+     * DB 제약 위반 → 409.
+     * 서비스가 중복을 먼저 확인하므로, 여기까지 오는 건 확인과 저장 사이에 같은 표현이 끼어든 경우다.
+     * 원문에는 SQL 과 제약 이름이 담기므로 클라이언트에는 내보내지 않고 로그에만 남긴다.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException e) {
+        log.warn("DB 제약 조건 위반", e);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "이미 등록된 표현이거나 저장할 수 없는 값입니다."));
+    }
+
+    /**
      * Gemini API 오류 매핑. 429(쿼터/레이트리밋)는 그대로 429 로,
      * 나머지는 502 로 내보낸다. 업스트림 원문에는 내부 메시지가 담기므로
      * 클라이언트에 그대로 전달하지 않고 로그에만 남긴다.
@@ -53,6 +108,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleRuntimeException(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", messageOf(e)));
+    }
+
+    private ResponseEntity<?> badRequest(String message) {
+        return ResponseEntity.badRequest().body(Map.of("error", message));
+    }
+
+    private String allowedValues(Class<?> enumType) {
+        return Arrays.toString(enumType.getEnumConstants());
+    }
+
+    private String fieldName(List<JsonMappingException.Reference> path) {
+        if (path.isEmpty() || path.get(path.size() - 1).getFieldName() == null) {
+            return "값";
+        }
+        return path.get(path.size() - 1).getFieldName();
     }
 
     private String messageOf(Throwable e) {

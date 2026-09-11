@@ -23,10 +23,28 @@ public class BusinessPhrase {
     @Column(nullable = false)
     private String meaning; // 한국어 뜻
 
-    private String situation; // 사용 상황 (EMAIL, MEETING, INTERVIEW 등)
+    // DB 에는 제약 없는 VARCHAR 로 저장한다. @Enumerated 대신 컨버터를 쓰는 이유는 SituationConverter 참고.
+    @Convert(converter = SituationConverter.class)
+    @Column(length = 100)
+    private Situation situation; // 사용 상황
 
     private Integer politenessLevel; // 정중도 (1~5)
 
     @Column(columnDefinition = "TEXT")
     private String usageExample; // 실제 비즈니스 메일, 대화 예시 문장
+
+    public static BusinessPhrase create(String phrase, String meaning, Situation situation,
+                                        Integer politenessLevel, String usageExample) {
+        return new BusinessPhrase(null, phrase, meaning, situation, politenessLevel, usageExample);
+    }
+
+    /** PUT 은 전체 교체다. id 를 제외한 모든 필드를 덮어쓴다. */
+    public void replace(String phrase, String meaning, Situation situation,
+                        Integer politenessLevel, String usageExample) {
+        this.phrase = phrase;
+        this.meaning = meaning;
+        this.situation = situation;
+        this.politenessLevel = politenessLevel;
+        this.usageExample = usageExample;
+    }
 }

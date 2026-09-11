@@ -9,6 +9,9 @@
 --   만들지 못해 조용히 실패하고, 결국 부팅마다 행이 계속 늘어난다.
 --   그래서 인덱스 존재 여부와 무관하게 동작하는 WHERE NOT EXISTS 방식을 쓴다.
 --   (기존 중복 행은 schema.sql 이 먼저 정리한다)
+--
+-- 아래 표현들은 '기본 사전'이다. 사용자가 DELETE /api/phrases/{id} 로 지워도
+-- 다음 부팅 때 여기서 다시 들어간다. 의도된 동작이다 — 기본 사전이 실수로 비는 것을 막는다.
 
 -- 1. 비즈니스 이메일/채팅 핵심 표현
 INSERT INTO business_phrase (phrase, meaning, situation, politeness_level, usage_example)
