@@ -16,10 +16,15 @@ public class JapaneseTextNormalizer {
         return normalized.trim();
     }
 
-    // 최소한의 유효성 검사
+    /**
+     * 유료 API 앞의 최소 관문. 일본어 문자가 하나라도 있어야 통과한다.
+     *
+     * <p>알파벳이나 숫자만으로는 통과하지 못한다 — 분석할 일본어가 없는 입력에
+     * 모델 호출 비용을 쓰지 않기 위해서다. 다만 판정 근거가 유니코드 한자 범위뿐이라
+     * 한자를 공유하는 중국어는 걸러내지 못한다(그 경우는 모델이 걸러 준다).
+     */
     public static boolean isValid(String input) {
         if (input == null || input.isBlank()) return false;
-        // 문장 내 일본어, 알파벳, 숫자가 하나라도 포함인지 확인
         return VALID_CHARS.matcher(input).find();
     }
 }

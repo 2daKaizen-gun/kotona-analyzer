@@ -2,18 +2,26 @@ package com.kaizen.kotona.analyzer.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kaizen.kotona.analyzer.dto.AnalysisHistorySummaryDTO;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.entity.AnalysisHistory;
+import com.kaizen.kotona.analyzer.exception.HistoryNotFoundException;
 import com.kaizen.kotona.analyzer.repository.AnalysisHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AnalysisHistoryService {
+
+    /** 한 번에 가져갈 수 있는 최대 건수. 클라이언트가 요청해도 이보다 크게는 주지 않는다. */
+    static final int MAX_PAGE_SIZE = 100;
+    static final int DEFAULT_PAGE_SIZE = 20;
+
     private final AnalysisHistoryRepository repository;
     private final ObjectMapper objectMapper;
 
@@ -37,17 +45,32 @@ public class AnalysisHistoryService {
         }
     }
 
-    // 분석 이력 전체 목록 조회
+    /**
+     * 최신순 이력 목록. 저장된 분석 결과 원본은 빠진 요약만 담는다.
+     *
+     * <p>createdAt 이 같거나 비어 있어도 순서가 흔들리지 않도록 id 를 보조 정렬로 둔다.
+     * (Auditing 을 켜기 전에 쌓인 행은 createdAt 이 null 이다)
+     */
     @Transactional(readOnly = true)
-    public List<AnalysisHistory> getHistoryList() {
-        return repository.findByOrderByCreatedAtDesc();
+    public PageResponse<AnalysisHistorySummaryDTO> getHistoryPage(int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(MAX_PAGE_SIZE, Math.max(1, size));
+
+        Sort newestFirst = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+        return PageResponse.from(repository.findSummaries(PageRequest.of(safePage, safeSize, newestFirst)));
+    }
+
+    /** 목록에서 한 건을 펼칠 때. 저장된 분석 결과 전체가 여기 담겨 있다. */
+    @Transactional(readOnly = true)
+    public AnalysisHistory getHistory(Long id) {
+        return repository.findById(id).orElseThrow(() -> new HistoryNotFoundException(id));
     }
 
     // 특정 이력 삭제
     @Transactional
     public void deleteHistory(Long id) {
-        if(!repository.existsById(id)) {
-            throw new IllegalArgumentException("해당 이력 존재하지 않습니다. ID: " + id);
+        if (!repository.existsById(id)) {
+            throw new HistoryNotFoundException(id);
         }
         repository.deleteById(id);
     }
