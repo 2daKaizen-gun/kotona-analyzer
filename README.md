@@ -86,6 +86,38 @@ docker compose up -d --build
 
 > Security: `/analyze` is protected by an **API Key filter** (`X-API-KEY`, enforced only when `API_KEY` is set) and a **per-IP rate limiter**. `GET`-based analysis was replaced by `POST` since the call mutates state (DB write) and invokes a paid AI API.
 
+## 📡 API
+
+Full schema at `GET /v3/api-docs`; Swagger UI at `/swagger-ui/index.html`. The frontend generates its
+TypeScript types from that spec, so the response shapes below are never declared twice.
+
+| Method | Path | Notes |
+|---|---|---|
+| `POST` | `/analyze` | The paid call. Body `{ text, relationshipType }`; `relationshipType` is `INTERNAL` / `EXTERNAL` / `INTERVIEW` and defaults to `INTERNAL`. Takes 20–30s. |
+| `GET` | `/api/history` | Page of summaries, newest first. `?page=0&size=20`; `size` is capped at 100. |
+| `GET` | `/api/history/{id}` | One record including the stored analysis. |
+| `DELETE` | `/api/history/{id}` | |
+| `GET` | `/api/phrases` | Dictionary, most polite first. |
+| `GET` | `/api/phrases/search?situation=` | Filter by situation. |
+| `POST` | `/api/phrases` | |
+| `PUT` | `/api/phrases/{id}` | |
+| `DELETE` | `/api/phrases/{id}` | |
+| `GET` | `/api/health` | |
+
+**The history list carries summaries, not results.** Each stored analysis is a couple of kilobytes of
+JSON, and a list row shows six short fields. Returning every row with its result attached meant the
+response grew forever and most of it was never read — so the list omits it and `/api/history/{id}`
+fetches one when a row is actually expanded.
+
+**Protected when `API_KEY` is set**: `/analyze`, everything under `/api/history`, and dictionary
+writes. Dictionary reads, health and Swagger stay open. With `API_KEY` unset the filter logs a
+warning and lets everything through, which is what makes local development frictionless — and what
+makes setting it mandatory before exposing the service.
+
+**Errors** are `{"error": "..."}` with a meaningful status: 400 invalid input, 404 unknown id,
+409 duplicate phrase, 429 rate limited (20 requests/minute/IP on `/analyze`) or model quota
+exhausted, 502 anything else from the model. Upstream response bodies are logged, never returned.
+
 ## ⚙️ Key Features
 - **Nuance Analysis**: Derives the true intent (本音) by analyzing the indirectness and politeness of the input text.
 - **Manner Scoring**: Provides manner scores and improvement guides based on Japanese business customs.
