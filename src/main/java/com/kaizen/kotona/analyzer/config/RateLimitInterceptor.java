@@ -5,8 +5,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * IP별 고정 윈도우 요청 제한기.
@@ -15,8 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RateLimitInterceptor implements HandlerInterceptor {
 
-    private static final int MAX_REQUESTS = 20;      // 윈도우당 최대 요청
-    private static final long WINDOW_MS = 60_000;    // 1분
+    static final int MAX_REQUESTS = 20;      // 윈도우당 최대 요청
+    static final long WINDOW_MS = 60_000;    // 1분
 
     private final Map<String, Window> buckets = new ConcurrentHashMap<>();
 
@@ -26,18 +28,32 @@ public class RateLimitInterceptor implements HandlerInterceptor {
      */
     private final boolean trustForwardedFor;
 
+    /** 테스트가 시간을 앞으로 돌릴 수 있도록 주입받는다. */
+    private final Clock clock;
+
+    /** 마지막으로 만료 버킷을 쓸어낸 시각. */
+    private final AtomicLong lastSweep;
+
     public RateLimitInterceptor(boolean trustForwardedFor) {
+        this(trustForwardedFor, Clock.systemUTC());
+    }
+
+    RateLimitInterceptor(boolean trustForwardedFor, Clock clock) {
         this.trustForwardedFor = trustForwardedFor;
+        this.clock = clock;
+        this.lastSweep = new AtomicLong(clock.millis());
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response,
                              Object handler) throws IOException {
-        long now = System.currentTimeMillis();
-        evictExpired(now);
+        long now = clock.millis();
+        sweepIfDue(now);
 
         Window window = buckets.compute(clientIp(request), (ip, current) -> {
+            // 이 IP 의 윈도우가 끝났으면 새로 연다. 청소가 아직 안 돌았어도
+            // 여기서 판단하므로 제한 자체는 정확하다.
             if (current == null || now - current.windowStart >= WINDOW_MS) {
                 return new Window(now);
             }
@@ -65,9 +81,28 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         return request.getRemoteAddr();
     }
 
-    /** 만료된 버킷을 지운다. 없으면 접속한 IP 수만큼 맵이 무한히 커진다. */
-    private void evictExpired(long now) {
+    /**
+     * 만료된 버킷을 쓸어낸다. 없으면 접속한 IP 수만큼 맵이 무한히 커진다.
+     *
+     * <p>윈도우마다 한 번만 돈다. 매 요청 전체를 훑으면 IP 가 늘어날수록
+     * 요청당 비용이 같이 늘어나는데, 제한 판정은 어차피 compute 안에서
+     * 하므로 청소를 미뤄도 정확도에는 영향이 없다.
+     */
+    private void sweepIfDue(long now) {
+        long last = lastSweep.get();
+        if (now - last < WINDOW_MS) {
+            return;
+        }
+        // 경쟁에서 진 스레드는 그냥 넘어간다. 다음 요청이 다시 시도한다.
+        if (!lastSweep.compareAndSet(last, now)) {
+            return;
+        }
         buckets.entrySet().removeIf(entry -> now - entry.getValue().windowStart >= WINDOW_MS);
+    }
+
+    /** 테스트에서 맵이 실제로 줄어드는지 보기 위한 창구. */
+    int trackedClients() {
+        return buckets.size();
     }
 
     private static final class Window {
