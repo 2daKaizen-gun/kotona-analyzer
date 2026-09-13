@@ -7,7 +7,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "analysis_history")
+// 목록은 항상 created_at 내림차순으로 읽는다. 인덱스가 없으면 매 조회가 정렬을 다시 한다.
+@Table(name = "analysis_history",
+        indexes = @Index(name = "idx_analysis_history_created_at", columnList = "created_at"))
 @EntityListeners(AuditingEntityListener.class) // 없으면 createdAt 이 항상 null 로 저장된다
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

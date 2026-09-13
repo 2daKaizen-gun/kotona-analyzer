@@ -1,26 +1,39 @@
 package com.kaizen.kotona.analyzer.controller;
 
+import com.kaizen.kotona.analyzer.dto.AnalysisHistorySummaryDTO;
+import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.entity.AnalysisHistory;
 import com.kaizen.kotona.analyzer.service.AnalysisHistoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/history")
 @RequiredArgsConstructor
+@Tag(name = "Analysis History", description = "분석 이력 조회 및 삭제 API")
 public class AnalysisHistoryController {
 
     private final AnalysisHistoryService historyService;
 
-    // 분석 이력 전체 목록 조회
+    @Operation(summary = "분석 이력 목록",
+            description = "최신순 요약 목록. 저장된 분석 결과 전체는 포함되지 않는다 — 한 건을 펼칠 때 상세 조회를 쓴다.")
     @GetMapping
-    public List<AnalysisHistory> getAllHistory() {
-        return historyService.getHistoryList();
+    public PageResponse<AnalysisHistorySummaryDTO> getHistory(
+            @Parameter(description = "0부터 시작하는 페이지 번호") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size) {
+        return historyService.getHistoryPage(page, size);
     }
 
-    // 특정 이력 삭제
+    @Operation(summary = "분석 이력 상세", description = "저장된 분석 결과 전체(fullAnalysisJson)를 포함한 한 건.")
+    @GetMapping("/{id}")
+    public AnalysisHistory getHistoryDetail(@PathVariable Long id) {
+        return historyService.getHistory(id);
+    }
+
+    @Operation(summary = "분석 이력 삭제")
     @DeleteMapping("/{id}")
     public void deleteHistory(@PathVariable Long id) {
         historyService.deleteHistory(id);

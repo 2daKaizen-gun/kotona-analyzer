@@ -64,6 +64,11 @@ public class GlobalExceptionHandler {
     }
 
     /** 없는 숙어 id → 404 */
+    @ExceptionHandler(HistoryNotFoundException.class)
+    public ResponseEntity<?> handleHistoryNotFound(HistoryNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", messageOf(e)));
+    }
+
     @ExceptionHandler(PhraseNotFoundException.class)
     public ResponseEntity<?> handleNotFound(PhraseNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", messageOf(e)));
