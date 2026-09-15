@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static com.kaizen.kotona.analyzer.service.AnalysisHistoryService.MAX_PAGE_SIZE;
+import static com.kaizen.kotona.analyzer.utils.Paging.MAX_PAGE_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;

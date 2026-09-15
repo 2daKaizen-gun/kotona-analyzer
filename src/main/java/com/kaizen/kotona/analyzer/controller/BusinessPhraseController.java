@@ -1,5 +1,6 @@
 package com.kaizen.kotona.analyzer.controller;
 
+import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.dto.PhraseRequestDTO;
 import com.kaizen.kotona.analyzer.entity.BusinessPhrase;
 import com.kaizen.kotona.analyzer.entity.Situation;
@@ -13,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/phrases")
@@ -24,17 +24,21 @@ public class BusinessPhraseController {
 
     private final BusinessPhraseService service;
 
-    @Operation(summary = "모든 숙어 조회", description = "DB에 저장된 모든 비즈니스 숙어를 정중도 순으로 조회")
+    @Operation(summary = "숙어 목록", description = "정중도 높은 순으로 한 페이지. 사용자가 추가한 표현까지 포함한다.")
     @GetMapping
-    public List<BusinessPhrase> getAllPhrases() {
-        return service.getAllPhrases();
+    public PageResponse<BusinessPhrase> getAllPhrases(
+            @Parameter(description = "0부터 시작하는 페이지 번호") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size) {
+        return service.getAllPhrases(page, size);
     }
 
     @Operation(summary = "상황별 숙어 검색", description = "EMAIL, MEETING 등 특정 상황에 맞는 숙어만 필터링. 허용되지 않은 값이면 400")
     @GetMapping("/search")
-    public List<BusinessPhrase> getPhrasesBySituation(
-            @Parameter(description = "검색할 상황 태그(예: EMAIL, MEETING)") @RequestParam Situation situation) {
-        return service.getPhrasesBySituation(situation);
+    public PageResponse<BusinessPhrase> getPhrasesBySituation(
+            @Parameter(description = "검색할 상황 태그(예: EMAIL, MEETING)") @RequestParam Situation situation,
+            @Parameter(description = "0부터 시작하는 페이지 번호") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size) {
+        return service.getPhrasesBySituation(situation, page, size);
     }
 
     @Operation(summary = "숙어 추가", description = "새 표현을 사전에 등록. 이미 있는 표현이면 409")

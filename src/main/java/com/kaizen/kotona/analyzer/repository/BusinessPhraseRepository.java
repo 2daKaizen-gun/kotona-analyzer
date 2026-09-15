@@ -2,16 +2,17 @@ package com.kaizen.kotona.analyzer.repository;
 
 import com.kaizen.kotona.analyzer.entity.BusinessPhrase;
 import com.kaizen.kotona.analyzer.entity.Situation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
 
 public interface BusinessPhraseRepository extends JpaRepository<BusinessPhrase, Long> {
 
     // 상황 태그로 숙어 목록 필터링 기능
-    List<BusinessPhrase> findBySituation(Situation situation);
+    Page<BusinessPhrase> findBySituation(Situation situation, Pageable pageable);
 
-    // 정중도 높은 순서대로 전체 목록 가져오는 기능
-    List<BusinessPhrase> findAllByOrderByPolitenessLevelDesc();
+    // 정렬은 Pageable 이 들고 온다. 메서드 이름에 박으면 Pageable 의 Sort 와 충돌한다.
+    Page<BusinessPhrase> findAllBy(Pageable pageable);
 
     // 등록 시 중복 확인
     boolean existsByPhrase(String phrase);

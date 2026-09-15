@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS business_phrase (
     situation VARCHAR(100), -- 사용 상황 (Situation enum 의 이름)
     politeness_level INT, -- 정중도 단계
     usage_example TEXT, -- 실제 활용 예시 문장
-    CONSTRAINT uk_business_phrase_phrase UNIQUE (phrase) -- 중복 삽입 방지
+    CONSTRAINT uk_business_phrase_phrase UNIQUE (phrase), -- 중복 삽입 방지
+    -- 상황별 검색이 테이블 전체를 훑지 않도록
+    INDEX idx_business_phrase_situation (situation)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- [1] phrase 콜레이션 이전.

@@ -1,9 +1,13 @@
 package com.kaizen.kotona.analyzer;
 
 import static org.mockito.BDDMockito.*;
+import static com.kaizen.kotona.analyzer.utils.Paging.MAX_PAGE_SIZE;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 import com.kaizen.kotona.analyzer.dto.PhraseRequestDTO;
+import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.entity.BusinessPhrase;
 import com.kaizen.kotona.analyzer.entity.Situation;
 import com.kaizen.kotona.analyzer.exception.DuplicatePhraseException;
@@ -13,9 +17,13 @@ import com.kaizen.kotona.analyzer.service.BusinessPhraseService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,21 +41,39 @@ class BusinessPhraseServiceTest {
     private BusinessPhraseService service;
 
     @Test
-    @DisplayName("전체 숙어 조회 시 정중도 내림차순으로 반환되어야 함.")
-    void getAllPhrasesTest() {
-        // given: 가짜 데이터와 행동 정의함
-        BusinessPhrase phrase1 = new BusinessPhrase(1L, "承知いたしました", "알겠습니다", Situation.EMAIL, 5, "예시1");
-        BusinessPhrase phrase2 = new BusinessPhrase(2L, "念のため", "만약을 위해", Situation.CONFIRMATION, 2, "예시2");
-        given(repository.findAllByOrderByPolitenessLevelDesc()).willReturn(List.of(phrase1, phrase2));
+    @DisplayName("목록은 정중도 내림차순, 같은 정중도면 id 오름차순으로 읽는다")
+    void readsMostPoliteFirstWithAStableTiebreak() {
+        // 정중도가 같은 행이 흔해서, 보조 정렬이 없으면 페이지마다 순서가 흔들린다
+        givenEmptyPage();
 
-        // 테스트할 메서드 실행
-        List<BusinessPhrase> result = service.getAllPhrases();
+        service.getAllPhrases(0, 20);
 
-        // AssertJ 사용한 결과 검증
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).getPolitenessLevel()).isEqualTo(5);
-        // 메서드 호출 횟수 검증
-        verify(repository, times(1)).findAllByOrderByPolitenessLevelDesc();
+        assertThat(capturePageable().getSort()).containsExactly(
+                Sort.Order.desc("politenessLevel"),
+                Sort.Order.asc("id"));
+    }
+
+    @Test
+    @DisplayName("페이지 크기는 이력 목록과 같은 상한·하한을 따른다")
+    void clampsPageSizeLikeTheOtherList() {
+        // 두 목록이 다르게 굴면 프론트가 한쪽에만 맞춰 깨진다
+        givenEmptyPage();
+        service.getAllPhrases(0, 9_999);
+        assertThat(capturePageable().getPageSize()).isEqualTo(MAX_PAGE_SIZE);
+    }
+
+    @Test
+    @DisplayName("응답에 전체 건수와 다음 페이지 여부가 담긴다")
+    void reportsTotalsAndWhetherMoreFollow() {
+        BusinessPhrase phrase = new BusinessPhrase(1L, "承知いたしました", "알겠습니다", Situation.EMAIL, 5, "예시1");
+        given(repository.findAllBy(any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(phrase), Pageable.ofSize(1), 3));
+
+        PageResponse<BusinessPhrase> result = service.getAllPhrases(0, 1);
+
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.totalElements()).isEqualTo(3);
+        assertThat(result.hasNext()).isTrue();
     }
 
     @Test
@@ -55,13 +81,24 @@ class BusinessPhraseServiceTest {
     void getPhrasesBySituationTest() {
         // given
         BusinessPhrase phrase = new BusinessPhrase(1L, "承知いたしました", "알겠습니다", Situation.EMAIL, 5, "예시1");
-        given(repository.findBySituation(Situation.EMAIL)).willReturn(List.of(phrase));
+        given(repository.findBySituation(eq(Situation.EMAIL), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(phrase)));
 
         // when
-        List<BusinessPhrase> result = service.getPhrasesBySituation(Situation.EMAIL);
+        PageResponse<BusinessPhrase> result = service.getPhrasesBySituation(Situation.EMAIL, 0, 20);
 
         // then
-        assertThat(result).allMatch(p -> p.getSituation() == Situation.EMAIL);
+        assertThat(result.content()).allMatch(p -> p.getSituation() == Situation.EMAIL);
+    }
+
+    private void givenEmptyPage() {
+        given(repository.findAllBy(any(Pageable.class))).willReturn(new PageImpl<>(List.of()));
+    }
+
+    private Pageable capturePageable() {
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(repository).findAllBy(captor.capture());
+        return captor.getValue();
     }
 
     @Test
