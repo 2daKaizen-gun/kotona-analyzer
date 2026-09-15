@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "business_phrase", // DB Table name
         // 이름을 고정해 두어야 schema.sql 이 기존 DB 에 같은 제약을 걸 수 있다.
-        uniqueConstraints = @UniqueConstraint(name = "uk_business_phrase_phrase", columnNames = "phrase"))
+        uniqueConstraints = @UniqueConstraint(name = "uk_business_phrase_phrase", columnNames = "phrase"),
+        // 상황별 검색이 매번 테이블을 훑지 않도록. 사용자가 표현을 추가할수록 차이가 커진다.
+        indexes = @Index(name = "idx_business_phrase_situation", columnList = "situation"))
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor // 모든 필드 인자로 받는 생성자 (테스트 코드용)

@@ -8,8 +8,8 @@ import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.entity.AnalysisHistory;
 import com.kaizen.kotona.analyzer.exception.HistoryNotFoundException;
 import com.kaizen.kotona.analyzer.repository.AnalysisHistoryRepository;
+import com.kaizen.kotona.analyzer.utils.Paging;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AnalysisHistoryService {
-
-    /** 한 번에 가져갈 수 있는 최대 건수. 클라이언트가 요청해도 이보다 크게는 주지 않는다. */
-    static final int MAX_PAGE_SIZE = 100;
-    static final int DEFAULT_PAGE_SIZE = 20;
 
     private final AnalysisHistoryRepository repository;
     private final ObjectMapper objectMapper;
@@ -53,11 +49,8 @@ public class AnalysisHistoryService {
      */
     @Transactional(readOnly = true)
     public PageResponse<AnalysisHistorySummaryDTO> getHistoryPage(int page, int size) {
-        int safePage = Math.max(0, page);
-        int safeSize = Math.min(MAX_PAGE_SIZE, Math.max(1, size));
-
         Sort newestFirst = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
-        return PageResponse.from(repository.findSummaries(PageRequest.of(safePage, safeSize, newestFirst)));
+        return PageResponse.from(repository.findSummaries(Paging.of(page, size, newestFirst)));
     }
 
     /** 목록에서 한 건을 펼칠 때. 저장된 분석 결과 전체가 여기 담겨 있다. */

@@ -1,5 +1,6 @@
 package com.kaizen.kotona.analyzer.controller;
 
+import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.entity.BusinessPhrase;
 import com.kaizen.kotona.analyzer.entity.Situation;
 import com.kaizen.kotona.analyzer.exception.DuplicatePhraseException;
@@ -14,9 +15,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
@@ -46,11 +50,30 @@ class BusinessPhraseControllerTest {
             """;
 
     @Test
-    @DisplayName("GET /api/phrases 호출 시에 200 OK랑 JSON 결과가 반환되어야 함.")
+    @DisplayName("GET /api/phrases 는 페이지 형태로 응답한다")
     void getAllPhrasesApiTest() throws Exception {
+        BusinessPhrase phrase = new BusinessPhrase(1L, "承知いたしました", "알겠습니다", Situation.EMAIL, 5, "예시");
+        given(service.getAllPhrases(anyInt(), anyInt()))
+                .willReturn(new PageResponse<>(List.of(phrase), 0, 20, 1, 1, false));
+
         mockMvc.perform(get("/api/phrases"))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType("application/json"));
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.content[0].phrase").value("承知いたしました"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.hasNext").value(false));
+    }
+
+    @Test
+    @DisplayName("GET /api/phrases 는 page·size 를 그대로 서비스에 넘긴다")
+    void passesPagingParametersThrough() throws Exception {
+        given(service.getAllPhrases(anyInt(), anyInt()))
+                .willReturn(new PageResponse<>(List.of(), 2, 5, 0, 0, false));
+
+        mockMvc.perform(get("/api/phrases").param("page", "2").param("size", "5"))
+                .andExpect(status().isOk());
+
+        verify(service).getAllPhrases(2, 5);
     }
 
     @Test
