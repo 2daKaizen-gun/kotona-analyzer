@@ -2,10 +2,13 @@ spring:
   application:
     name: analyzer
 
-  # [추가] MySQL 같은 외부 DB에서도 schema.sql, data.sql을 읽게 합니다.
-  sql:
-    init:
-      mode: always
+  # 스키마는 Flyway 가 관리한다. schema.sql / data.sql 은 db/migration 으로 옮겨졌다.
+  flyway:
+    # 이미 테이블이 있는 DB 는 V1 이 적용된 것으로 간주하고 건너뛴다.
+    # V1 은 실물 DB 를 조회해 그대로 옮긴 것이라, 새 DB 도 같은 모양으로 만들어진다.
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: "hibernate ddl-auto 로 만들어진 기존 스키마"
 
   datasource:
     hikari:
@@ -18,12 +21,13 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
-    # 기존의 jpa: jpa: 중첩을 제거하고 하나로
     hibernate:
-      ddl-auto: update
+      # 스키마는 Flyway 가 만든다. Hibernate 는 엔티티와 실제 테이블이 어긋나면
+      # 조용히 고치는 대신 기동을 멈춘다 — 그게 이 설정의 목적이다.
+      # update 는 컬럼을 더하기만 하고 지우거나 좁히지 않아서, 지워진 필드의 컬럼이
+      # 영원히 남고 이름을 바꾸면 컬럼이 둘로 늘어난다.
+      ddl-auto: validate
     show-sql: true
-    # Hibernate가 테이블을 체크한 '뒤'에 SQL 파일을 실행하게 함
-    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true

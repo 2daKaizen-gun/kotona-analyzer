@@ -41,6 +41,10 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // 스키마 변경을 버전으로 관리한다. flyway-mysql 은 MySQL 방언 모듈로, 없으면 기동 시 거부된다.
+    implementation 'org.flywaydb:flyway-core'
+    runtimeOnly 'org.flywaydb:flyway-mysql'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

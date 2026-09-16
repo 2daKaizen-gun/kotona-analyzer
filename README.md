@@ -120,6 +120,26 @@ makes setting it mandatory before exposing the service.
 409 duplicate phrase, 429 rate limited (20 requests/minute/IP on `/analyze`) or model quota
 exhausted, 502 anything else from the model. Upstream response bodies are logged, never returned.
 
+## 🗄 Schema
+
+Flyway owns the schema; Hibernate runs with `ddl-auto: validate` and refuses to start if the
+entities and the tables disagree. Migrations live in `src/main/resources/db/migration`.
+
+| File | Runs |
+|---|---|
+| `V1__baseline.sql` | Once, on a database that does not have it. Existing databases are baselined at V1 and skip it. |
+| `R__seed_default_phrases.sql` | Whenever the file changes — it is the single source for the default dictionary. |
+
+**V1 was transcribed from the live database, not from the old `schema.sql`.** Those two disagreed:
+`schema.sql` declared `category VARCHAR(50)` and `risk_level VARCHAR(20)` where both are
+`varchar(255)`, because Hibernate created the tables from the entities and `CREATE TABLE IF NOT
+EXISTS` skipped the script every time. Writing V1 from the script would have made fresh databases
+differ from existing ones.
+
+Adding a column means adding `V2__...sql` and the field on the entity. `validate` will tell you at
+startup if they do not match, which is the point — `update` used to add columns silently and never
+remove or narrow one, so a deleted field left its column behind forever and a rename produced two.
+
 ## ⚙️ Key Features
 - **Nuance Analysis**: Derives the true intent (本音) by analyzing the indirectness and politeness of the input text.
 - **Manner Scoring**: Provides manner scores and improvement guides based on Japanese business customs.

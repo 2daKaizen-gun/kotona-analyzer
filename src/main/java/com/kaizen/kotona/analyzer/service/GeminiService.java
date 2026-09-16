@@ -1,11 +1,10 @@
 package com.kaizen.kotona.analyzer.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.genai.Client;
 import com.google.genai.errors.ApiException;
+import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
-import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class GeminiService {
 
-    private final Client genAiClient;
+    private final NuanceModelClient modelClient;
     private final Schema nuanceResponseSchema;
     private final ObjectMapper objectMapper;
 
@@ -127,10 +126,8 @@ public class GeminiService {
         GenerateContentConfig config = configBuilder.build();
 
         try {
-            GenerateContentResponse response = genAiClient.models.generateContent(
+            String rawText = modelClient.generate(
                     model, buildUserMessage(cleanInput, relationshipType), config);
-
-            String rawText = response.text();
             if (rawText == null || rawText.isBlank()) {
                 throw new RuntimeException("AI가 응답을 생성하지 못하였습니다.");
             }
