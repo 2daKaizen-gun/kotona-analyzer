@@ -72,7 +72,7 @@ The whole stack (Spring Boot app + MySQL) runs locally with a single command —
 # 1) Set secrets (create .env in project root)
 #    GEMINI_API_KEY=...             # required: https://aistudio.google.com/apikey
 #    API_KEY=<your-api-key>         # optional: protects POST /analyze when set
-#    GEMINI_MODEL=gemini-2.5-flash  # optional: default. Free tier eligible.
+#    GEMINI_MODEL=gemini-3.6-flash  # optional: this is the default. Free tier eligible.
 # 2) Run everything (no service account key file, no GCP project, no billing account)
 docker compose up -d --build
 ```
@@ -82,7 +82,11 @@ docker compose up -d --build
 
 > **API route note**: KOTONA talks to Gemini through the **AI Studio** endpoint (a plain API key), not Vertex AI.
 > That is what removes the service-account JSON, the GCP project, the billing account, and the recurring
-> terms-of-service re-acceptance. `GEMINI_MODEL` defaults to `gemini-2.5-flash`, which is free-tier eligible.
+> terms-of-service re-acceptance. `GEMINI_MODEL` defaults to `gemini-3.6-flash`, which is free-tier eligible.
+>
+> Do not set it to `gemini-2.5-flash`. That model answers
+> `404 ... no longer available to new users` on keys issued recently, which is why the default moved off it.
+>
 > Note that free-tier traffic may be used by Google to improve their products — use a paid tier for real
 > client correspondence.
 
