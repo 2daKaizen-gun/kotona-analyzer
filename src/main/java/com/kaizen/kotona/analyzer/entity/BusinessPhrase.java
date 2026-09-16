@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "business_phrase", // DB Table name
-        // 이름을 고정해 두어야 schema.sql 이 기존 DB 에 같은 제약을 걸 수 있다.
+        // 이름을 고정해 두어야 마이그레이션이 같은 제약을 가리킬 수 있다.
         uniqueConstraints = @UniqueConstraint(name = "uk_business_phrase_phrase", columnNames = "phrase"),
         // 상황별 검색이 매번 테이블을 훑지 않도록. 사용자가 표현을 추가할수록 차이가 커진다.
         indexes = @Index(name = "idx_business_phrase_situation", columnList = "situation"))
@@ -22,7 +22,9 @@ public class BusinessPhrase {
 
     // 두 표현이 "같은가"는 콜레이션이 정한다. MySQL 기본 콜레이션(utf8mb4_0900_ai_ci)은
     // よろしく 와 ヨロシク, ハハ 와 パパ 를 같은 문자열로 보므로, 서로 다른 표현이 UNIQUE 에 걸려 거절된다.
-    // 탁점과 가나 종류를 구분하는 ja_0900_as_cs_ks 로 고정한다. 기존 DB 는 schema.sql 이 이전한다.
+    // 탁점과 가나 종류를 구분하는 ja_0900_as_cs_ks 로 고정한다.
+    // 실제 컬럼은 Flyway 가 만든다(V1__baseline.sql). 여기 적는 것은 ddl-auto=validate 가
+    // 대조할 기준이다 — 둘이 어긋나면 기동이 멈춘다.
     @Column(nullable = false,
             columnDefinition = "varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_ja_0900_as_cs_ks")
     private String phrase; // 일본어 숙어
