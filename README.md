@@ -72,7 +72,7 @@ The whole stack (Spring Boot app + MySQL) runs locally with a single command —
 # 1) Set secrets (create .env in project root)
 #    GEMINI_API_KEY=...             # required: https://aistudio.google.com/apikey
 #    API_KEY=<your-api-key>         # optional: protects POST /analyze when set
-#    GEMINI_MODEL=gemini-2.5-flash  # optional: default. Free tier eligible.
+#    GEMINI_MODEL=gemini-3.6-flash  # optional: this is the default. Free tier eligible.
 # 2) Run everything (no service account key file, no GCP project, no billing account)
 docker compose up -d --build
 ```
@@ -82,7 +82,11 @@ docker compose up -d --build
 
 > **API route note**: KOTONA talks to Gemini through the **AI Studio** endpoint (a plain API key), not Vertex AI.
 > That is what removes the service-account JSON, the GCP project, the billing account, and the recurring
-> terms-of-service re-acceptance. `GEMINI_MODEL` defaults to `gemini-2.5-flash`, which is free-tier eligible.
+> terms-of-service re-acceptance. `GEMINI_MODEL` defaults to `gemini-3.6-flash`, which is free-tier eligible.
+>
+> Do not set it to `gemini-2.5-flash`. That model answers
+> `404 ... no longer available to new users` on keys issued recently, which is why the default moved off it.
+>
 > Note that free-tier traffic may be used by Google to improve their products — use a paid tier for real
 > client correspondence.
 
@@ -148,7 +152,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 ## 🛠 Tech Stack
 - **Framework**: ![Spring Boot](https://img.shields.io/badge/spring-%236DB33F.svg?style=for-the-badge&logo=springboot&logoColor=white)
 - **Language**: ![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
-- **Database**: ![MySQL](https://img.shields.io/badge/mysql-4479A1.svg?style=for-the-badge&logo=mysql&logoColor=white) | ![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white) | ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+- **Database**: ![MySQL](https://img.shields.io/badge/mysql-4479A1.svg?style=for-the-badge&logo=mysql&logoColor=white) | ![Flyway](https://img.shields.io/badge/Flyway-CC0200?style=for-the-badge&logo=flyway&logoColor=white) | ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 - **AI/LLM**: ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white) | ![AI Studio](https://img.shields.io/badge/AI%20Studio-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
 - **Cloud & Deployment**: ![AWS](https://img.shields.io/badge/AWS%20EC2-%23FF9900.svg?style=for-the-badge&logo=amazonec2&logoColor=white) | ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 - **OS & Environment**: ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) (Amazon Linux 2023)
@@ -163,8 +167,8 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 ## ✅ Milestone
 - **Phase 1**: Project Foundation & Backend Environment Setup
     - [x] Phase 1-1: Initialize GitHub Repository & Project Board
-    - [x] Phase 1-2: Setup Spring Boot 3.x & Java 17 Development Environment
-    - [x] Phase 1-3: Database Schema Design & Containerization (Docker with PostgreSQL/MySQL)
+    - [x] Phase 1-2: Setup Spring Boot 3.x & Java 21 Development Environment
+    - [x] Phase 1-3: Database Schema Design & Containerization (Docker with MySQL)
     - [x] Phase 1-4: Security Configuration (API Key Management & .env Setup)
 
 - **Phase 2**: AI Integration & Core Analysis Engine Development
@@ -222,9 +226,11 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
+- **Test Coverage**: 150 backend and 61 frontend tests. The scoring rules, the error-to-status contract, the schema sent to the model, and the rate limiter are all pinned — including what must *not* appear in a response, since upstream bodies and SQL constraint names carry details a client should never see
+
 - **Portability**: No single-cloud lock-in — runs anywhere Docker runs, enabling zero-downtime migration off the retired EC2 free tier
 
-- **Security**: Zero hardcoded secrets and zero key files on disk — a single `GEMINI_API_KEY` env var replaced the GCP service-account JSON; the `/analyze` endpoint is protected by an API-key filter + per-IP rate limiting
+- **Security**: Zero hardcoded secrets and zero key files on disk — a single `GEMINI_API_KEY` env var replaced the GCP service-account JSON. `/analyze`, the analysis history and dictionary writes are behind an API-key filter, with a per-IP rate limiter on the paid endpoint
 
 ## 🧐 Self-Reflection
 - **Technical Growth**
