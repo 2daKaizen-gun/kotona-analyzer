@@ -226,7 +226,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 150 backend and 61 frontend tests. The scoring rules, the error-to-status contract, the schema sent to the model, and the rate limiter are all pinned — including what must *not* appear in a response, since upstream bodies and SQL constraint names carry details a client should never see
+- **Test Coverage**: 159 backend tests, plus 84 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web). The scoring rules, the error-to-status contract, the schema sent to the model, the rate limiter and the CORS allow-list are all pinned — including what must *not* get through: upstream bodies and SQL constraint names that a client should never see, and origins that only resemble an allowed one. The browser tests run the deployed demo build end to end in CI
 
 - **Portability**: No single-cloud lock-in — runs anywhere Docker runs, enabling zero-downtime migration off the retired EC2 free tier
 
