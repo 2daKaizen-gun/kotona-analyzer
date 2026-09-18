@@ -1,6 +1,7 @@
 package com.kaizen.kotona.analyzer.service;
 
 import com.kaizen.kotona.analyzer.dto.EvaluationDTO;
+import com.kaizen.kotona.analyzer.dto.RelationshipType;
 import com.kaizen.kotona.analyzer.dto.FeedbackDTO;
 import com.kaizen.kotona.analyzer.dto.HonneDTO;
 import com.kaizen.kotona.analyzer.dto.MetricsDTO;
@@ -40,7 +41,7 @@ class AnalysisValidatorSanitizeTest {
                         new SmartReplyDTO("Counter-proposal", "ご確認 부탁드립니다。", "대안", "Firm"),
                         new SmartReplyDTO("Clarification", "予算や schedule 面でのご懸念はございますか。", "확인", "Firm")));
 
-        NuanceResponseDTO result = validator.validate(aiResponse, INPUT, "EXTERNAL", true);
+        NuanceResponseDTO result = validator.validate(aiResponse, INPUT, RelationshipType.EXTERNAL, true);
 
         assertThat(result.smartReplies())
                 .extracting(SmartReplyDTO::nuanceLevel, SmartReplyDTO::content)
@@ -61,7 +62,7 @@ class AnalysisValidatorSanitizeTest {
                 "Clarification", "〇月〇日（〇）までにSlackへご回答いただけますと幸いです。", "기한 확인", "Firm");
 
         NuanceResponseDTO result =
-                validator.validate(responseWith(List.of(suggestion), List.of(reply)), INPUT, "EXTERNAL", true);
+                validator.validate(responseWith(List.of(suggestion), List.of(reply)), INPUT, RelationshipType.EXTERNAL, true);
 
         assertThat(result.suggestions()).containsExactly(suggestion);
         assertThat(result.smartReplies()).containsExactly(reply);
@@ -70,7 +71,7 @@ class AnalysisValidatorSanitizeTest {
     @Test
     @DisplayName("두 목록이 null 이어도 빈 목록으로 내려간다")
     void tolerlatesNullLists() {
-        NuanceResponseDTO result = validator.validate(responseWith(null, null), INPUT, "INTERNAL", true);
+        NuanceResponseDTO result = validator.validate(responseWith(null, null), INPUT, RelationshipType.INTERNAL, true);
 
         assertThat(result.suggestions()).isEmpty();
         assertThat(result.smartReplies()).isEmpty();

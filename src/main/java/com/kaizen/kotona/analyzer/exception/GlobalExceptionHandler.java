@@ -109,6 +109,14 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", "AI 분석 서비스에 일시적인 문제가 발생했습니다. 서버 로그를 확인하세요."));
     }
 
+    /** 분석 실패 → 500. 문구를 우리가 쓴 실패이므로 그대로 내보낸다. */
+    @ExceptionHandler(AnalysisFailedException.class)
+    public ResponseEntity<?> handleAnalysisFailed(AnalysisFailedException e) {
+        log.error("분석 실패", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", messageOf(e)));
+    }
+
     /**
      * 분류되지 않은 오류 → 500.
      *

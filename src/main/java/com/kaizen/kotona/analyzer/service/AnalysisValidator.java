@@ -3,6 +3,7 @@ package com.kaizen.kotona.analyzer.service;
 import com.kaizen.kotona.analyzer.dto.EvaluationDTO;
 import com.kaizen.kotona.analyzer.dto.MetricsDTO;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.dto.RelationshipType;
 import com.kaizen.kotona.analyzer.dto.RiskAnalysisDTO;
 import com.kaizen.kotona.analyzer.dto.SmartReplyDTO;
 import com.kaizen.kotona.analyzer.dto.SuggestionDTO;
@@ -21,7 +22,7 @@ import java.util.Set;
 @Service
 public class AnalysisValidator {
     //AI 점수와 형태소 분석 및 규칙 기반 데이터 교차 검증
-    public NuanceResponseDTO validate(NuanceResponseDTO aiResponse, String cleanInput, String relationshipType, boolean hasPoliteEnding) {
+    public NuanceResponseDTO validate(NuanceResponseDTO aiResponse, String cleanInput, RelationshipType relationshipType, boolean hasPoliteEnding) {
         // 기존 Metrics 가져오기
         int p = aiResponse.metrics().politeness();   // Max 40
         int i = aiResponse.metrics().indirectness(); // Max 30
@@ -61,14 +62,12 @@ public class AnalysisValidator {
             }
         }
 
-        // 컨텍스트 가중치($W$) 적용
-        double multiplier = switch (relationshipType != null ? relationshipType : "INTERNAL") {
-            case "EXTERNAL" -> 1.2;  // 사외 관계는 위험도 증폭
-            case "INTERVIEW" -> 1.5; // 면접은 치명적
-            default -> 1.0;          // 사내는 기본값
-        };
+        // 컨텍스트 가중치($W$) 적용. 배수는 enum 이 들고 있다 — 값이 늘어날 때
+        // default 가 조용히 1.0 을 주는 일을 막는다.
+        RelationshipType relationship =
+                relationshipType != null ? relationshipType : RelationshipType.INTERNAL;
 
-        double finalRiskScore = riskScore * multiplier;
+        double finalRiskScore = riskScore * relationship.riskMultiplier();
 
         // 규칙 기반 등급 판정
         String ruleRiskLevel = "SAFE";
