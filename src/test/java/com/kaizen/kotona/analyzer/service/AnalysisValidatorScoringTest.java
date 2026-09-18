@@ -1,6 +1,7 @@
 package com.kaizen.kotona.analyzer.service;
 
 import com.kaizen.kotona.analyzer.dto.EvaluationDTO;
+import com.kaizen.kotona.analyzer.dto.RelationshipType;
 import com.kaizen.kotona.analyzer.dto.FeedbackDTO;
 import com.kaizen.kotona.analyzer.dto.HonneDTO;
 import com.kaizen.kotona.analyzer.dto.MetricsDTO;
@@ -37,7 +38,7 @@ class AnalysisValidatorScoringTest {
         @Test
         @DisplayName("경어 없이 정중도가 30 이상이면 10점 깎는다")
         void penalisesPolitenessClaimedWithoutKeigo() {
-            NuanceResponseDTO result = validate(metrics(35, 10, 10), PLAIN, "INTERNAL", false);
+            NuanceResponseDTO result = validate(metrics(35, 10, 10), PLAIN, RelationshipType.INTERNAL, false);
 
             assertThat(result.metrics().politeness()).isEqualTo(25);
         }
@@ -45,7 +46,7 @@ class AnalysisValidatorScoringTest {
         @Test
         @DisplayName("경어가 실제로 있으면 정중도를 깎지 않는다")
         void keepsPolitenessWhenKeigoIsPresent() {
-            NuanceResponseDTO result = validate(metrics(35, 10, 10), PLAIN, "INTERNAL", true);
+            NuanceResponseDTO result = validate(metrics(35, 10, 10), PLAIN, RelationshipType.INTERNAL, true);
 
             assertThat(result.metrics().politeness()).isEqualTo(35);
         }
@@ -53,7 +54,7 @@ class AnalysisValidatorScoringTest {
         @Test
         @DisplayName("정중도가 30 미만이면 경어가 없어도 깎지 않는다")
         void leavesLowPolitenessAlone() {
-            NuanceResponseDTO result = validate(metrics(29, 10, 10), PLAIN, "INTERNAL", false);
+            NuanceResponseDTO result = validate(metrics(29, 10, 10), PLAIN, RelationshipType.INTERNAL, false);
 
             assertThat(result.metrics().politeness()).isEqualTo(29);
         }
@@ -61,7 +62,7 @@ class AnalysisValidatorScoringTest {
         @Test
         @DisplayName("쿠션어 없이 에티켓이 20 이상이면 10점, 완곡어미 없이 간접성이 20 이상이면 5점 깎는다")
         void penalisesEtiquetteAndIndirectnessClaimedWithoutEvidence() {
-            NuanceResponseDTO result = validate(metrics(10, 25, 25), PLAIN, "INTERNAL", true);
+            NuanceResponseDTO result = validate(metrics(10, 25, 25), PLAIN, RelationshipType.INTERNAL, true);
 
             assertThat(result.metrics().etiquette()).isEqualTo(15);
             assertThat(result.metrics().indirectness()).isEqualTo(20);
@@ -73,7 +74,7 @@ class AnalysisValidatorScoringTest {
             // お手数 는 쿠션어, いただけますか 는 완곡어미
             String polite = "お手数ですが、ご対応いただけますか。";
 
-            NuanceResponseDTO result = validate(metrics(10, 25, 25), polite, "INTERNAL", true);
+            NuanceResponseDTO result = validate(metrics(10, 25, 25), polite, RelationshipType.INTERNAL, true);
 
             assertThat(result.metrics().etiquette()).isEqualTo(25);
             assertThat(result.metrics().indirectness()).isEqualTo(25);
@@ -85,7 +86,7 @@ class AnalysisValidatorScoringTest {
             // 모델은 100 을 주장하지만 근거가 없다: 35→25, 25→20, 25→15
             NuanceResponseDTO aiResponse = response(metrics(35, 25, 25), "SAFE", List.of(), "EMAIL", 100);
 
-            NuanceResponseDTO result = validator.validate(aiResponse, PLAIN, "INTERNAL", false);
+            NuanceResponseDTO result = validator.validate(aiResponse, PLAIN, RelationshipType.INTERNAL, false);
 
             assertThat(result.totalScore()).isEqualTo(60);
         }
@@ -94,7 +95,7 @@ class AnalysisValidatorScoringTest {
         @DisplayName("감점해도 0 아래로 내려가지 않는다")
         void neverFallsBelowZero() {
             // 지표 상한을 넘는 값이 와도 음수가 나오면 안 된다
-            NuanceResponseDTO result = validate(new MetricsDTO(30, 20, 20), PLAIN, "INTERNAL", false);
+            NuanceResponseDTO result = validate(new MetricsDTO(30, 20, 20), PLAIN, RelationshipType.INTERNAL, false);
 
             assertThat(result.metrics().politeness()).isGreaterThanOrEqualTo(0);
             assertThat(result.metrics().etiquette()).isGreaterThanOrEqualTo(0);
@@ -110,7 +111,7 @@ class AnalysisValidatorScoringTest {
         @DisplayName("検討 하나면 사내에서는 주의다")
         void flagsKentouAsCaution() {
             // 検討 0.5 × INTERNAL 1.0 = 0.5 → CAUTION(0.3 이상)
-            NuanceResponseDTO result = validateRisk("社内で検討させていただきます。", "INTERNAL", "SAFE");
+            NuanceResponseDTO result = validateRisk("社内で検討させていただきます。", RelationshipType.INTERNAL, "SAFE");
 
             assertThat(result.riskAnalysis().riskLevel()).isEqualTo("CAUTION");
         }
@@ -119,7 +120,7 @@ class AnalysisValidatorScoringTest {
         @DisplayName("難しい 는 사내에서도 위험이다")
         void flagsMuzukashiiAsDanger() {
             // 難しい 0.8 × 1.0 = 0.8 → DANGER(0.7 이상)
-            NuanceResponseDTO result = validateRisk("それは難しいですね。", "INTERNAL", "SAFE");
+            NuanceResponseDTO result = validateRisk("それは難しいですね。", RelationshipType.INTERNAL, "SAFE");
 
             assertThat(result.riskAnalysis().riskLevel()).isEqualTo("DANGER");
         }
@@ -128,7 +129,7 @@ class AnalysisValidatorScoringTest {
         @DisplayName("確認 은 정중한 표현에도 흔해서 단독으로는 안전하다")
         void doesNotFlagKakuninAlone() {
             // 確認 0.2 × EXTERNAL 1.2 = 0.24 → 아직 SAFE
-            NuanceResponseDTO result = validateRisk("ご確認をお願いします。", "EXTERNAL", "SAFE");
+            NuanceResponseDTO result = validateRisk("ご確認をお願いします。", RelationshipType.EXTERNAL, "SAFE");
 
             assertThat(result.riskAnalysis().riskLevel()).isEqualTo("SAFE");
         }
@@ -137,7 +138,7 @@ class AnalysisValidatorScoringTest {
         @DisplayName("같은 確認 도 면접에서는 주의로 올라간다")
         void escalatesKakuninAtInterview() {
             // 確認 0.2 × INTERVIEW 1.5 = 0.3 → CAUTION 경계에 닿는다
-            NuanceResponseDTO result = validateRisk("ご確認をお願いします。", "INTERVIEW", "SAFE");
+            NuanceResponseDTO result = validateRisk("ご確認をお願いします。", RelationshipType.INTERVIEW, "SAFE");
 
             assertThat(result.riskAnalysis().riskLevel()).isEqualTo("CAUTION");
         }
@@ -146,7 +147,7 @@ class AnalysisValidatorScoringTest {
         @DisplayName("관계가 null 이면 사내로 본다")
         void treatsMissingRelationshipAsInternal() {
             NuanceResponseDTO withNull = validateRisk("ご確認をお願いします。", null, "SAFE");
-            NuanceResponseDTO asInternal = validateRisk("ご確認をお願いします。", "INTERNAL", "SAFE");
+            NuanceResponseDTO asInternal = validateRisk("ご確認をお願いします。", RelationshipType.INTERNAL, "SAFE");
 
             assertThat(withNull.riskAnalysis().riskLevel()).isEqualTo(asInternal.riskAnalysis().riskLevel());
         }
@@ -155,7 +156,7 @@ class AnalysisValidatorScoringTest {
         @DisplayName("규칙이 못 잡아도 모델이 위험하다고 하면 위험이다")
         void keepsTheModelsVerdictWhenRulesFindNothing() {
             // 사전에 없는 완곡 거절은 규칙이 놓친다. 예전에는 이 경우 SAFE 로 덮였다.
-            NuanceResponseDTO result = validateRisk(PLAIN, "INTERNAL", "DANGER");
+            NuanceResponseDTO result = validateRisk(PLAIN, RelationshipType.INTERNAL, "DANGER");
 
             assertThat(result.riskAnalysis().riskLevel()).isEqualTo("DANGER");
         }
@@ -163,7 +164,7 @@ class AnalysisValidatorScoringTest {
         @Test
         @DisplayName("모델이 안전하다고 해도 규칙이 위험하면 위험이다")
         void keepsTheRuleVerdictWhenTheModelUnderrates() {
-            NuanceResponseDTO result = validateRisk("それは難しいですね。", "INTERNAL", "SAFE");
+            NuanceResponseDTO result = validateRisk("それは難しいですね。", RelationshipType.INTERNAL, "SAFE");
 
             assertThat(result.riskAnalysis().riskLevel()).isEqualTo("DANGER");
         }
@@ -171,14 +172,14 @@ class AnalysisValidatorScoringTest {
         @Test
         @DisplayName("모델 등급이 null 이거나 모르는 값이면 안전으로 본다")
         void fallsBackToSafeForUnusableModelVerdicts() {
-            assertThat(validateRisk(PLAIN, "INTERNAL", null).riskAnalysis().riskLevel()).isEqualTo("SAFE");
-            assertThat(validateRisk(PLAIN, "INTERNAL", "???").riskAnalysis().riskLevel()).isEqualTo("SAFE");
+            assertThat(validateRisk(PLAIN, RelationshipType.INTERNAL, null).riskAnalysis().riskLevel()).isEqualTo("SAFE");
+            assertThat(validateRisk(PLAIN, RelationshipType.INTERNAL, "???").riskAnalysis().riskLevel()).isEqualTo("SAFE");
         }
 
         @Test
         @DisplayName("모델 등급의 대소문자는 가리지 않는다")
         void acceptsLowercaseModelVerdicts() {
-            NuanceResponseDTO result = validateRisk(PLAIN, "INTERNAL", "danger");
+            NuanceResponseDTO result = validateRisk(PLAIN, RelationshipType.INTERNAL, "danger");
 
             assertThat(result.riskAnalysis().riskLevel()).isEqualTo("DANGER");
         }
@@ -190,7 +191,7 @@ class AnalysisValidatorScoringTest {
                     metrics(40, 20, 30), "CAUTION", List.of("모델이 본 신호"), "EMAIL", 90);
 
             NuanceResponseDTO result =
-                    validator.validate(aiResponse, "社内で検討させていただきます。", "INTERNAL", true);
+                    validator.validate(aiResponse, "社内で検討させていただきます。", RelationshipType.INTERNAL, true);
 
             assertThat(result.riskAnalysis().redFlags())
                     .contains("모델이 본 신호")
@@ -203,7 +204,7 @@ class AnalysisValidatorScoringTest {
             NuanceResponseDTO aiResponse = response(metrics(40, 20, 30), "SAFE", null, "EMAIL", 90);
 
             NuanceResponseDTO result =
-                    validator.validate(aiResponse, "それは難しいですね。", "INTERNAL", true);
+                    validator.validate(aiResponse, "それは難しいですね。", RelationshipType.INTERNAL, true);
 
             assertThat(result.riskAnalysis().redFlags()).isNotEmpty();
         }
@@ -218,7 +219,7 @@ class AnalysisValidatorScoringTest {
         void warnsWhenAnInterviewScoresBelowNinety() {
             NuanceResponseDTO aiResponse = response(metrics(30, 20, 20), "SAFE", List.of(), "INTERVIEW", 70);
 
-            NuanceResponseDTO result = validator.validate(aiResponse, PLAIN, "INTERVIEW", true);
+            NuanceResponseDTO result = validator.validate(aiResponse, PLAIN, RelationshipType.INTERVIEW, true);
 
             assertThat(result.evaluation().summary()).startsWith("[주의: 면접 상황]");
         }
@@ -228,7 +229,7 @@ class AnalysisValidatorScoringTest {
         void praisesAdequateInternalChat() {
             NuanceResponseDTO aiResponse = response(metrics(40, 20, 30), "SAFE", List.of(), "INTERNAL_CHAT", 90);
 
-            NuanceResponseDTO result = validator.validate(aiResponse, PLAIN, "INTERNAL", true);
+            NuanceResponseDTO result = validator.validate(aiResponse, PLAIN, RelationshipType.INTERNAL, true);
 
             assertThat(result.evaluation().summary()).startsWith("[우수: 사내 채팅]");
         }
@@ -238,7 +239,7 @@ class AnalysisValidatorScoringTest {
         void leavesOtherCategoriesUntouched() {
             NuanceResponseDTO aiResponse = response(metrics(40, 20, 30), "SAFE", List.of(), "EMAIL", 90);
 
-            NuanceResponseDTO result = validator.validate(aiResponse, PLAIN, "INTERNAL", true);
+            NuanceResponseDTO result = validator.validate(aiResponse, PLAIN, RelationshipType.INTERNAL, true);
 
             assertThat(result.evaluation().summary()).isEqualTo(SUMMARY);
         }
@@ -248,13 +249,13 @@ class AnalysisValidatorScoringTest {
 
     private static final String SUMMARY = "정중한 표현입니다.";
 
-    private NuanceResponseDTO validate(MetricsDTO metrics, String input, String relationship, boolean hasPoliteEnding) {
+    private NuanceResponseDTO validate(MetricsDTO metrics, String input, RelationshipType relationship, boolean hasPoliteEnding) {
         return validator.validate(
                 response(metrics, "SAFE", List.of(), "EMAIL", 90), input, relationship, hasPoliteEnding);
     }
 
     /** 리스크만 보는 경우 지표는 감점이 일어나지 않는 값으로 고정한다. */
-    private NuanceResponseDTO validateRisk(String input, String relationship, String modelRiskLevel) {
+    private NuanceResponseDTO validateRisk(String input, RelationshipType relationship, String modelRiskLevel) {
         return validator.validate(
                 response(metrics(20, 10, 10), modelRiskLevel, List.of(), "EMAIL", 40), input, relationship, true);
     }

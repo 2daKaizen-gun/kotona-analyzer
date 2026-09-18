@@ -57,7 +57,30 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    // 'live' 는 진짜 Gemini 를 부른다. 매 푸시마다 쿼터를 쓰지 않도록 기본 테스트에서는 뺀다.
+    useJUnitPlatform {
+        excludeTags 'live'
+    }
+}
+
+/**
+ * 실제 Gemini 를 부르는 테스트만 돌린다. GEMINI_API_KEY 가 필요하고, 호출 한 번의 쿼터를 쓴다.
+ * SDK 나 모델 설정을 건드린 뒤에 손으로 돌리는 용도다 — CI 에는 넣지 않는다.
+ */
+tasks.register('liveTest', Test) {
+    group = 'verification'
+    description = '실제 Gemini API 를 호출하는 테스트 (GEMINI_API_KEY 필요)'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'live'
+    }
+    // 실제 호출이므로 결과를 캐시에서 꺼내 오면 의미가 없다.
+    outputs.upToDateWhen { false }
+    testLogging {
+        events 'passed', 'failed'
+        showStandardStreams = true
+    }
 }
 
 tasks.named('bootJar') {

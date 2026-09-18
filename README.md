@@ -78,7 +78,7 @@ docker compose up -d --build
 ```
 - API base: `http://localhost:8081`
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
-- Analyze (POST): `POST /analyze` with body `{ "text": "...", "relationshipType": "EMAIL" }` and header `X-API-KEY: <API_KEY>` when configured.
+- Analyze (POST): `POST /analyze` with body `{ "text": "...", "relationshipType": "EXTERNAL" }` and header `X-API-KEY: <API_KEY>` when configured. `relationshipType` is one of `INTERNAL` / `EXTERNAL` / `INTERVIEW`; anything else is refused with the allowed list.
 
 > **API route note**: KOTONA talks to Gemini through the **AI Studio** endpoint (a plain API key), not Vertex AI.
 > That is what removes the service-account JSON, the GCP project, the billing account, and the recurring
@@ -120,9 +120,11 @@ writes. Dictionary reads, health and Swagger stay open. With `API_KEY` unset the
 warning and lets everything through, which is what makes local development frictionless — and what
 makes setting it mandatory before exposing the service.
 
-**Errors** are `{"error": "..."}` with a meaningful status: 400 invalid input, 404 unknown id,
-409 duplicate phrase, 429 rate limited (20 requests/minute/IP on `/analyze`) or model quota
-exhausted, 502 anything else from the model. Upstream response bodies are logged, never returned.
+**Errors** are `{"error": "..."}` with a meaningful status: 400 invalid input (including a
+relationship or situation outside its enum), 404 unknown id, 409 duplicate phrase, 429 rate
+limited (20 requests/minute/IP on `/analyze`) or model quota exhausted, 502 anything else from
+the model. Upstream response bodies are logged, never returned — and so is the message of any
+error we did not classify, since that text belongs to a JDBC driver or the JDK, not to us.
 
 ## 🗄 Schema
 
@@ -226,7 +228,9 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 159 backend tests, plus 84 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web). The scoring rules, the error-to-status contract, the schema sent to the model, the rate limiter and the CORS allow-list are all pinned — including what must *not* get through: upstream bodies and SQL constraint names that a client should never see, and origins that only resemble an allowed one. The browser tests run the deployed demo build end to end in CI
+- **Test Coverage**: 163 backend tests, plus 107 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web). The scoring rules, the error-to-status contract, the schema sent to the model, the rate limiter and the CORS allow-list are all pinned — including what must *not* get through: upstream bodies, SQL constraint names and the message of any error we did not classify, origins that only resemble an allowed one, and a relationship the analyzer does not know (it used to score as `INTERNAL` and reach the prompt verbatim). The browser tests run the deployed demo build end to end in CI
+
+- **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 
 - **Portability**: No single-cloud lock-in — runs anywhere Docker runs, enabling zero-downtime migration off the retired EC2 free tier
 

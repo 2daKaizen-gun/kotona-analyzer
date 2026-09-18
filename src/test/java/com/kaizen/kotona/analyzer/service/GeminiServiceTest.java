@@ -6,6 +6,7 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.dto.RelationshipType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -84,7 +85,7 @@ class GeminiServiceTest {
         @Test
         @DisplayName("일본어가 없는 입력은 모델을 부르기 전에 막는다")
         void refusesInputWithoutJapaneseBeforeSpendingACall() {
-            assertThatThrownBy(() -> service.analyzeJapaneseNuance("hello world", "INTERNAL"))
+            assertThatThrownBy(() -> service.analyzeJapaneseNuance("hello world", RelationshipType.INTERNAL))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("올바른 일본어");
 
@@ -95,7 +96,7 @@ class GeminiServiceTest {
         @DisplayName("빈 입력과 공백도 마찬가지다")
         void refusesEmptyInput() {
             for (String blank : new String[] {"", "   ", null}) {
-                assertThatThrownBy(() -> service.analyzeJapaneseNuance(blank, "INTERNAL"))
+                assertThatThrownBy(() -> service.analyzeJapaneseNuance(blank, RelationshipType.INTERNAL))
                         .isInstanceOf(IllegalArgumentException.class);
             }
 
@@ -113,7 +114,7 @@ class GeminiServiceTest {
             // 반각 가타카나가 그대로 가면 모델과 형태소 분석이 다른 문장을 보게 된다
             givenModelAnswers();
 
-            service.analyzeJapaneseNuance("  ｼｽﾃﾑの確認をお願いします  ", "INTERNAL");
+            service.analyzeJapaneseNuance("  ｼｽﾃﾑの確認をお願いします  ", RelationshipType.INTERNAL);
 
             assertThat(capturePrompt()).contains("システム").doesNotContain("ｼｽﾃﾑ");
         }
@@ -124,9 +125,9 @@ class GeminiServiceTest {
             // 안 보내면 모델은 늘 사내 기준으로 판단한다
             givenModelAnswers();
 
-            service.analyzeJapaneseNuance(VALID_INPUT, "INTERVIEW");
+            service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERVIEW);
 
-            assertThat(capturePrompt()).contains("INTERVIEW");
+            assertThat(capturePrompt()).contains(RelationshipType.INTERVIEW.name());
         }
 
         @Test
@@ -135,7 +136,7 @@ class GeminiServiceTest {
             // 스키마가 빠지면 모델이 임의의 모양으로 답하고 역직렬화가 깨진다
             givenModelAnswers();
 
-            service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL");
+            service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL);
 
             GenerateContentConfig config = captureConfig();
             assertThat(config.responseMimeType()).contains("application/json");
@@ -147,11 +148,11 @@ class GeminiServiceTest {
         void onlySendsThinkingWhenConfigured() {
             // 구세대 모델에 thinking 을 보내면 400 이다
             givenModelAnswers();
-            service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL");
+            service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL);
             assertThat(captureConfig().thinkingConfig()).isEmpty();
 
             ReflectionTestUtils.setField(service, "thinkingLevel", "high");
-            service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL");
+            service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL);
             assertThat(captureConfig().thinkingConfig()).isPresent();
         }
     }
@@ -165,10 +166,10 @@ class GeminiServiceTest {
         void alwaysRunsTheAnswerThroughTheValidator() {
             givenModelAnswers();
             NuanceResponseDTO validated = validatedResult();
-            given(analysisValidator.validate(any(), anyString(), anyString(), anyBoolean()))
+            given(analysisValidator.validate(any(), anyString(), any(), anyBoolean()))
                     .willReturn(validated);
 
-            NuanceResponseDTO result = service.analyzeJapaneseNuance(VALID_INPUT, "EXTERNAL");
+            NuanceResponseDTO result = service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.EXTERNAL);
 
             assertThat(result).isSameAs(validated);
         }
@@ -180,9 +181,9 @@ class GeminiServiceTest {
             givenModelAnswers();
             given(tokenService.hasPoliteEnding(anyString())).willReturn(true);
 
-            service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL");
+            service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL);
 
-            verify(analysisValidator).validate(any(), anyString(), anyString(), eq(true));
+            verify(analysisValidator).validate(any(), anyString(), any(), eq(true));
         }
 
         @Test
@@ -191,10 +192,10 @@ class GeminiServiceTest {
             // 원본을 저장하면 이력에서 펼쳤을 때 화면에 보였던 것과 다른 값이 나온다
             givenModelAnswers();
             NuanceResponseDTO validated = validatedResult();
-            given(analysisValidator.validate(any(), anyString(), anyString(), anyBoolean()))
+            given(analysisValidator.validate(any(), anyString(), any(), anyBoolean()))
                     .willReturn(validated);
 
-            service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL");
+            service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL);
 
             verify(historyService).saveHistory(anyString(), same(validated));
         }
@@ -204,7 +205,7 @@ class GeminiServiceTest {
         void doesNotPersistAnEmptyAnswer() {
             given(modelClient.generate(anyString(), anyString(), any())).willReturn("   ");
 
-            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL"))
+            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
                     .isInstanceOf(RuntimeException.class);
 
             verify(historyService, never()).saveHistory(anyString(), any());
@@ -215,7 +216,7 @@ class GeminiServiceTest {
         void hidesParsingFailuresFromTheClient() {
             given(modelClient.generate(anyString(), anyString(), any())).willReturn("이건 JSON 이 아니다");
 
-            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL"))
+            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("잠시 후 다시 시도")
                     // Jackson 의 메시지에는 파서 위치와 클래스 이름이 담긴다
@@ -237,7 +238,7 @@ class GeminiServiceTest {
             given(modelClient.generate(anyString(), anyString(), any()))
                     .willThrow(new ClientException(429, "RESOURCE_EXHAUSTED", "quota"));
 
-            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL"))
+            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
                     .isInstanceOf(ClientException.class);
         }
 
@@ -245,12 +246,12 @@ class GeminiServiceTest {
         @DisplayName("저장이 실패해도 내부 메시지를 내보이지 않는다")
         void hidesPersistenceFailures() {
             givenModelAnswers();
-            given(analysisValidator.validate(any(), anyString(), anyString(), anyBoolean()))
+            given(analysisValidator.validate(any(), anyString(), any(), anyBoolean()))
                     .willReturn(validatedResult());
             willThrow(new RuntimeException("Duplicate entry for key 'PRIMARY'"))
                     .given(historyService).saveHistory(anyString(), any());
 
-            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, "INTERNAL"))
+            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
                     .hasMessageNotContaining("Duplicate entry")
                     .hasMessageNotContaining("PRIMARY");
         }

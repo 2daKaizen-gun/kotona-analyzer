@@ -206,11 +206,31 @@ class GlobalExceptionHandlerTest {
         @Test
         @DisplayName("분류되지 않은 오류는 500 이다")
         void mapsUnclassifiedErrorsToServerError() {
-            ResponseEntity<?> response =
-                    handler.handleRuntimeException(new RuntimeException("분석 중 오류가 발생했습니다."));
+            ResponseEntity<?> response = handler.handleRuntimeException(new RuntimeException("boom"));
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-            assertThat(errorOf(response)).isEqualTo("분석 중 오류가 발생했습니다.");
+            assertThat(errorOf(response)).isNotBlank();
+        }
+
+        @Test
+        @DisplayName("분류되지 않은 오류의 메시지는 내보내지 않는다")
+        void hidesTheMessageOfAnUnclassifiedError() {
+            // 여기까지 오는 예외는 우리가 문구를 써 둔 적이 없는 예외다. 그 메시지는 내부 사정을
+            // 담는다 — 아래는 JDBC 드라이버와 JDK 가 실제로 만드는 모양이다. 앞선 핸들러들이
+            // DB·모델 메시지를 감추는 것과 같은 이유로 이것도 나가면 안 된다.
+            String[] internal = {
+                    "could not execute statement [Duplicate entry 'x' for key 'business_phrase.UK_phrase']",
+                    "Cannot invoke \"com.kaizen.kotona.analyzer.entity.BusinessPhrase.getPhrase()\" "
+                            + "because \"phrase\" is null",
+                    "Access denied for user 'kotona'@'localhost'",
+            };
+
+            for (String message : internal) {
+                String body = errorOf(handler.handleRuntimeException(new RuntimeException(message)));
+
+                assertThat(body).doesNotContain("Duplicate entry", "business_phrase", "getPhrase",
+                        "Access denied", "kotona'@'localhost");
+            }
         }
 
         @Test
@@ -219,7 +239,7 @@ class GlobalExceptionHandlerTest {
             // getMessage() 가 null 인 예외는 흔하다. 그대로 두면 본문이 {"error": null} 이 된다.
             ResponseEntity<?> response = handler.handleRuntimeException(new RuntimeException());
 
-            assertThat(errorOf(response)).isEqualTo("알 수 없는 오류가 발생했습니다.");
+            assertThat(errorOf(response)).isNotBlank().isNotEqualTo("null");
         }
     }
 

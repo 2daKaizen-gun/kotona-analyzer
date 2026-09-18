@@ -7,6 +7,7 @@ import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.entity.AnalysisHistory;
 import com.kaizen.kotona.analyzer.exception.HistoryNotFoundException;
+import com.kaizen.kotona.analyzer.exception.AnalysisFailedException;
 import com.kaizen.kotona.analyzer.repository.AnalysisHistoryRepository;
 import com.kaizen.kotona.analyzer.utils.Paging;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class AnalysisHistoryService {
 
             repository.save(history);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("데이터 저장 중 직렬화 오류가 발생했습니다.", e);
+            throw new AnalysisFailedException("데이터 저장 중 직렬화 오류가 발생했습니다.", e);
         }
     }
 

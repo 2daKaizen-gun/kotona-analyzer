@@ -109,10 +109,27 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", "AI 분석 서비스에 일시적인 문제가 발생했습니다. 서버 로그를 확인하세요."));
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<?> handleRuntimeException(RuntimeException e) {
+    /** 분석 실패 → 500. 문구를 우리가 쓴 실패이므로 그대로 내보낸다. */
+    @ExceptionHandler(AnalysisFailedException.class)
+    public ResponseEntity<?> handleAnalysisFailed(AnalysisFailedException e) {
+        log.error("분석 실패", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", messageOf(e)));
+    }
+
+    /**
+     * 분류되지 않은 오류 → 500.
+     *
+     * <p>메시지는 내보내지 않고 로그에만 남긴다. 여기까지 온 예외는 우리가 문구를 써 둔 적이
+     * 없는 예외이고, 그런 예외의 메시지는 내부 사정을 담는다 — JDBC 예외에는 실행하려던
+     * 문장이, NullPointerException 에는 어느 클래스의 어느 필드가 비었는지가 들어 있다.
+     * 위의 핸들러들이 공들여 감춘 것을 마지막에 되돌리지 않기 위함이다.
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<?> handleRuntimeException(RuntimeException e) {
+        log.error("분류되지 않은 오류", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
     }
 
     private ResponseEntity<?> badRequest(String message) {

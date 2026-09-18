@@ -9,6 +9,8 @@ import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.dto.RelationshipType;
+import com.kaizen.kotona.analyzer.exception.AnalysisFailedException;
 import com.kaizen.kotona.analyzer.utils.JapaneseTextNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -98,7 +100,7 @@ public class GeminiService {
               do not annotate it, and do not leave it in.
             """;
 
-    public NuanceResponseDTO analyzeJapaneseNuance(String userInput, String relationshipType) {
+    public NuanceResponseDTO analyzeJapaneseNuance(String userInput, RelationshipType relationshipType) {
         // 입력값 정규화
         String cleanInput = JapaneseTextNormalizer.normalize(userInput);
 
@@ -129,7 +131,7 @@ public class GeminiService {
             String rawText = modelClient.generate(
                     model, buildUserMessage(cleanInput, relationshipType), config);
             if (rawText == null || rawText.isBlank()) {
-                throw new RuntimeException("AI가 응답을 생성하지 못하였습니다.");
+                throw new AnalysisFailedException("AI가 응답을 생성하지 못하였습니다.");
             }
 
             NuanceResponseDTO aiResult = objectMapper.readValue(rawText, NuanceResponseDTO.class);
@@ -143,26 +145,26 @@ public class GeminiService {
 
             return validatedResult;
 
-        } catch (IllegalArgumentException | ApiException e) {
-            // 입력 검증 실패 → 400, Gemini API 오류 → 429/502.
+        } catch (IllegalArgumentException | ApiException | AnalysisFailedException e) {
+            // 입력 검증 실패 → 400, Gemini API 오류 → 429/502, 우리가 문구를 쓴 실패는 그 문구 그대로.
             // GlobalExceptionHandler 가 상태코드로 매핑하므로 여기서 감싸지 않는다.
             // (감싸면 업스트림 원문이 500 응답 본문으로 그대로 새어 나간다.)
             throw e;
         } catch (Exception e) {
             // 원인 메시지에는 내부 경로·벤더 응답이 섞일 수 있으므로 로그에만 남긴다.
             log.error("Gemini 분석 중 오류 발생", e);
-            throw new RuntimeException("분석 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+            throw new AnalysisFailedException("분석 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
         }
     }
 
     /** 사용자 입력과 관계 맥락만 담는다. 고정 지시는 시스템 지시가 담당한다. */
-    private String buildUserMessage(String cleanInput, String relationshipType) {
+    private String buildUserMessage(String cleanInput, RelationshipType relationshipType) {
         return """
                 # Relationship Context: %s
                 (INTERNAL = 사내, EXTERNAL = 사외/고객사, INTERVIEW = 면접)
 
                 # User Input
                 %s
-                """.formatted(relationshipType, cleanInput);
+                """.formatted(relationshipType.name(), cleanInput);
     }
 }

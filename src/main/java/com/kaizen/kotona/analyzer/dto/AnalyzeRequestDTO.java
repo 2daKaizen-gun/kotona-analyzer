@@ -9,11 +9,10 @@ import jakarta.validation.constraints.NotBlank;
 public record AnalyzeRequestDTO(
         @NotBlank(message = "분석할 text는 필수입니다.")
         String text,
-        String relationshipType
+        RelationshipType relationshipType
 ) {
-    public String relationshipTypeOrDefault() {
-        return (relationshipType == null || relationshipType.isBlank())
-                ? "INTERNAL"
-                : relationshipType;
+    /** 관계를 비워 두는 것은 허용한다 — 대부분의 요청이 사내다. 모르는 값은 그 전에 거절된다. */
+    public RelationshipType relationshipTypeOrDefault() {
+        return relationshipType == null ? RelationshipType.INTERNAL : relationshipType;
     }
 }
