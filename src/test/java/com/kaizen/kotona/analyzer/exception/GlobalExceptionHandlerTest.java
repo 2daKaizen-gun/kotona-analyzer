@@ -224,6 +224,28 @@ class GlobalExceptionHandlerTest {
     class Fallback {
 
         @Test
+        @DisplayName("우리가 문구를 쓴 분석 실패는 500 과 그 문구로 나간다")
+        void mapsAnalysisFailureToServerErrorWithOurWording() {
+            // 분류되지 않은 오류와 달리 이 문구는 사용자에게 보일 것을 전제로 썼다.
+            // 이 핸들러가 빠지면 "AI가 응답을 생성하지 못하였습니다" 대신 일반 문구가 나간다.
+            ResponseEntity<?> response = handler.handleAnalysisFailed(
+                    new AnalysisFailedException("AI가 응답을 생성하지 못하였습니다."));
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(errorOf(response)).isEqualTo("AI가 응답을 생성하지 못하였습니다.");
+        }
+
+        @Test
+        @DisplayName("분석 실패가 원인을 품고 있어도 원인의 메시지는 나가지 않는다")
+        void keepsTheCauseOfAnAnalysisFailureInside() {
+            ResponseEntity<?> response = handler.handleAnalysisFailed(new AnalysisFailedException(
+                    "데이터 저장 중 직렬화 오류가 발생했습니다.",
+                    new RuntimeException("Infinite recursion through reference chain: AnalysisHistory[\"id\"]")));
+
+            assertThat(errorOf(response)).doesNotContain("recursion", "AnalysisHistory");
+        }
+
+        @Test
         @DisplayName("분류되지 않은 오류는 500 이다")
         void mapsUnclassifiedErrorsToServerError() {
             ResponseEntity<?> response = handler.handleRuntimeException(new RuntimeException("boom"));
