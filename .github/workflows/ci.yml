@@ -58,6 +58,39 @@ jobs:
           path: build/reports/tests/test
           if-no-files-found: ignore
 
+      # 커버리지 숫자를 실행 요약에 띄운다. 리포트를 따로 열어 보지 않아도 매번 눈에 들어오고,
+      # 가장 많이 빈 클래스를 같이 적어 "합계는 괜찮은데 한 곳이 0%" 인 경우가 묻히지 않게 한다.
+      - name: Coverage Summary
+        if: always()
+        run: |
+          csv=build/reports/jacoco/test/jacocoTestReport.csv
+          [ -f "$csv" ] || exit 0
+          python3 - "$csv" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import csv, sys
+          rows = list(csv.DictReader(open(sys.argv[1])))
+          def pct(missed, covered):
+              total = missed + covered
+              return 100.0 * covered / total if total else 100.0
+          lm = sum(int(r["LINE_MISSED"]) for r in rows); lc = sum(int(r["LINE_COVERED"]) for r in rows)
+          bm = sum(int(r["BRANCH_MISSED"]) for r in rows); bc = sum(int(r["BRANCH_COVERED"]) for r in rows)
+          print("### Coverage")
+          print(f"Lines **{pct(lm, lc):.1f}%** ({lc}/{lm + lc}) · Branches **{pct(bm, bc):.1f}%** ({bc}/{bm + bc})")
+          worst = sorted((r for r in rows if int(r["LINE_MISSED"])), key=lambda r: -int(r["LINE_MISSED"]))[:5]
+          if worst:
+              print("\n| Most lines missed | Missed | Lines |\n|---|---|---|")
+              for r in worst:
+                  m = int(r["LINE_MISSED"]); c = int(r["LINE_COVERED"])
+                  print(f"| `{r['CLASS']}` | {m} | {m + c} |")
+          PY
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: build/reports/jacoco/test/html
+          if-no-files-found: ignore
+
 # 이전에는 이 워크플로가 수동 실행(workflow_dispatch) 시 AWS EC2 로 배포까지 했다.
 # 무료 티어가 끝나 인스턴스를 회수하면서 배포 잡을 걷어내고 CI 만 남겼다.
 # 배포 파이프라인의 형태는 git history 와 README 의 Troubleshooting 절에 남아 있다.
