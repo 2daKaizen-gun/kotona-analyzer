@@ -16,14 +16,14 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 
   2. Cultural Blind Spots: Missing the "本音" (true intent) behind a polite "建前" (public face) often leads to project delays or misunderstandings with Japanese clients.
 
-  3. Production Readiness: Many AI tools are restricted to local environments, making it difficult for developers to provide a reliable, always-on solution for professional teams.
+  3. Production Readiness: Many AI tools only ever run on the developer's own machine, with nothing to show they still work after the next change — or that a failure reaches the user as a clear message rather than a stack trace.
 
 - **The Solution**
   1. Nuance Deciphering Engine: An AI-powered logic that breaks down messages into politeness, indirectness, and etiquette scores.
 
   2. 本音/建前 Extraction: Automatically identifies the sender's true intention and suggests appropriate action items.
 
-  3. Enterprise-Grade Deployment: A robust CI/CD pipeline ensuring the analyzer is always accessible via a secure cloud environment.
+  3. Portable, Verified Deployment: One `docker compose up` runs the whole stack anywhere Docker runs, and CI builds and tests every push. The frontend is public in demo mode; the analyzer itself is started when needed rather than hosted, since a JVM app with MySQL and 79-second requests is a paid shape.
 
 - **Data Source**: Gemini via Google AI Studio (Google Gen AI Java SDK) with schema-enforced JSON output, Spring Boot Backend.
 
@@ -99,7 +99,7 @@ TypeScript types from that spec, so the response shapes below are never declared
 
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/analyze` | The paid call. Body `{ text, relationshipType }`; `relationshipType` is `INTERNAL` / `EXTERNAL` / `INTERVIEW` and defaults to `INTERNAL`. Takes 20–30s. |
+| `POST` | `/analyze` | The paid call. Body `{ text, relationshipType }`; `text` is at most 2,000 characters, `relationshipType` is `INTERNAL` / `EXTERNAL` / `INTERVIEW` and defaults to `INTERNAL`. Takes 20–30s. |
 | `GET` | `/api/history` | Page of summaries, newest first. `?page=0&size=20`; `size` is capped at 100. |
 | `GET` | `/api/history/{id}` | One record including the stored analysis. |
 | `DELETE` | `/api/history/{id}` | |
@@ -228,7 +228,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 163 backend tests, plus 107 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web). The scoring rules, the error-to-status contract, the schema sent to the model, the rate limiter and the CORS allow-list are all pinned — including what must *not* get through: upstream bodies, SQL constraint names and the message of any error we did not classify, origins that only resemble an allowed one, and a relationship the analyzer does not know (it used to score as `INTERNAL` and reach the prompt verbatim). The browser tests run the deployed demo build end to end in CI
+- **Test Coverage**: 167 backend tests, plus 116 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web). The scoring rules, the error-to-status contract, the schema sent to the model, the rate limiter and the CORS allow-list are all pinned — including what must *not* get through: upstream bodies, SQL constraint names and the message of any error we did not classify, origins that only resemble an allowed one, a relationship the analyzer does not know (it used to score as `INTERNAL` and reach the prompt verbatim), and text long enough to be paid for before the database refused it. The browser tests run the deployed demo build end to end in CI
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 
@@ -252,7 +252,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 ## 🧐 Final Project Retrospective
 
 ### 💡Engineering for Reliability
-This project was built with a core focus on 'Reliability'. By resolving critical pathing and secret injection issues during Phase 5, I proved that AI-driven services can be stable and secure in a cloud environment. The transition from local testing to a live AWS instance demonstrated my ability to handle real-world infrastructure challenges.
+This project was built with a core focus on 'Reliability'. By resolving critical pathing and secret injection issues during Phase 5, I proved that AI-driven services can be stable and secure in a cloud environment. The transition from local testing to a live AWS instance (since retired with the free tier — see Results) demonstrated my ability to handle real-world infrastructure challenges.
 
 ### 🚀 Technical Evolution: Beyond Coding
 Moving from simple API calls to a structured Spring Boot architecture, I mastered the nuances of JVM management and automated deployment. Dealing with the transition from Classpath to FileSystem resources taught me the importance of environment-aware development.
