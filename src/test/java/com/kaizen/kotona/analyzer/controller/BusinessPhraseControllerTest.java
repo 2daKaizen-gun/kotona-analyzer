@@ -109,6 +109,20 @@ class BusinessPhraseControllerTest {
     }
 
     @Test
+    @DisplayName("예문이 너무 길면 중복(409)이 아니라 길이(400)로 거절한다.")
+    void createRejectsATooLongUsageExample() throws Exception {
+        // 예전에는 DB 가 거절했고, 그 예외가 중복 위반과 같은 타입이라 "이미 등록된 표현" 으로 안내됐다.
+        String tooLong = "例".repeat(501);
+
+        mockMvc.perform(post("/api/phrases").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phrase\":\"念のため\",\"meaning\":\"만약을 위해\",\"usageExample\":\"" + tooLong + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("예문(usageExample)은 500자 이하여야 합니다."));
+
+        verify(service, never()).create(any());
+    }
+
+    @Test
     @DisplayName("situation 에 없는 값을 보내면 500 이 아니라 400 과 허용값 목록을 돌려준다.")
     void createRejectsUnknownSituation() throws Exception {
         mockMvc.perform(post("/api/phrases").contentType(MediaType.APPLICATION_JSON)

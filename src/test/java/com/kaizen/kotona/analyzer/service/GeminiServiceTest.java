@@ -6,6 +6,7 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.exception.InvalidInputException;
 import com.kaizen.kotona.analyzer.dto.RelationshipType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -86,7 +87,7 @@ class GeminiServiceTest {
         @DisplayName("일본어가 없는 입력은 모델을 부르기 전에 막는다")
         void refusesInputWithoutJapaneseBeforeSpendingACall() {
             assertThatThrownBy(() -> service.analyzeJapaneseNuance("hello world", RelationshipType.INTERNAL))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(InvalidInputException.class)
                     .hasMessageContaining("올바른 일본어");
 
             verifyNoInteractions(modelClient, historyService);
@@ -97,7 +98,7 @@ class GeminiServiceTest {
         void refusesEmptyInput() {
             for (String blank : new String[] {"", "   ", null}) {
                 assertThatThrownBy(() -> service.analyzeJapaneseNuance(blank, RelationshipType.INTERNAL))
-                        .isInstanceOf(IllegalArgumentException.class);
+                        .isInstanceOf(InvalidInputException.class);
             }
 
             verifyNoInteractions(modelClient);
