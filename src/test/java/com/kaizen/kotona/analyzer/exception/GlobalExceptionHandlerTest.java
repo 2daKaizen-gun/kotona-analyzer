@@ -64,13 +64,33 @@ class GlobalExceptionHandlerTest {
         }
 
         @Test
-        @DisplayName("분석할 수 없는 입력은 400 으로 내려간다")
-        void mapsIllegalArgumentToBadRequest() {
-            ResponseEntity<?> response = handler.handleIllegalArgument(
-                    new IllegalArgumentException("분석할 수 없는 문장입니다."));
+        @DisplayName("우리가 거절한 입력은 400 과 우리 문구로 내려간다")
+        void mapsOurOwnRefusalToBadRequestWithItsMessage() {
+            ResponseEntity<?> response = handler.handleInvalidInput(
+                    new InvalidInputException("분석할 수 없는 문장입니다."));
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(errorOf(response)).isEqualTo("분석할 수 없는 문장입니다.");
+        }
+
+        @Test
+        @DisplayName("라이브러리가 던진 인자 오류는 400 이지만 그 메시지는 내보내지 않는다")
+        void hidesTheMessageOfALibrarysIllegalArgument() {
+            // IllegalArgumentException 은 누구나 던진다. 아래는 Spring 과 JDK 가 실제로 쓰는 모양이다 —
+            // 사용자에게는 쓸모없고, 내부 구조를 드러낸다.
+            String[] internal = {
+                    "Page index must not be less than zero",
+                    "No enum constant com.kaizen.kotona.analyzer.entity.Situation.EMIAL",
+                    "Illegal pattern character 'x'",
+            };
+
+            for (String message : internal) {
+                ResponseEntity<?> response = handler.handleIllegalArgument(new IllegalArgumentException(message));
+
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                assertThat(errorOf(response)).doesNotContain("Page index", "com.kaizen", "No enum constant",
+                        "Illegal pattern");
+            }
         }
 
         @Test

@@ -32,11 +32,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("error", message));
     }
 
-    /** 잘못된 입력(예: 분석 불가한 문장) → 400 */
+    /** 우리가 거절한 입력(예: 분석 불가한 문장) → 400. 문구를 우리가 썼으므로 그대로 내보낸다. */
+    @ExceptionHandler(InvalidInputException.class)
+    public ResponseEntity<?> handleInvalidInput(InvalidInputException e) {
+        return badRequest(messageOf(e));
+    }
+
+    /**
+     * 라이브러리가 던진 인자 오류 → 400. 메시지는 로그에만 남긴다.
+     *
+     * <p>이 타입은 누구나 던진다. 메시지는 그 라이브러리가 자기 개발자에게 쓴 설명이라
+     * 클래스·필드 이름이 섞여 있고, 사용자에게는 쓸모가 없다. 우리가 문구를 쓴 거절은
+     * {@link InvalidInputException} 으로 따로 온다.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException e) {
-        return ResponseEntity.badRequest()
-                .body(Map.of("error", messageOf(e)));
+        log.warn("분류되지 않은 인자 오류", e);
+        return badRequest("잘못된 요청입니다. 입력값을 확인하세요.");
     }
 
     /**

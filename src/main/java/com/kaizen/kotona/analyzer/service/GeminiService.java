@@ -11,6 +11,7 @@ import com.google.genai.types.ThinkingConfig;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.dto.RelationshipType;
 import com.kaizen.kotona.analyzer.exception.AnalysisFailedException;
+import com.kaizen.kotona.analyzer.exception.InvalidInputException;
 import com.kaizen.kotona.analyzer.utils.JapaneseTextNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -106,7 +107,7 @@ public class GeminiService {
 
         // 유효하지 않은 입력이면 즉시 컷함(불필요한 API 호출 방지)
         if (!JapaneseTextNormalizer.isValid(cleanInput)) {
-            throw new IllegalArgumentException("분석할 수 없는 문장입니다. 올바른 일본어를 입력하세요.");
+            throw new InvalidInputException("분석할 수 없는 문장입니다. 올바른 일본어를 입력하세요.");
         }
 
         // 형태소 분석을 통한 정중어 사전 체크(Token Analysis)
