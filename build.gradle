@@ -37,8 +37,8 @@ dependencies {
     implementation 'com.google.genai:google-genai:1.72.0'
 
     // DTO record 트리 → JSON Schema 자동 생성 (Gemini responseSchema 용)
-    implementation 'com.github.victools:jsonschema-generator:4.38.0'
-    implementation 'com.github.victools:jsonschema-module-jackson:4.38.0'
+    implementation 'com.github.victools:jsonschema-generator:5.0.0'
+    implementation 'com.github.victools:jsonschema-module-jackson:5.0.0'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
