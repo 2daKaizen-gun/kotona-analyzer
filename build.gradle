@@ -31,7 +31,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
     // .env 파일을 읽기 위한 라이브러리
-    implementation 'io.github.cdimascio:dotenv-java:3.0.0'
+    implementation 'io.github.cdimascio:dotenv-java:3.2.0'
 
     // Google Gen AI SDK (AI Studio API 키 방식 — Vertex AI/서비스 계정 불필요)
     implementation 'com.google.genai:google-genai:1.72.0'
