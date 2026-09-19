@@ -2,6 +2,7 @@ package com.kaizen.kotona.analyzer.controller;
 
 import com.kaizen.kotona.analyzer.dto.AnalysisHistorySummaryDTO;
 import com.kaizen.kotona.analyzer.dto.PageResponse;
+import com.kaizen.kotona.analyzer.entity.AnalysisHistory;
 import com.kaizen.kotona.analyzer.exception.HistoryNotFoundException;
 import com.kaizen.kotona.analyzer.service.AnalysisHistoryService;
 import org.junit.jupiter.api.DisplayName;
@@ -59,6 +60,34 @@ class AnalysisHistoryControllerTest {
                 .andExpect(status().isOk());
 
         verify(historyService).getHistoryPage(2, 5);
+    }
+
+    @Test
+    @DisplayName("한 건을 펼치면 저장된 분석 결과까지 싣는다")
+    void detailCarriesTheStoredResult() throws Exception {
+        // 목록이 뺀 것을 상세가 채운다. 여기서도 빠지면 행을 펼쳐도 볼 것이 없다.
+        AnalysisHistory stored = AnalysisHistory.builder()
+                .userInput("ご確認ください。")
+                .totalScore(80)
+                .category("EMAIL")
+                .riskLevel("SAFE")
+                .fullAnalysisJson("{\"totalScore\":80}")
+                .build();
+        given(historyService.getHistory(8L)).willReturn(stored);
+
+        mockMvc.perform(get("/api/history/8"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userInput").value("ご確認ください。"))
+                .andExpect(jsonPath("$.fullAnalysisJson").value("{\"totalScore\":80}"));
+    }
+
+    @Test
+    @DisplayName("있는 id 는 지운다")
+    void deletesAnExistingRecord() throws Exception {
+        mockMvc.perform(delete("/api/history/8"))
+                .andExpect(status().is2xxSuccessful());
+
+        verify(historyService).deleteHistory(8L);
     }
 
     @Test

@@ -1,0 +1,33 @@
+# 의존성 업데이트를 주 1회 PR 로 받는다.
+#
+# 이 파일이 생기기 전에는 Spring Boot 가 패치 여섯 개를 뒤처질 때까지 아무도 몰랐다.
+# 패치 릴리스에는 보안 수정이 실린다. 알려 주는 쪽이 없으면 뒤처진다.
+#
+# 마이너·패치는 한 PR 로 묶는다. 하나씩 오면 매주 PR 이 여러 개 쌓여 결국 아무도 안 본다.
+# 메이저는 따로 온다 — 깨질 수 있는 변경은 섞지 않고 하나씩 본다.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Spring Boot 4 는 메이저 이전이라 #50 에서 계획한다. 매주 같은 PR 이 열리지 않게 한다.
+      - dependency-name: "org.springframework.boot*"   # 플러그인 마커 이름까지 잡는다
+        update-types: [version-update:semver-major]
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

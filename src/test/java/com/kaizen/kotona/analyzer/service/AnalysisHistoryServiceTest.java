@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AnalysisHistoryServiceTest {
@@ -118,6 +119,16 @@ class AnalysisHistoryServiceTest {
 
         assertThatThrownBy(() -> service.deleteHistory(99L))
                 .isInstanceOf(HistoryNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("있는 이력은 지운다")
+    void deletesAnExistingRecord() {
+        given(repository.existsById(8L)).willReturn(true);
+
+        service.deleteHistory(8L);
+
+        verify(repository).deleteById(8L);
     }
 
     @Test
