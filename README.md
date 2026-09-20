@@ -99,10 +99,10 @@ TypeScript types from that spec, so the response shapes below are never declared
 
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/analyze` | The paid call. Body `{ text, relationshipType }`; `text` is at most 2,000 characters, `relationshipType` is `INTERNAL` / `EXTERNAL` / `INTERVIEW` and defaults to `INTERNAL`. Takes 20–30s. |
+| `POST` | `/analyze` | The paid call. Body `{ text, relationshipType }`; `text` is at most 2,000 characters (and any body over 64 KB is refused unread), `relationshipType` is `INTERNAL` / `EXTERNAL` / `INTERVIEW` and defaults to `INTERNAL`. Takes 20–30s. |
 | `GET` | `/api/history` | Page of summaries, newest first. `?page=0&size=20`; `size` is capped at 100. |
 | `GET` | `/api/history/{id}` | One record including the stored analysis. |
-| `DELETE` | `/api/history/{id}` | |
+| `DELETE` | `/api/history/{id}` | 204 on success, like the dictionary. |
 | `GET` | `/api/phrases` | Dictionary, most polite first. |
 | `GET` | `/api/phrases/search?situation=` | Filter by situation. |
 | `POST` | `/api/phrases` | |
@@ -120,7 +120,7 @@ writes. Dictionary reads, health and Swagger stay open. With `API_KEY` unset the
 warning and lets everything through, which is what makes local development frictionless — and what
 makes setting it mandatory before exposing the service.
 
-**Errors** are `{"error": "..."}` with a meaningful status: 400 invalid input (including a
+**Errors** are `{"error": "..."}` with a meaningful status: 413 a body over 64 KB and 411 a body that does not declare its length — both refused before anything is read, since `@Size` only judges after the body has been parsed. 400 invalid input (including a
 relationship or situation outside its enum), 404 unknown id, 409 duplicate phrase, 429 rate
 limited (20 requests/minute/IP on `/analyze`) or model quota exhausted, 502 anything else from
 the model. Upstream response bodies are logged, never returned — and so is the message of any
@@ -228,7 +228,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 192 backend tests covering 96% of lines and 86% of branches, plus 116 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web). JaCoCo runs on every build: CI prints the totals and the least-covered classes in the run summary, uploads the line-level report, and fails below 90% of lines or 80% of branches. It earned its place on the first run — the total read 90%, while the save path behind every analysis was at 0% and the politeness check had never executed. That check, once tested against the real tokenizer, was marking 「ご確認ください」 down as impolite. The scoring rules, the error-to-status contract, the schema sent to the model, the rate limiter and the CORS allow-list are all pinned — including what must *not* get through: upstream bodies, SQL constraint names and the message of any error we did not classify, origins that only resemble an allowed one, a relationship the analyzer does not know (it used to score as `INTERNAL` and reach the prompt verbatim), and text long enough to be paid for before the database refused it. The browser tests run the deployed demo build end to end in CI
+- **Test Coverage**: 200 backend tests covering 96% of lines and 87% of branches, plus 138 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 
