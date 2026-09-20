@@ -35,6 +35,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
+      # 래퍼는 빌드가 어떤 Gradle 로 도는지를 정하고, 그 jar 는 저장소에 바이너리로 들어 있다.
+      # 여기서 확인하지 않으면 바뀌어도 눈에 띄지 않는다 — properties 파일에 병합 충돌 표시가
+      # 남아 있던 것을 아무도 몰랐던 것처럼. 자바가 그 줄들을 무시해 빌드는 멀쩡히 돌았다.
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
