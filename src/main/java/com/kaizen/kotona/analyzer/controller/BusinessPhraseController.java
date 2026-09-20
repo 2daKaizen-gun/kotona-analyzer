@@ -6,6 +6,8 @@ import com.kaizen.kotona.analyzer.entity.BusinessPhrase;
 import com.kaizen.kotona.analyzer.entity.Situation;
 import com.kaizen.kotona.analyzer.service.BusinessPhraseService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -55,6 +57,8 @@ public class BusinessPhraseController {
 
     @Operation(summary = "숙어 삭제",
             description = "없는 id 면 404. 삭제는 되돌릴 수 없다 — 기본 사전의 표현도 마찬가지다.")
+    // 반환 타입만 보면 springdoc 은 200 이라고 적는다. 실제로 나가는 코드를 밝힌다.
+    @ApiResponse(responseCode = "204", description = "삭제됨", content = @Content)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePhrase(@PathVariable Long id) {
         service.delete(id);

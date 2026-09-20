@@ -84,8 +84,9 @@ class AnalysisHistoryControllerTest {
     @Test
     @DisplayName("있는 id 는 지운다")
     void deletesAnExistingRecord() throws Exception {
+        // 사전 삭제와 같은 코드여야 한다
         mockMvc.perform(delete("/api/history/8"))
-                .andExpect(status().is2xxSuccessful());
+                .andExpect(status().isNoContent());
 
         verify(historyService).deleteHistory(8L);
     }

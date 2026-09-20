@@ -5,9 +5,12 @@ import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.entity.AnalysisHistory;
 import com.kaizen.kotona.analyzer.service.AnalysisHistoryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -33,9 +36,14 @@ public class AnalysisHistoryController {
         return historyService.getHistory(id);
     }
 
+    // 사전 삭제와 같은 204 로 답한다. 같은 동작에 다른 코드를 주면 호출하는 쪽이
+    // 엔드포인트마다 다르게 처리해야 하고, 그 차이에 이유가 없다.
     @Operation(summary = "분석 이력 삭제")
+    // 반환 타입만 보면 springdoc 은 200 이라고 적는다. 실제로 나가는 코드를 밝힌다.
+    @ApiResponse(responseCode = "204", description = "삭제됨", content = @Content)
     @DeleteMapping("/{id}")
-    public void deleteHistory(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteHistory(@PathVariable Long id) {
         historyService.deleteHistory(id);
+        return ResponseEntity.noContent().build();
     }
 }
