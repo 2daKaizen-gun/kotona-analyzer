@@ -31,7 +31,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
 
 # 커스텀 변수 (Gemini / Google AI Studio 설정)
 gemini:
