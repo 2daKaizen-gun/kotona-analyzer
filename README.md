@@ -82,6 +82,25 @@ docker compose up -d --build
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 - Analyze (POST): `POST /analyze` with body `{ "text": "...", "relationshipType": "EXTERNAL" }` and header `X-API-KEY: <API_KEY>` when configured. `relationshipType` is one of `INTERNAL` / `EXTERNAL` / `INTERVIEW`; anything else is refused with the allowed list.
 
+### Configuration
+
+Everything is an environment variable with a working default, so a clone runs without a config file. Only `GEMINI_API_KEY` has no usable default — the app refuses to start without it.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `GEMINI_API_KEY` | *(none)* | Required. https://aistudio.google.com/apikey |
+| `GEMINI_MODEL` | `gemini-3.6-flash` | Free-tier eligible. Do not set `gemini-2.5-flash`; new keys get a 404 |
+| `GEMINI_THINKING_LEVEL` | `high` | `low` is faster and mixes languages into the Japanese replies — see `PROMPT_DESIGN.md` |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `8000` | Three smart replies plus alternatives, in Japanese and Korean |
+| `GEMINI_TEMPERATURE` | `0.7` | |
+| `API_KEY` | *(none)* | When set, `X-API-KEY` is required on `/analyze`, history and dictionary writes. Unset, the filter logs a warning and lets everything through |
+| `DB_HOST` / `DB_PORT` | `127.0.0.1` / `3306` | `docker compose` sets these for the container network |
+| `DB_NAME` | `kotona` | Created on first connect if missing |
+| `DB_USERNAME` / `DB_PASSWORD` | `root` / `1234` | Local defaults; CI uses the same so the workflow needs no secrets |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Comma-separated. Patterns allowed, and pinned by `WebConfigCorsTest` |
+| `TRUST_FORWARDED_FOR` | `false` | Whether the rate limiter believes `X-Forwarded-For`. Only turn it on behind a proxy that overwrites the header, or an IP can be spoofed to bypass the limit |
+| `SPRINGDOC_ENABLED` | `true` | Serves `/v3/api-docs` and Swagger UI. The spec is what the frontend generates its types from |
+
 > **API route note**: KOTONA talks to Gemini through the **AI Studio** endpoint (a plain API key), not Vertex AI.
 > That is what removes the service-account JSON, the GCP project, the billing account, and the recurring
 > terms-of-service re-acceptance. `GEMINI_MODEL` defaults to `gemini-3.6-flash`, which is free-tier eligible.
