@@ -27,10 +27,22 @@ spring:
       # update 는 컬럼을 더하기만 하고 지우거나 좁히지 않아서, 지워진 필드의 컬럼이
       # 영원히 남고 이름을 바꾸면 컬럼이 둘로 늘어난다.
       ddl-auto: validate
+    # 응답을 쓰는 동안까지 영속성 컨텍스트와 DB 연결을 붙잡지 않는다. 엔티티에 연관이
+    # 없어서 지연 로딩이 일어날 곳도 없고, 켜 두면 Spring 이 기동할 때마다 경고한다.
+    open-in-view: false
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+
+# API 문서. springdoc 3 은 기본값으로 켜 두면 기동할 때마다 "운영에서는 끄라" 고 경고한다.
+# 이 서비스에서 Swagger 는 끄는 게 아니라 켜 두는 쪽이 맞다 — 호스팅하지 않고 로컬에서
+# 띄워 쓰며, 스펙(/v3/api-docs)은 프론트가 타입을 생성하는 원본이다. 그 의도를 적어 둔다.
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_ENABLED:true}
+  swagger-ui:
+    enabled: ${SPRINGDOC_ENABLED:true}
 
 # 커스텀 변수 (Gemini / Google AI Studio 설정)
 gemini:
