@@ -5,6 +5,8 @@
 
 An AI-driven Japanese business communication analyzer that deciphers "本音" (true intent) and "建前" (public face) to provide culturally nuanced response strategies and etiquette scores for non-native IT engineers.
 
+Spring Boot 4 · Java 21 · MySQL 8 · Gemini via Google AI Studio
+
 ## 🎯 Background & Motivation
 - **The Context**: "Engineering with Respect"
   - Japanese business etiquette, centered on consideration for others and indirect expressions, is a beautiful and delicate culture. However, for non-native engineers, failing to grasp these subtle nuances can lead to unintended misunderstandings during collaboration.
@@ -79,6 +81,25 @@ docker compose up -d --build
 - API base: `http://localhost:8081`
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 - Analyze (POST): `POST /analyze` with body `{ "text": "...", "relationshipType": "EXTERNAL" }` and header `X-API-KEY: <API_KEY>` when configured. `relationshipType` is one of `INTERNAL` / `EXTERNAL` / `INTERVIEW`; anything else is refused with the allowed list.
+
+### Configuration
+
+Everything is an environment variable with a working default, so a clone runs without a config file. Only `GEMINI_API_KEY` has no usable default — the app refuses to start without it.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `GEMINI_API_KEY` | *(none)* | Required. https://aistudio.google.com/apikey |
+| `GEMINI_MODEL` | `gemini-3.6-flash` | Free-tier eligible. Do not set `gemini-2.5-flash`; new keys get a 404 |
+| `GEMINI_THINKING_LEVEL` | `high` | `low` is faster and mixes languages into the Japanese replies — see `PROMPT_DESIGN.md` |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `8000` | Three smart replies plus alternatives, in Japanese and Korean |
+| `GEMINI_TEMPERATURE` | `0.7` | |
+| `API_KEY` | *(none)* | When set, `X-API-KEY` is required on `/analyze`, history and dictionary writes. Unset, the filter logs a warning and lets everything through |
+| `DB_HOST` / `DB_PORT` | `127.0.0.1` / `3306` | `docker compose` sets these for the container network |
+| `DB_NAME` | `kotona` | Created on first connect if missing |
+| `DB_USERNAME` / `DB_PASSWORD` | `root` / `1234` | Local defaults; CI uses the same so the workflow needs no secrets |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Comma-separated. Patterns allowed, and pinned by `WebConfigCorsTest` |
+| `TRUST_FORWARDED_FOR` | `false` | Whether the rate limiter believes `X-Forwarded-For`. Only turn it on behind a proxy that overwrites the header, or an IP can be spoofed to bypass the limit |
+| `SPRINGDOC_ENABLED` | `true` | Serves `/v3/api-docs` and Swagger UI. The spec is what the frontend generates its types from |
 
 > **API route note**: KOTONA talks to Gemini through the **AI Studio** endpoint (a plain API key), not Vertex AI.
 > That is what removes the service-account JSON, the GCP project, the billing account, and the recurring
@@ -198,6 +219,11 @@ remove or narrow one, so a deleted field left its column behind forever and a re
     - [x] Phase 5-3: Comprehensive Technical Documentation (README & Diagrams)
     - [x] Phase 5-4: Final Project Retrospective & Achievement Summary
 
+- **Phase 6**: Keeping It Alive
+    - [x] Phase 6-1: Coverage measured in both repositories, with a floor enforced in CI
+    - [x] Phase 6-2: Dependabot watching npm, Gradle and Actions, with alerts enabled
+    - [x] Phase 6-3: Migration to Spring Boot 4 (Jackson 3, victools 5, springdoc 3)
+
 ## 🔥 Troubleshooting & Lessons Learned
 **1. External Resource Path Resolution (Classpath vs FileSystem)** *(historical — resolved by removing the key file entirely)*
 - **Challenge**: The application failed to find the GCP service-account key on the EC2 server because it was looking inside the JAR file (Classpath).
@@ -222,6 +248,13 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 - **Resolution**: Switched to the **AI Studio** endpoint via the Google Gen AI Java SDK. Same model family, but authentication collapses to a single API key with no billing account required, and the free tier covers this workload. Along the way the response contract was hardened: the JSON Schema is now generated from the `NuanceResponseDTO` record tree and enforced by `responseSchema`, which deleted both the hand-written schema block in the prompt and the markdown-fence-stripping regex that used to guard against malformed JSON.
 
 - **Lesson**: When a dependency feels heavy, check whether you are on the wrong on-ramp before you replace the destination.
+
+**5. A Major Upgrade Is a Set, Not a Line**
+- **Challenge**: Spring Boot 4 looked like a version bump. It is four moves that only work together: Boot 4 auto-configures **Jackson 3**, whose packages are `tools.jackson.*`; victools 5 builds its schema on Jackson 3; and springdoc 2 fails to start on Boot 4 at all, looking up a `WebMvcProperties` class that moved. Changing any one of them alone leaves the context unable to start.
+
+- **Resolution**: Moved all four in one commit, then checked the two contracts that matter rather than trusting a green build. The JSON Schema sent to Gemini came out **byte-identical** to the one victools 4 produced, and the OpenAPI spec springdoc 3 publishes differs from springdoc 2's by **zero** keys — so the frontend's generated types needed no regeneration.
+
+- **Lesson**: The compiler finds the renames; it cannot tell you whether what you send to another system still looks the same. Diff the artefacts, not just the test results.
 
 ## 📈 Results
 - **Deployment**: Portable — one-command local run via `docker compose up` (app + MySQL); GitHub Actions builds and runs the test suite on every push. The EC2 deployment job was removed with the instance; the pipeline that ran it is in the git history

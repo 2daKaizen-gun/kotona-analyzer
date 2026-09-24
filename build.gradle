@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.springframework.boot' version '3.5.16'
+    id 'org.springframework.boot' version '4.1.1'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -37,24 +37,29 @@ dependencies {
     implementation 'com.google.genai:google-genai:1.72.0'
 
     // DTO record 트리 → JSON Schema 자동 생성 (Gemini responseSchema 용)
-    implementation 'com.github.victools:jsonschema-generator:4.38.0'
-    implementation 'com.github.victools:jsonschema-module-jackson:4.38.0'
+    implementation 'com.github.victools:jsonschema-generator:5.0.0'
+    implementation 'com.github.victools:jsonschema-module-jackson:5.0.0'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     // 스키마 변경을 버전으로 관리한다. flyway-mysql 은 MySQL 방언 모듈로, 없으면 기동 시 거부된다.
-    implementation 'org.flywaydb:flyway-core'
+    //
+    // Boot 4 는 자동 구성을 모듈로 쪼갰다. flyway-core 만 있으면 마이그레이션이 조용히 실행되지
+    // 않고, 기존 DB 에서는 테이블이 이미 있어 아무 일도 없는 것처럼 보인다. 빈 DB 에서만
+    // "missing table" 로 드러났다. 스타터가 자동 구성을 데려온다.
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
     runtimeOnly 'org.flywaydb:flyway-mysql'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // 일본어 형태소 분석기 Kuromoji (ipadic 사전 포함 버전)
     implementation 'com.atilika.kuromoji:kuromoji-ipadic:0.9.0'
 
     //Swagger UI & OpenAPI 3.0
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.9.1'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
 }
 
 tasks.named('test') {

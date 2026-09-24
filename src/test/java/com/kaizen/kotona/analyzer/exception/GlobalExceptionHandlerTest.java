@@ -1,7 +1,7 @@
 package com.kaizen.kotona.analyzer.exception;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.exc.InvalidFormatException;
 import com.google.genai.errors.ClientException;
 import com.google.genai.errors.ServerException;
 import com.kaizen.kotona.analyzer.entity.Situation;
@@ -109,7 +109,7 @@ class GlobalExceptionHandlerTest {
             // 이게 없으면 Jackson 내부 메시지가 그대로 500 으로 새어 나간다
             InvalidFormatException cause =
                     InvalidFormatException.from(null, "no enum", "EMIAL", Situation.class);
-            cause.prependPath(new JsonMappingException.Reference(Object.class, "situation"));
+            cause.prependPath(new JacksonException.Reference(Object.class, "situation"));
 
             ResponseEntity<?> response = handler.handleUnreadable(
                     new HttpMessageNotReadableException("bad enum", cause, emptyInput()));

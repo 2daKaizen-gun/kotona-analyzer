@@ -1,7 +1,7 @@
 package com.kaizen.kotona.analyzer.exception;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.exc.InvalidFormatException;
 import com.google.genai.errors.ApiException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -152,11 +152,11 @@ public class GlobalExceptionHandler {
         return Arrays.toString(enumType.getEnumConstants());
     }
 
-    private String fieldName(List<JsonMappingException.Reference> path) {
-        if (path.isEmpty() || path.get(path.size() - 1).getFieldName() == null) {
+    private String fieldName(List<JacksonException.Reference> path) {
+        if (path.isEmpty() || path.get(path.size() - 1).getPropertyName() == null) {
             return "값";
         }
-        return path.get(path.size() - 1).getFieldName();
+        return path.get(path.size() - 1).getPropertyName();
     }
 
     private String messageOf(Throwable e) {

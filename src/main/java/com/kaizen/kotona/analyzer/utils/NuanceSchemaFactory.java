@@ -1,8 +1,8 @@
 package com.kaizen.kotona.analyzer.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
@@ -50,8 +50,8 @@ public final class NuanceSchemaFactory {
 
         JsonNode properties = node.get("properties");
         if (properties instanceof ObjectNode props) {
-            List<String> names = new ArrayList<>();
-            props.fieldNames().forEachRemaining(names::add);
+            // Jackson 3 은 propertyNames() 로 이름이 바뀌었고, 반복자가 아니라 컬렉션을 준다.
+            List<String> names = new ArrayList<>(props.propertyNames());
 
             // 필드가 누락되면 DTO 에 null 이 박히므로 전부 필수로 지정한다.
             ArrayNode required = node.putArray("required");

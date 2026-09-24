@@ -1,7 +1,7 @@
 package com.kaizen.kotona.analyzer.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import org.junit.jupiter.api.BeforeAll;
@@ -79,8 +79,7 @@ class NuanceSchemaFactoryTest {
             if (properties == null) return;
 
             JsonNode required = node.value().get("required");
-            List<String> names = new ArrayList<>();
-            properties.fieldNames().forEachRemaining(names::add);
+            List<String> names = new ArrayList<>(properties.propertyNames());
 
             List<String> requiredNames = new ArrayList<>();
             if (required != null) required.forEach(entry -> requiredNames.add(entry.asText()));

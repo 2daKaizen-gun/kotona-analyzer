@@ -1,7 +1,7 @@
 package com.kaizen.kotona.analyzer.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.kaizen.kotona.analyzer.dto.AnalysisHistorySummaryDTO;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.dto.PageResponse;
@@ -37,7 +37,7 @@ public class AnalysisHistoryService {
                     .build();
 
             repository.save(history);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new AnalysisFailedException("데이터 저장 중 직렬화 오류가 발생했습니다.", e);
         }
     }
