@@ -44,7 +44,11 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     // 스키마 변경을 버전으로 관리한다. flyway-mysql 은 MySQL 방언 모듈로, 없으면 기동 시 거부된다.
-    implementation 'org.flywaydb:flyway-core'
+    //
+    // Boot 4 는 자동 구성을 모듈로 쪼갰다. flyway-core 만 있으면 마이그레이션이 조용히 실행되지
+    // 않고, 기존 DB 에서는 테이블이 이미 있어 아무 일도 없는 것처럼 보인다. 빈 DB 에서만
+    // "missing table" 로 드러났다. 스타터가 자동 구성을 데려온다.
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
     runtimeOnly 'org.flywaydb:flyway-mysql'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
