@@ -1,6 +1,6 @@
 package com.kaizen.kotona.analyzer.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.genai.errors.ClientException;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.Schema;

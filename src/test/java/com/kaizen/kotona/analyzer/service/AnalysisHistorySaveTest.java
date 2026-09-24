@@ -1,7 +1,7 @@
 package com.kaizen.kotona.analyzer.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.entity.AnalysisHistory;
 import com.kaizen.kotona.analyzer.exception.AnalysisFailedException;
@@ -86,7 +86,7 @@ class AnalysisHistorySaveTest {
     @DisplayName("직렬화에 실패하면 저장하지 않고, 원인 대신 우리 문구를 낸다")
     void refusesToSaveWhenSerialisationFails() throws Exception {
         ObjectMapper broken = mock(ObjectMapper.class);
-        given(broken.writeValueAsString(any())).willThrow(new JsonProcessingException("Infinite recursion (StackOverflowError) through reference chain") {});
+        given(broken.writeValueAsString(any())).willThrow(new JacksonException("Infinite recursion (StackOverflowError) through reference chain") {});
         AnalysisHistoryService withBrokenMapper = new AnalysisHistoryService(repository, broken);
 
         assertThatThrownBy(() -> withBrokenMapper.saveHistory("ご確認ください。", result()))

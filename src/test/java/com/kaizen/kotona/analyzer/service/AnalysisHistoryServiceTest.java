@@ -1,6 +1,6 @@
 package com.kaizen.kotona.analyzer.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.kaizen.kotona.analyzer.dto.AnalysisHistorySummaryDTO;
 import com.kaizen.kotona.analyzer.dto.PageResponse;
 import com.kaizen.kotona.analyzer.entity.AnalysisHistory;

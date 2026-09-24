@@ -1,6 +1,6 @@
 package com.kaizen.kotona.analyzer.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.genai.errors.ApiException;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.google.genai.types.Content;

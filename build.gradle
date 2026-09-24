@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.springframework.boot' version '3.5.16'
+    id 'org.springframework.boot' version '4.1.1'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -37,8 +37,8 @@ dependencies {
     implementation 'com.google.genai:google-genai:1.72.0'
 
     // DTO record 트리 → JSON Schema 자동 생성 (Gemini responseSchema 용)
-    implementation 'com.github.victools:jsonschema-generator:4.38.0'
-    implementation 'com.github.victools:jsonschema-module-jackson:4.38.0'
+    implementation 'com.github.victools:jsonschema-generator:5.0.0'
+    implementation 'com.github.victools:jsonschema-module-jackson:5.0.0'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -48,13 +48,14 @@ dependencies {
     runtimeOnly 'org.flywaydb:flyway-mysql'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // 일본어 형태소 분석기 Kuromoji (ipadic 사전 포함 버전)
     implementation 'com.atilika.kuromoji:kuromoji-ipadic:0.9.0'
 
     //Swagger UI & OpenAPI 3.0
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.9.1'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
 }
 
 tasks.named('test') {
