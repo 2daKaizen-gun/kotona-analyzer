@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.tuple;
  */
 class AnalysisValidatorSanitizeTest {
 
-    private final AnalysisValidator validator = new AnalysisValidator();
+    private final AnalysisValidator validator = new AnalysisValidator(new JapaneseTokenService());
 
     private static final String INPUT = "お手数ですが、ご確認いただけますでしょうか。";
 

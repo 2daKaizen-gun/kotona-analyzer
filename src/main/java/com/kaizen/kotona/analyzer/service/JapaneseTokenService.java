@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -38,6 +39,20 @@ public class JapaneseTokenService {
      */
     public boolean hasPoliteEnding(String text) {
         return tokenizer.tokenize(text).stream().anyMatch(JapaneseTokenService::isPolite);
+    }
+
+    /**
+     * 문장에 쓰인 낱말의 기본형 모음.
+     *
+     * <p>사전을 문자열 포함으로 맞추면 활용형에 걸려 넘어진다 — 사전에 「考えておく」 를
+     * 적어 두어도 실제 문장은 「考えておきます」 라 걸리지 않았다. 기본형으로 환원하면
+     * 「恐れ入りますが」 와 「恐れ入ります」 가 같은 낱말(恐れ入る)이 된다.
+     */
+    public Set<String> baseForms(String text) {
+        return tokenizer.tokenize(text).stream()
+                .map(Token::getBaseForm)
+                .filter(form -> form != null && !form.equals("*"))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private static boolean isPolite(Token token) {

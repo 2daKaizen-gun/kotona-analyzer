@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class AnalysisValidatorScoringTest {
 
-    private final AnalysisValidator validator = new AnalysisValidator();
+    private final AnalysisValidator validator = new AnalysisValidator(new JapaneseTokenService());
 
     /** 쿠션어·완곡어미·소프트리젝션 키워드가 하나도 없는 평범한 문장. */
     private static final String PLAIN = "明日会議があります。";
