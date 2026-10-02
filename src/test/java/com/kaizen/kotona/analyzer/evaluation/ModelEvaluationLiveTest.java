@@ -42,6 +42,44 @@ class ModelEvaluationLiveTest {
             """;
 
     @Test
+    @DisplayName("모델이 문장의 순서를 뒤집지 않는지 본다")
+    void respectsTheOrderingPairs() throws Exception {
+        // 지표에는 비교할 정답 점수가 없지만 순서에는 있다. 쌍마다 두 번 부르므로 비싸다 —
+        // -DevalLimit 으로 쌍 수를 줄일 수 있다.
+        String apiKey = System.getenv("GEMINI_API_KEY");
+        assertThat(apiKey).as("GEMINI_API_KEY 가 있어야 한다").isNotBlank();
+
+        List<EvaluationSet.OrderingPair> pairs = EvaluationSet.orderingPairs();
+        int limit = Integer.getInteger("evalLimit", pairs.size());
+        pairs = pairs.subList(0, Math.min(limit, pairs.size()));
+
+        Judge judge = new Judge(apiKey);
+        List<String> inverted = new ArrayList<>();
+        int compared = 0;
+
+        for (EvaluationSet.OrderingPair pair : pairs) {
+            Integer low = judge.axis(pair.lower(), pair.axis());
+            Integer high = judge.axis(pair.higher(), pair.axis());
+            if (low == null || high == null) {
+                System.out.printf("  %-18s 호출 실패로 건너뜀%n", pair.id());
+                continue;
+            }
+            compared++;
+            System.out.printf("  %-18s %-12s %2d → %2d%s%n", pair.id(), pair.axis(), low, high,
+                    high >= low ? "" : "   뒤집힘");
+            if (high < low) {
+                inverted.add("  %s (%s): 「%s」=%d 가 「%s」=%d 보다 높다%n      근거: %s"
+                        .formatted(pair.id(), pair.axis(), pair.lower(), low, pair.higher(), high, pair.basis()));
+            }
+        }
+
+        System.out.printf("%n=== 모델 순서 준수 ===%n비교한 쌍 %d 중 %d 쌍이 순서를 지켰다%n",
+                compared, compared - inverted.size());
+        inverted.forEach(System.out::println);
+        assertThat(compared).as("한 쌍도 비교하지 못했다 — 쿼터나 업스트림 상태를 확인할 것").isPositive();
+    }
+
+    @Test
     @DisplayName("모델의 리스크 판정을 라벨과 맞대어 본다")
     void reportsAgreementWithTheLabels() throws Exception {
         String apiKey = System.getenv("GEMINI_API_KEY");
@@ -91,7 +129,7 @@ class ModelEvaluationLiveTest {
                 agreed++;
             } else {
                 mismatches.add("  %-14s 라벨 %-7s 모델 %-7s  %s%n      근거: %s"
-                        .formatted(row.id(), row.risk(), got, row.text(), row.basis()));
+                        .formatted(row.id(), row.risk(), got, row.text(), row.riskBasis()));
             }
         }
 
@@ -104,5 +142,45 @@ class ModelEvaluationLiveTest {
 
         // 합격선은 두지 않는다. 다만 한 건도 묻지 못했다면 측정 자체가 없던 일이다.
         assertThat(asked).as("모델에 한 건도 묻지 못했다 — 쿼터나 업스트림 상태를 확인할 것").isPositive();
+    }
+
+    /** 한 문장을 모델에 물어 지표 하나를 꺼낸다. 호출이 실패하면 null 이다. */
+    private static final class Judge {
+        private final NuanceModelClient client;
+        private final GenerateContentConfig config;
+        private final String model = System.getenv().getOrDefault("GEMINI_MODEL", "gemini-3.6-flash");
+        private final ObjectMapper mapper = new ObjectMapper();
+
+        Judge(String apiKey) {
+            Schema schema = Schema.fromJson(NuanceSchemaFactory.build(NuanceResponseDTO.class).toString());
+            this.config = GenerateContentConfig.builder()
+                    .systemInstruction(Content.fromParts(Part.fromText(SYSTEM_INSTRUCTION)))
+                    .temperature(0.0f)
+                    .maxOutputTokens(8000)
+                    .responseMimeType("application/json")
+                    .responseSchema(schema)
+                    .build();
+            this.client = new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
+        }
+
+        Integer axis(String text, String axis) {
+            String prompt = """
+                    # Relationship Context: EXTERNAL
+
+                    # User Input
+                    %s
+                    """.formatted(text);
+            try {
+                NuanceResponseDTO parsed = mapper.readValue(client.generate(model, prompt, config), NuanceResponseDTO.class);
+                return switch (axis) {
+                    case "politeness" -> parsed.metrics().politeness();
+                    case "indirectness" -> parsed.metrics().indirectness();
+                    case "etiquette" -> parsed.metrics().etiquette();
+                    default -> throw new IllegalArgumentException("모르는 축: " + axis);
+                };
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
     }
 }

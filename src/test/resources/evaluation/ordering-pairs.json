@@ -1,0 +1,51 @@
+[
+  {
+    "id": "polite-ladder-01",
+    "axis": "politeness",
+    "lower": "よろしく",
+    "higher": "よろしくお願いします。",
+    "basis": "丁寧語「ます」の有無。敬語の指針(2007)の分類で後者だけが丁寧語を含む。"
+  },
+  {
+    "id": "polite-ladder-02",
+    "axis": "politeness",
+    "lower": "よろしくお願いします。",
+    "higher": "よろしくお願い申し上げます。",
+    "basis": "「申し上げる」は謙譲語Ⅰ。丁寧語のみの前者より敬語の段が一つ上がる。"
+  },
+  {
+    "id": "polite-ladder-03",
+    "axis": "politeness",
+    "lower": "確認して。",
+    "higher": "ご確認ください。",
+    "basis": "前者は命令形で敬語なし。後者は尊敬語「くださる」による依頼形。"
+  },
+  {
+    "id": "polite-ladder-04",
+    "axis": "politeness",
+    "lower": "ご確認ください。",
+    "higher": "ご確認いただけますでしょうか。",
+    "basis": "後者は謙譲語Ⅰ「いただく」に疑問形を重ね、相手に諾否の余地を残す。"
+  },
+  {
+    "id": "cushion-added-01",
+    "axis": "etiquette",
+    "lower": "ご確認いただけますでしょうか。",
+    "higher": "お手数ですが、ご確認いただけますでしょうか。",
+    "basis": "同じ依頼にクッション言葉を足しただけ。足して礼儀が下がることはない。"
+  },
+  {
+    "id": "cushion-added-02",
+    "axis": "etiquette",
+    "lower": "ご確認いただけますでしょうか。",
+    "higher": "恐れ入りますが、ご確認いただけますでしょうか。",
+    "basis": "同上。クッション言葉の種類が変わっても向きは同じ。"
+  },
+  {
+    "id": "indirect-added-01",
+    "axis": "indirectness",
+    "lower": "確認をお願いします。",
+    "higher": "ご確認いただけますでしょうか。",
+    "basis": "後者は断定を避けた疑問形で、相手に断る余地を残す。"
+  }
+]

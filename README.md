@@ -117,7 +117,17 @@ Everything is an environment variable with a working default, so a clone runs wi
 
 A number out of 100 looks like a measurement. This one is a model's judgement, adjusted by a layer of rules, and it is worth being precise about what stands behind each part.
 
-**The model's part has no ground truth.** Gemini is asked to rate politeness, indirectness and etiquette. Nothing verifies those ratings against an authority, because no such labelled corpus exists here. What exists is `src/test/resources/evaluation/business-sentences.json`: 24 Japanese business sentences, each labelled on three axes — polite form, cushion phrase, refusal signal — with the reason for the label written next to it. **Those labels are author-written and have not been reviewed by a native speaker.** They are a stated basis, not an authority.
+**The model's part has no ground truth.** Gemini is asked to rate politeness, indirectness and etiquette. Nothing verifies those ratings against an authority, because no such labelled corpus exists here. What exists is `src/test/resources/evaluation/business-sentences.json`: 24 Japanese business sentences, each labelled on three axes, each axis carrying its own basis.
+
+Those bases are not all the same kind of claim, and the file distinguishes them:
+
+| axis | what the label rests on |
+|---|---|
+| polite form | the categories in [文化庁「敬語の指針」(2007)](https://www.bunka.go.jp/seisaku/bunkashingikai/kokugo/hokoku/pdf/keigo_tosin.pdf) — 丁寧語 for です・ます, 謙譲語Ⅰ for 伺う・申し上げる, 謙譲語Ⅱ for いたす・おる, 尊敬語 for くださる・なさる. Decidable from a published standard |
+| cushion phrase | business convention. Manner references agree on the core set (お手数ですが・恐れ入りますが・差し支えなければ・申し訳ございませんが) but none is official |
+| refusal signal | business convention — 「検討します」 and 「難しい」 as indirect refusals. Same status: widely documented, no single authority |
+
+**No native speaker has reviewed any of it.** The first axis stands on a published standard; the other two stand on the author's reading of a convention. That difference matters more than a single disclaimer, which is why it is in the table.
 
 **The rule layer is measured against those labels on every push.** `RuleLayerEvaluationTest` scores the dictionaries and the morphological check:
 
@@ -130,6 +140,8 @@ A number out of 100 looks like a measurement. This one is a model's judgement, a
 
 Those numbers were 22/24 and 4/6 when the evaluation was first written. Matching raw strings missed 「恐れ入りますが」 and 「考えておきます」; matching Kuromoji base forms does not.
 
+**The three metrics have ordering constraints.** No source says 「ご確認ください」 is 35 out of 40, so there is nothing to compare an absolute score against. Ordering is another matter: 「よろしく」 cannot be more polite than 「よろしくお願い申し上げます」, and adding a cushion phrase to a request cannot lower its etiquette. `ordering-pairs.json` holds seven such pairs with the grammatical reason for each, and `RuleLayerOrderingTest` gives both sentences identical model scores so that any difference is the rules' doing. All seven hold; `evalTest` runs the same check against the model, at two calls per pair.
+
 **The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift: they have to reproduce the grades on all 24 labelled sentences, so changing one breaks the build.
 
 **The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` reports agreement on the risk grade and asserts no threshold, because there is no basis yet for deciding what percentage is good enough. Its first run found that the model read `riskLevel` as rudeness rather than refusal: 「よろしく」 came back DANGER. The prompt had asked for both readings, and now asks for one.
@@ -139,9 +151,10 @@ Those numbers were 22/24 and 4/6 when the evaluation was first written. Matching
 **Every rule adjustment is returned** in `scoreAdjustments` and shown in the UI: which metric, before, after, and why. A reader can see whether 73 came from the model or from a rule taking ten off.
 
 ### What is still unverified
-- No native speaker has reviewed the labels, so the agreement figures measure consistency with one author's reading of standard business usage, not correctness.
-- The three metrics have no labels at all. Only the risk grade is comparable, because it is one of three values; "politeness 35/40" has nothing to be compared against.
-- 24 sentences is small, and they were written to cover known cases rather than sampled from real correspondence.
+- **No native speaker has reviewed the labels.** The politeness axis is decidable from 文化庁's categories, so it needs a reader of Japanese grammar rather than a judgement call. The cushion and refusal axes rest on convention, and there a native speaker's reading is the thing that is missing.
+- **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
+- **24 sentences and 7 pairs, written to cover known cases.** They are not a sample of real correspondence, so agreement on them says nothing about the distribution of sentences a user actually types.
+- **The model-side numbers are barely measured.** Quota allowed three answered calls before the prompt fix and one after. The rule layer is measured on every push; the model is not.
 
 ## 📡 API
 
