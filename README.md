@@ -32,7 +32,7 @@ Spring Boot 4 · Java 21 · MySQL 8 · Gemini via Google AI Studio
 - **Key Features**
   1. 本音/建前 Analysis: Separates public face from true intent to prevent business communication risks.
 
-  2. Nuance Scoring: Quantifies Politeness, Indirectness, and Etiquette for objective evaluation.
+  2. Nuance Scoring: Breaks a message into politeness, indirectness and etiquette, and says which rule changed which number. It is a model's judgement with a rule layer over it, not a measurement — see [What the score is](#-what-the-score-is).
 
   3. Smart Response Generator: Provides 3 levels of response (Standard, Soft, Firm) based on cultural context.
 
@@ -112,6 +112,36 @@ Everything is an environment variable with a working default, so a clone runs wi
 > client correspondence.
 
 > Security: `/analyze` is protected by an **API Key filter** (`X-API-KEY`, enforced only when `API_KEY` is set) and a **per-IP rate limiter**. `GET`-based analysis was replaced by `POST` since the call mutates state (DB write) and invokes a paid AI API.
+
+## 🔍 What the score is
+
+A number out of 100 looks like a measurement. This one is a model's judgement, adjusted by a layer of rules, and it is worth being precise about what stands behind each part.
+
+**The model's part has no ground truth.** Gemini is asked to rate politeness, indirectness and etiquette. Nothing verifies those ratings against an authority, because no such labelled corpus exists here. What exists is `src/test/resources/evaluation/business-sentences.json`: 24 Japanese business sentences, each labelled on three axes — polite form, cushion phrase, refusal signal — with the reason for the label written next to it. **Those labels are author-written and have not been reviewed by a native speaker.** They are a stated basis, not an authority.
+
+**The rule layer is measured against those labels on every push.** `RuleLayerEvaluationTest` scores the dictionaries and the morphological check:
+
+| axis | agreement |
+|---|---|
+| polite form (Kuromoji) | 24/24 |
+| cushion phrase | 24/24 |
+| refusal signal, recall | 6/6 |
+| refusal signal, false alarms | 0/18 |
+
+Those numbers were 22/24 and 4/6 when the evaluation was first written. Matching raw strings missed 「恐れ入りますが」 and 「考えておきます」; matching Kuromoji base forms does not.
+
+**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift: they have to reproduce the grades on all 24 labelled sentences, so changing one breaks the build.
+
+**The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` reports agreement on the risk grade and asserts no threshold, because there is no basis yet for deciding what percentage is good enough. Its first run found that the model read `riskLevel` as rudeness rather than refusal: 「よろしく」 came back DANGER. The prompt had asked for both readings, and now asks for one.
+
+**Scoring is deterministic.** `GEMINI_TEMPERATURE` defaults to 0. At 0.7 the same sentence scored 70/71/71 overall but 15/10/12 on etiquette across three identical requests.
+
+**Every rule adjustment is returned** in `scoreAdjustments` and shown in the UI: which metric, before, after, and why. A reader can see whether 73 came from the model or from a rule taking ten off.
+
+### What is still unverified
+- No native speaker has reviewed the labels, so the agreement figures measure consistency with one author's reading of standard business usage, not correctness.
+- The three metrics have no labels at all. Only the risk grade is comparable, because it is one of three values; "politeness 35/40" has nothing to be compared against.
+- 24 sentences is small, and they were written to cover known cases rather than sampled from real correspondence.
 
 ## 📡 API
 
