@@ -4,215 +4,263 @@
     "text": "よろしく",
     "relationship": "EXTERNAL",
     "politeForm": false,
+    "politeFormBasis": "敬語なし。です・ます も 謙譲語 も現れない",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "동사도 조동사도 없는 체언 종결. 丁寧語(です・ます)가 없으므로 정중체가 아니다. 거절 신호는 없다."
+    "riskBasis": "依頼も拒否もない挨拶の断片"
   },
   {
     "id": "plain-02",
     "text": "明日までにやっといて。",
     "relationship": "INTERNAL",
     "politeForm": false,
+    "politeFormBasis": "敬語なし。「やっといて」は「やっておいて」の縮約で命令形",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "「やっておいて」의 축약형 명령. 정중체 없음. 거절이 아니라 지시다."
+    "riskBasis": "指示であって拒否ではない"
   },
   {
     "id": "plain-03",
     "text": "了解",
     "relationship": "INTERNAL",
     "politeForm": false,
+    "politeFormBasis": "敬語なし。名詞一語",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "체언 한 단어. 정중체 아님."
+    "riskBasis": "応答のみ。確答を避けていない"
   },
   {
     "id": "polite-01",
     "text": "承知いたしました。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "謙譲語 いたす + ました. 수락 표현이라 거절 신호가 아니다."
+    "riskBasis": "承諾の表明。確答している"
   },
   {
     "id": "polite-02",
     "text": "ご確認いただけますでしょうか。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "ご+いただく(謙譲語) + でしょうか. 쿠션어 없이 의뢰만 한다."
+    "riskBasis": "依頼。確答を避ける要素がない"
   },
   {
     "id": "polite-03",
     "text": "ご確認ください。",
     "relationship": "INTERNAL",
     "politeForm": true,
+    "politeFormBasis": "尊敬語「くださる」の命令形による依頼形",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "ご〜ください는 くださる(尊敬語)의 명령형을 쓴 정중한 의뢰형이다. です・ます가 없어도 정중체로 센다."
+    "riskBasis": "依頼。拒否ではない"
   },
   {
     "id": "polite-04",
     "text": "よろしくお願い申し上げます。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「申し上げる」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "申し上げる(謙譲語) + ます. 가장 정중한 맺음 중 하나."
+    "riskBasis": "挨拶。拒否ではない"
   },
   {
     "id": "cushion-01",
     "text": "お手数ですが、ご確認いただけますでしょうか。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
     "cushion": true,
+    "cushionBasis": "「お手数ですが」— 依頼時の定番クッション言葉",
     "risk": "SAFE",
-    "basis": "「お手数ですが」는 상대의 수고를 미리 언급하는 대표적 쿠션어다."
+    "riskBasis": "依頼。拒否ではない"
   },
   {
     "id": "cushion-02",
     "text": "恐れ入りますが、ご確認いただけますでしょうか。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
     "cushion": true,
+    "cushionBasis": "「恐れ入りますが」— 依頼時の定番クッション言葉",
     "risk": "SAFE",
-    "basis": "「恐れ入りますが」는 의뢰 앞에 붙이는 쿠션어로 「お手数ですが」와 같은 자리에 쓰인다."
+    "riskBasis": "依頼。拒否ではない"
   },
   {
     "id": "cushion-03",
     "text": "ご多忙のところ恐れ入りますが、ご確認をお願いいたします。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
     "cushion": true,
+    "cushionBasis": "「ご多忙のところ恐れ入りますが」— 相手の事情に配慮するクッション言葉",
     "risk": "SAFE",
-    "basis": "「ご多忙のところ」는 상대의 사정을 배려하는 쿠션어. 「お忙しいところ」의 문어체 대응이다."
+    "riskBasis": "依頼。拒否ではない"
   },
   {
     "id": "cushion-04",
     "text": "差し支えなければ、ご意見を伺えますでしょうか。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「伺う」+ 丁寧語「ます」",
     "cushion": true,
+    "cushionBasis": "「差し支えなければ」— 相手に断る余地を残すクッション言葉",
     "risk": "SAFE",
-    "basis": "「差し支えなければ」는 상대가 거절할 여지를 남기는 쿠션어다."
+    "riskBasis": "依頼。拒否ではない"
   },
   {
     "id": "cushion-05",
     "text": "大変恐縮ですが、納期を再度ご確認いただけますでしょうか。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
     "cushion": true,
+    "cushionBasis": "「大変恐縮ですが」— 恐縮を前置きするクッション言葉",
     "risk": "SAFE",
-    "basis": "「恐縮ですが」는 미안함을 앞세우는 쿠션어."
+    "riskBasis": "依頼。拒否ではない"
   },
   {
     "id": "cushion-06",
     "text": "申し訳ございませんが、本日中の対応は難しい状況です。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "丁寧語「です」+「ございません」",
     "cushion": true,
+    "cushionBasis": "「申し訳ございませんが」— 断り時の定番クッション言葉",
     "risk": "DANGER",
-    "basis": "쿠션어로 시작하지만 「難しい」로 사실상 거절한다. 쿠션어 유무와 거절 신호는 별개 축이다."
+    "riskBasis": "「難しい」で事実上の拒否。クッション言葉の有無とは別軸"
   },
   {
     "id": "reject-01",
     "text": "ご提案の件、社内で検討させていただきます。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "CAUTION",
-    "basis": "「検討します」는 즉답을 피하는 완곡 표현으로, 사외 제안에 대한 답으로는 보류 또는 완곡한 거절로 읽힌다."
+    "riskBasis": "「検討します」は期限も約束もない保留の定型"
   },
   {
     "id": "reject-02",
     "text": "それは難しいですね。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "丁寧語「です」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "DANGER",
-    "basis": "「難しい」는 불가능을 직접 말하지 않는 거절 표현. 사외에서는 거의 확정적 거절로 받아들여진다."
+    "riskBasis": "「難しい」は不可能を直接言わない拒否の定型"
   },
   {
     "id": "reject-03",
     "text": "少し考えておきます。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "CAUTION",
-    "basis": "「考えておく」는 기한도 약속도 없는 보류 표현이다."
+    "riskBasis": "「考えておく」は期限も約束もない保留"
   },
   {
     "id": "reject-04",
     "text": "前向きに検討させていただきます。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "CAUTION",
-    "basis": "「前向きに」가 붙어도 확약이 아니다. 긍정적으로 들리지만 「検討」의 보류 성격은 남는다."
+    "riskBasis": "「前向きに」が付いても確約ではない"
   },
   {
     "id": "reject-05",
     "text": "社内で確認のうえ、改めてご連絡いたします。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "「確認のうえ連絡する」는 다음 행동과 주체가 분명한 정상적 업무 절차다. 「確認」이 들어갔다는 이유만으로 거절로 볼 수 없다."
+    "riskBasis": "次の行為と主体が明示された通常の業務手順。「確認」だけでは拒否と読めない"
   },
   {
     "id": "reject-06",
     "text": "大変申し訳ございませんが、今回は見送らせていただきます。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
     "cushion": true,
+    "cushionBasis": "「大変申し訳ございませんが」— 断り時のクッション言葉",
     "risk": "DANGER",
-    "basis": "「見送る」는 완곡하지만 명확한 거절이다."
+    "riskBasis": "「見送る」は婉曲だが結論の出た拒否"
   },
   {
     "id": "accept-01",
     "text": "ご提案の件、喜んでお受けいたします。",
     "relationship": "EXTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「お受けする」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "명확한 수락. 보류나 거절 신호가 없다."
+    "riskBasis": "明確な承諾"
   },
   {
     "id": "accept-02",
     "text": "承知いたしました。明日の十五時までに提出いたします。",
     "relationship": "INTERNAL",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "수락에 기한까지 명시했다. 회피 요소가 없다."
+    "riskBasis": "承諾に期限まで明示"
   },
   {
     "id": "interview-01",
     "text": "御社の事業内容に強く共感しており、ぜひ貢献したいと考えております。",
     "relationship": "INTERVIEW",
     "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「おる」+ 丁寧語「ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "おる(謙譲語) + ます. 면접에 적합한 정중체이며 거절 신호가 아니다."
+    "riskBasis": "抱負の表明。拒否ではない"
   },
   {
     "id": "interview-02",
     "text": "その質問はちょっと分かりません。",
     "relationship": "INTERVIEW",
     "politeForm": true,
+    "politeFormBasis": "丁寧語「ます」（「分かりません」）",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "정중체이긴 하나 「ちょっと」가 섞인 구어체다. 거절 신호는 아니므로 리스크 축은 SAFE — 점수(정중도)와 리스크는 다른 축임을 보여 주는 행."
+    "riskBasis": "口語的だが拒否ではない。丁寧度と拒否リスクが別軸であることを示す行"
   },
   {
     "id": "chat-01",
     "text": "お疲れさまです。資料を共有しますので、ご確認をお願いします。",
     "relationship": "INTERNAL",
     "politeForm": true,
+    "politeFormBasis": "丁寧語「です・ます」",
     "cushion": false,
+    "cushionBasis": "なし",
     "risk": "SAFE",
-    "basis": "사내 채팅의 표준적인 정중체. 거절 신호 없음."
+    "riskBasis": "共有と依頼。拒否ではない"
   }
 ]

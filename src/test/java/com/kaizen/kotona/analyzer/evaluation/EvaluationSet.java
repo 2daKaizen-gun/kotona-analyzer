@@ -24,9 +24,30 @@ public record EvaluationSet(List<Row> rows) {
             String text,
             RelationshipType relationship,
             boolean politeForm,
+            String politeFormBasis,
             boolean cushion,
+            String cushionBasis,
             String risk,
-            String basis) {
+            String riskBasis) {
+    }
+
+    /**
+     * 두 문장의 순서. 절대 점수에는 정답이 없지만 순서에는 있다 —
+     * 「よろしく」 가 「よろしくお願い申し上げます」 보다 정중할 수는 없다.
+     * 라벨 없이도 확인할 수 있는 몇 안 되는 성질이라 따로 둔다.
+     */
+    public record OrderingPair(String id, String axis, String lower, String higher, String basis) {
+    }
+
+    public static List<OrderingPair> orderingPairs() {
+        try (InputStream in = EvaluationSet.class.getResourceAsStream("/evaluation/ordering-pairs.json")) {
+            if (in == null) {
+                throw new IllegalStateException("순서 제약 리소스를 찾을 수 없다");
+            }
+            return new ObjectMapper().readValue(in, new tools.jackson.core.type.TypeReference<List<OrderingPair>>() {});
+        } catch (Exception e) {
+            throw new IllegalStateException("순서 제약을 읽지 못했다", e);
+        }
     }
 
     public static EvaluationSet load() {
