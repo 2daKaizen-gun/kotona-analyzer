@@ -38,7 +38,7 @@ public class GeminiService {
     @Value("${gemini.max-output-tokens:8000}")
     private int maxOutputTokens;
 
-    @Value("${gemini.temperature:0.7}")
+    @Value("${gemini.temperature:0.0}")
     private float temperature;
 
     /** low | high. 비우면 모델 기본값을 쓴다. 낮출수록 응답이 빠르다. */

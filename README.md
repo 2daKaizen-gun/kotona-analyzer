@@ -92,7 +92,7 @@ Everything is an environment variable with a working default, so a clone runs wi
 | `GEMINI_MODEL` | `gemini-3.6-flash` | Free-tier eligible. Do not set `gemini-2.5-flash`; new keys get a 404 |
 | `GEMINI_THINKING_LEVEL` | `high` | `low` is faster and mixes languages into the Japanese replies — see `PROMPT_DESIGN.md` |
 | `GEMINI_MAX_OUTPUT_TOKENS` | `8000` | Three smart replies plus alternatives, in Japanese and Korean |
-| `GEMINI_TEMPERATURE` | `0.7` | |
+| `GEMINI_TEMPERATURE` | `0.0` | Scoring is a judgement, not a draft. At 0.7 the same sentence scored 70/71/71 overall but 15/10/12 on etiquette across three identical requests |
 | `API_KEY` | *(none)* | When set, `X-API-KEY` is required on `/analyze`, history and dictionary writes. Unset, the filter logs a warning and lets everything through |
 | `DB_HOST` / `DB_PORT` | `127.0.0.1` / `3306` | `docker compose` sets these for the container network |
 | `DB_NAME` | `kotona` | Created on first connect if missing |
