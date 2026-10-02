@@ -58,7 +58,11 @@ gemini:
   # 탓에 답장이 3개에서 1개로 줄었다. high 로 올리면 이 현상이 사라진다.
   thinking-level: ${GEMINI_THINKING_LEVEL:high}
   max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:8000}
-  temperature: ${GEMINI_TEMPERATURE:0.7}
+  # 0 으로 둔다. 같은 문장을 세 번 넣어 측정했더니 총점은 70/71/71 로 비슷했지만
+  # 예의 점수가 15/10/12 로 갈렸다 — 사용자가 읽는 "예의 10/30" 이 실행마다 범위의 절반만큼
+  # 움직였다는 뜻이다. 점수는 판정이지 창작이 아니므로 표본을 흔들 이유가 없다.
+  # 답장 문장의 다양성은 줄지만, 매번 다른 점수를 주는 채점기보다는 낫다.
+  temperature: ${GEMINI_TEMPERATURE:0.0}
 
 # 애플리케이션 보안 설정
 app:

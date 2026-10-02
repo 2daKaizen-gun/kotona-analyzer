@@ -5,10 +5,12 @@ import com.kaizen.kotona.analyzer.dto.MetricsDTO;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.dto.RelationshipType;
 import com.kaizen.kotona.analyzer.dto.RiskAnalysisDTO;
+import com.kaizen.kotona.analyzer.dto.ScoreAdjustmentDTO;
 import com.kaizen.kotona.analyzer.dto.SmartReplyDTO;
 import com.kaizen.kotona.analyzer.dto.SuggestionDTO;
 import com.kaizen.kotona.analyzer.utils.EtiquetteConstants;
 import com.kaizen.kotona.analyzer.utils.JapaneseOutputSanitizer;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
@@ -20,9 +22,17 @@ import java.util.Set;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AnalysisValidator {
+
+    /** 사전을 기본형으로 맞추기 위해 쓴다. 활용형에 걸려 넘어지지 않게 하는 유일한 수단이다. */
+    private final JapaneseTokenService tokenService;
+
     //AI 점수와 형태소 분석 및 규칙 기반 데이터 교차 검증
     public NuanceResponseDTO validate(NuanceResponseDTO aiResponse, String cleanInput, RelationshipType relationshipType, boolean hasPoliteEnding) {
+        Set<String> lemmas = tokenService.baseForms(cleanInput);
+        // 규칙이 손댄 것은 전부 적어 둔다. 적지 않으면 사용자는 73점의 이유를 알 수 없다.
+        List<ScoreAdjustmentDTO> adjustments = new ArrayList<>();
         // 기존 Metrics 가져오기
         int p = aiResponse.metrics().politeness();   // Max 40
         int i = aiResponse.metrics().indirectness(); // Max 30
@@ -30,21 +40,30 @@ public class AnalysisValidator {
 
         // 1. Politeness 검증 (경어 사용 여부)
         if (p >= 30 && !hasPoliteEnding) {
+            int before = p;
             p = Math.max(0, p - 10); // 10점 페널티
+            adjustments.add(new ScoreAdjustmentDTO("politeness", String.valueOf(before), String.valueOf(p),
+                    "정중체(です・ます 또는 〜ください)가 쓰이지 않아 감점했습니다."));
         }
 
         // 2. Etiquette 검증 (쿠션어 사용 여부)
-        boolean hasCushion = EtiquetteConstants.CUSHION_PHRASES.stream()
-                .anyMatch(cleanInput::contains);
+        boolean hasCushion = lemmas.stream().anyMatch(EtiquetteConstants.CUSHION_LEMMAS::contains)
+                || EtiquetteConstants.CUSHION_PHRASES.stream().anyMatch(cleanInput::contains);
         if (e >= 20 && !hasCushion) {
+            int before = e;
             e = Math.max(0, e - 10); // 10점 페널티
+            adjustments.add(new ScoreAdjustmentDTO("etiquette", String.valueOf(before), String.valueOf(e),
+                    "쿠션어(お手数ですが・恐れ入りますが 등)가 쓰이지 않아 감점했습니다."));
         }
 
         // 3. Indirectness 검증 (완곡 어미 사용 여부)
         boolean hasIndirect = EtiquetteConstants.INDIRECT_ENDINGS.stream()
                 .anyMatch(cleanInput::contains);
         if (i >= 20 && !hasIndirect) {
+            int before = i;
             i = Math.max(0, i - 5); // 5점 페널티
+            adjustments.add(new ScoreAdjustmentDTO("indirectness", String.valueOf(before), String.valueOf(i),
+                    "완곡 어미(〜でしょうか 등)가 쓰이지 않아 감점했습니다."));
         }
 
         // 최종 총점 재계산 (합계가 100을 넘지 않도록 보정)
@@ -55,8 +74,9 @@ public class AnalysisValidator {
         double riskScore = 0.0;
         List<String> detectedRedFlags = new ArrayList<>();
 
-        for (Map.Entry<String, SoftRejectionSignal> entry : SOFT_REJECTION_SIGNALS.entrySet()) {
-            if (cleanInput.contains(entry.getKey())) {
+        for (Map.Entry<String, EtiquetteConstants.SoftRejectionSignal> entry
+                : EtiquetteConstants.SOFT_REJECTION_SIGNALS.entrySet()) {
+            if (EtiquetteConstants.signalMatches(entry, lemmas)) {
                 riskScore += entry.getValue().weight();
                 detectedRedFlags.add(entry.getValue().description());
             }
@@ -98,6 +118,14 @@ public class AnalysisValidator {
             mergedRedFlags.addAll(aiResponse.riskAnalysis().redFlags());
         }
 
+        if (!finalRiskLevel.equalsIgnoreCase(aiResponse.riskAnalysis().riskLevel())) {
+            adjustments.add(new ScoreAdjustmentDTO("riskLevel",
+                    aiResponse.riskAnalysis().riskLevel(), finalRiskLevel,
+                    detectedRedFlags.isEmpty()
+                            ? "두 판정 중 더 위험한 쪽을 택했습니다."
+                            : "거절 신호를 찾았습니다: " + String.join(", ", detectedRedFlags)));
+        }
+
         RiskAnalysisDTO validatedRisk = new RiskAnalysisDTO(
                 finalRiskLevel,
                 List.copyOf(mergedRedFlags),
@@ -114,6 +142,7 @@ public class AnalysisValidator {
                 sanitizeSuggestions(aiResponse.suggestions()),
                 aiResponse.sentiment(),
                 validatedRisk,
+                List.copyOf(adjustments),
                 sanitizeSmartReplies(aiResponse.smartReplies())
         );
     }
@@ -154,18 +183,6 @@ public class AnalysisValidator {
         }
         return List.copyOf(kept);
     }
-
-    /** 소프트 리젝션 키워드와 가중치. 프롬프트의 Risk Detection Guide 와 같은 목록을 본다. */
-    private record SoftRejectionSignal(double weight, String description) {
-    }
-
-    private static final Map<String, SoftRejectionSignal> SOFT_REJECTION_SIGNALS = new LinkedHashMap<>() {{
-        put("難しい", new SoftRejectionSignal(0.8, "'어렵다(難しい)' 시그널 감지"));
-        put("考えておく", new SoftRejectionSignal(0.6, "'생각해 보겠다'는 모호한 응답"));
-        put("検討", new SoftRejectionSignal(0.5, "'검토(検討)' 시그널 감지"));
-        // 確認 은 정중한 표현에서도 흔히 쓰이므로 단독으로는 CAUTION 이 되지 않게 낮게 잡는다.
-        put("確認", new SoftRejectionSignal(0.2, "'확인(確認)' 후 회신 — 즉답 회피 가능성"));
-    }};
 
     private static final Map<String, Integer> RISK_SEVERITY = Map.of("SAFE", 0, "CAUTION", 1, "DANGER", 2);
 

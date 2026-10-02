@@ -28,6 +28,18 @@ KOTONA의 핵심 엔진은 사용자의 입력 문장을 단순 번역하는 것
         - Identify specific cultural/grammatical issues.
         - Suggest 2-3 improved alternatives with "standard" and "highest" levels.
 
+## 3-1. riskLevel 이 재는 것
+
+`riskLevel` 은 **확답을 피하는 정도** 하나만 잰다. 정중도와 무관하며, 무례한 문장도 거절이
+아니면 SAFE 다. 둘을 섞어 적었던 동안 모델은 넓은 쪽으로 읽었다 — 평가에서 「よろしく」 가
+DANGER, 「明日までにやっといて。」 가 CAUTION 으로 돌아왔다. 둘 다 거절이 아니라 그냥 반말이다.
+
+- SAFE: 확답·수락·요청이거나 다음 단계를 밝힌 경우. 무례함은 등급을 바꾸지 않는다.
+- CAUTION: 기한도 약속도 없는 보류. 「検討させていただきます」「考えておきます」
+- DANGER: 완곡하더라도 거절. 「難しいですね」「今回は見送らせていただきます」
+
+정중도는 세 지표가 따로 잰다. 한 문장이 "정중한데 거절" 일 수 있기 때문에 축을 나눈다.
+
 # 4. Contextual Variables (Input Parameters)
    - user_input: 사용자가 입력한 일본어 문구 — 유저 메시지로 전달
    - relationship_type: INTERNAL (사내), EXTERNAL (사외), INTERVIEW (면접)
@@ -93,6 +105,10 @@ KOTONA의 핵심 엔진은 사용자의 입력 문장을 단순 번역하는 것
 어설픈 문장을 그대로 보여 주는 것보다 개수가 줄어드는 편이 낫다고 판단했다.
 
 # 6. Few-Shot Examples (Training the AI)
+> 아래 두 예시의 점수는 **저자가 정한 값**이다. 어떤 기준이나 말뭉치에서 가져온 것이 아니라,
+> 모델에게 점수대의 감각을 주려고 쓴 보기다. 평가에 쓰는 라벨은 따로 있다 —
+> `src/test/resources/evaluation/business-sentences.json` 이며, 행마다 라벨의 근거를 적어 두었다.
+> 그쪽도 원어민 검수를 거치지 않았다는 점은 README 의 "What the score is" 에 밝혀 둔다.
     - Example 1
         - Input: "よろしく" (Relationship: External)
         - Analysis: * Total Score: 15/100
