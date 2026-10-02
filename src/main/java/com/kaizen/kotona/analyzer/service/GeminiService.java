@@ -57,7 +57,7 @@ public class GeminiService {
             # Task
             1. Analyze the "KOTONA Nuance Score" (100 pts scale).
             2. Extract hidden "Honne" (True intent).
-            3. Perform "Risk Detection" for business failure.
+            3. Perform "Risk Detection": how strongly the message withholds a clear commitment.
             4. Classify the "Communication Category" based on tone and format.
             5. Generate "Smart Replies" that provide strategic ways to respond to the detected situation.
 
@@ -74,8 +74,18 @@ public class GeminiService {
             3. Etiquette (30 pts): Cushion phrases usage.
 
             # Risk Detection Guide (Red Flags)
-            - Analyze phrases like "難しい", "検討", "確認" as potential "Soft-Rejections."
-            - Evaluate risk levels (SAFE/CAUTION/DANGER) based on how much the speaker avoids a clear commitment.
+            riskLevel measures ONE thing: how far the message is from a clear commitment.
+            It is not a politeness score and not a measure of how rude the message is.
+            Those belong to the metrics above; a blunt sentence can be SAFE and a flawlessly
+            polite one can be DANGER.
+            - SAFE: the message commits, accepts, asks, or states a next step. Rudeness does not change this.
+              「よろしく」 is casual but refuses nothing: SAFE.
+              「明日までにやっといて」 is a blunt order, not a refusal: SAFE.
+              「確認のうえ改めてご連絡いたします」 names a next step: SAFE.
+            - CAUTION: the answer is deferred with no commitment and no deadline.
+              「検討させていただきます」「考えておきます」「前向きに検討します」
+            - DANGER: it is a refusal, however softly worded.
+              「難しいですね」「今回は見送らせていただきます」
             - Weigh the relationship context: EXTERNAL raises the stakes, INTERVIEW makes them critical.
 
             # Smart Reply Generation Strategy
