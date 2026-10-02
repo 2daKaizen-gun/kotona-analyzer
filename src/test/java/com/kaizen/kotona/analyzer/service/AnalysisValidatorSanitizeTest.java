@@ -88,6 +88,7 @@ class AnalysisValidatorSanitizeTest {
                 suggestions,
                 new SentimentDTO("NEUTRAL", 0.9, new HonneDTO("확인 부탁", "조속한 회신 희망", "회신 대기")),
                 new RiskAnalysisDTO("SAFE", List.of(), "회신을 기다립니다."),
+                List.of(),
                 smartReplies);
     }
 }

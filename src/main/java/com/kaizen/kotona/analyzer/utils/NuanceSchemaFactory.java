@@ -39,8 +39,22 @@ public final class NuanceSchemaFactory {
                         .with(Option.INLINE_ALL_SCHEMAS);
 
         ObjectNode schema = new SchemaGenerator(configBuilder.build()).generateSchema(type);
+        dropServerFilledFields(schema);
         sanitize(schema);
         return schema;
+    }
+
+    /**
+     * 서버가 채우는 필드는 모델에게 요구하지 않는다.
+     *
+     * <p>{@code scoreAdjustments} 는 규칙이 모델 점수를 어떻게 고쳤는지의 기록이다.
+     * 스키마에 남겨 두면 모델이 자기가 받지도 않은 조정 내역을 지어내게 되고,
+     * {@code required} 에까지 올라가 반드시 채우도록 강제된다.
+     */
+    private static void dropServerFilledFields(ObjectNode schema) {
+        if (schema.get("properties") instanceof ObjectNode props) {
+            props.remove("scoreAdjustments");
+        }
     }
 
     /** Gemini 가 이해하지 못하는 키를 제거하고, 모든 객체 필드를 required 로 강제한다. */

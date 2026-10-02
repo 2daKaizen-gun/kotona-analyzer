@@ -33,6 +33,9 @@ public record NuanceResponseDTO(
         @JsonPropertyDescription("비즈니스 리스크 감지 결과.")
         RiskAnalysisDTO riskAnalysis,
 
+        @JsonPropertyDescription("규칙이 모델 점수를 고친 내역. 서버가 채우며 모델에게 요구하지 않는다.")
+        List<ScoreAdjustmentDTO> scoreAdjustments,
+
         @JsonPropertyDescription("상황별 추천 답장 3개.")
         List<SmartReplyDTO> smartReplies
 ) {}

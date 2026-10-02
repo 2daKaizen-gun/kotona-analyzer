@@ -7,6 +7,7 @@ import com.kaizen.kotona.analyzer.dto.HonneDTO;
 import com.kaizen.kotona.analyzer.dto.MetricsDTO;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.dto.RiskAnalysisDTO;
+import com.kaizen.kotona.analyzer.dto.ScoreAdjustmentDTO;
 import com.kaizen.kotona.analyzer.dto.SentimentDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -254,6 +255,56 @@ class AnalysisValidatorScoringTest {
                 response(metrics, "SAFE", List.of(), "EMAIL", 90), input, relationship, hasPoliteEnding);
     }
 
+    @Nested
+    @DisplayName("점수를 고친 이유")
+    class Adjustments {
+
+        @Test
+        @DisplayName("규칙이 손대지 않았으면 조정 내역도 비어 있다")
+        void recordsNothingWhenNothingWasChanged() {
+            // 모델 점수를 그대로 내보냈는데 "조정했다" 고 적으면 설명이 거짓말이 된다
+            NuanceResponseDTO result = validator.validate(
+                    response(metrics(20, 10, 10), "SAFE", List.of(), "EMAIL", 40),
+                    "お手数ですが、ご確認いただけますでしょうか。", RelationshipType.EXTERNAL, true);
+
+            assertThat(result.scoreAdjustments()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("감점한 항목과 이유를 적는다")
+        void recordsWhatWasTakenOffAndWhy() {
+            // 사용자가 보는 것은 깎인 뒤의 숫자뿐이었다. 왜 깎였는지가 응답에 없었다.
+            NuanceResponseDTO result = validator.validate(
+                    response(metrics(35, 25, 25), "SAFE", List.of(), "EMAIL", 85),
+                    "資料を送る。", RelationshipType.EXTERNAL, false);
+
+            assertThat(result.scoreAdjustments()).extracting(ScoreAdjustmentDTO::metric)
+                    .contains("politeness", "etiquette", "indirectness");
+            assertThat(result.scoreAdjustments()).allSatisfy(adjustment -> {
+                assertThat(adjustment.reason()).isNotBlank();
+                assertThat(adjustment.before()).isNotEqualTo(adjustment.after());
+            });
+        }
+
+        @Test
+        @DisplayName("리스크 등급을 올렸으면 무엇을 보고 올렸는지 적는다")
+        void recordsWhyTheRiskGradeRose() {
+            NuanceResponseDTO result = validator.validate(
+                    response(metrics(20, 10, 10), "SAFE", List.of(), "EMAIL", 40),
+                    "それは難しいですね。", RelationshipType.EXTERNAL, true);
+
+            assertThat(result.riskAnalysis().riskLevel()).isEqualTo("DANGER");
+            assertThat(result.scoreAdjustments())
+                    .filteredOn(adjustment -> adjustment.metric().equals("riskLevel"))
+                    .singleElement()
+                    .satisfies(adjustment -> {
+                        assertThat(adjustment.before()).isEqualTo("SAFE");
+                        assertThat(adjustment.after()).isEqualTo("DANGER");
+                        assertThat(adjustment.reason()).contains("難しい");
+                    });
+        }
+    }
+
     /** 리스크만 보는 경우 지표는 감점이 일어나지 않는 값으로 고정한다. */
     private NuanceResponseDTO validateRisk(String input, RelationshipType relationship, String modelRiskLevel) {
         return validator.validate(
@@ -275,6 +326,7 @@ class AnalysisValidatorScoringTest {
                 List.of(),
                 new SentimentDTO("NEUTRAL", 0.9, new HonneDTO("확인 요청", "조속한 회신 희망", "회신 대기")),
                 new RiskAnalysisDTO(riskLevel, redFlags, "회신을 기다립니다."),
+                List.of(),
                 List.of());
     }
 }

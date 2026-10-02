@@ -5,6 +5,7 @@ import com.kaizen.kotona.analyzer.dto.MetricsDTO;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.dto.RelationshipType;
 import com.kaizen.kotona.analyzer.dto.RiskAnalysisDTO;
+import com.kaizen.kotona.analyzer.dto.ScoreAdjustmentDTO;
 import com.kaizen.kotona.analyzer.dto.SmartReplyDTO;
 import com.kaizen.kotona.analyzer.dto.SuggestionDTO;
 import com.kaizen.kotona.analyzer.utils.EtiquetteConstants;
@@ -30,6 +31,8 @@ public class AnalysisValidator {
     //AI 점수와 형태소 분석 및 규칙 기반 데이터 교차 검증
     public NuanceResponseDTO validate(NuanceResponseDTO aiResponse, String cleanInput, RelationshipType relationshipType, boolean hasPoliteEnding) {
         Set<String> lemmas = tokenService.baseForms(cleanInput);
+        // 규칙이 손댄 것은 전부 적어 둔다. 적지 않으면 사용자는 73점의 이유를 알 수 없다.
+        List<ScoreAdjustmentDTO> adjustments = new ArrayList<>();
         // 기존 Metrics 가져오기
         int p = aiResponse.metrics().politeness();   // Max 40
         int i = aiResponse.metrics().indirectness(); // Max 30
@@ -37,21 +40,30 @@ public class AnalysisValidator {
 
         // 1. Politeness 검증 (경어 사용 여부)
         if (p >= 30 && !hasPoliteEnding) {
+            int before = p;
             p = Math.max(0, p - 10); // 10점 페널티
+            adjustments.add(new ScoreAdjustmentDTO("politeness", String.valueOf(before), String.valueOf(p),
+                    "정중체(です・ます 또는 〜ください)가 쓰이지 않아 감점했습니다."));
         }
 
         // 2. Etiquette 검증 (쿠션어 사용 여부)
         boolean hasCushion = lemmas.stream().anyMatch(EtiquetteConstants.CUSHION_LEMMAS::contains)
                 || EtiquetteConstants.CUSHION_PHRASES.stream().anyMatch(cleanInput::contains);
         if (e >= 20 && !hasCushion) {
+            int before = e;
             e = Math.max(0, e - 10); // 10점 페널티
+            adjustments.add(new ScoreAdjustmentDTO("etiquette", String.valueOf(before), String.valueOf(e),
+                    "쿠션어(お手数ですが・恐れ入りますが 등)가 쓰이지 않아 감점했습니다."));
         }
 
         // 3. Indirectness 검증 (완곡 어미 사용 여부)
         boolean hasIndirect = EtiquetteConstants.INDIRECT_ENDINGS.stream()
                 .anyMatch(cleanInput::contains);
         if (i >= 20 && !hasIndirect) {
+            int before = i;
             i = Math.max(0, i - 5); // 5점 페널티
+            adjustments.add(new ScoreAdjustmentDTO("indirectness", String.valueOf(before), String.valueOf(i),
+                    "완곡 어미(〜でしょうか 등)가 쓰이지 않아 감점했습니다."));
         }
 
         // 최종 총점 재계산 (합계가 100을 넘지 않도록 보정)
@@ -106,6 +118,14 @@ public class AnalysisValidator {
             mergedRedFlags.addAll(aiResponse.riskAnalysis().redFlags());
         }
 
+        if (!finalRiskLevel.equalsIgnoreCase(aiResponse.riskAnalysis().riskLevel())) {
+            adjustments.add(new ScoreAdjustmentDTO("riskLevel",
+                    aiResponse.riskAnalysis().riskLevel(), finalRiskLevel,
+                    detectedRedFlags.isEmpty()
+                            ? "두 판정 중 더 위험한 쪽을 택했습니다."
+                            : "거절 신호를 찾았습니다: " + String.join(", ", detectedRedFlags)));
+        }
+
         RiskAnalysisDTO validatedRisk = new RiskAnalysisDTO(
                 finalRiskLevel,
                 List.copyOf(mergedRedFlags),
@@ -122,6 +142,7 @@ public class AnalysisValidator {
                 sanitizeSuggestions(aiResponse.suggestions()),
                 aiResponse.sentiment(),
                 validatedRisk,
+                List.copyOf(adjustments),
                 sanitizeSmartReplies(aiResponse.smartReplies())
         );
     }
