@@ -144,7 +144,20 @@ Those numbers were 22/24 and 4/6 when the evaluation was first written. Matching
 
 **The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift: they have to reproduce the grades on all 24 labelled sentences, so changing one breaks the build.
 
-**The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` reports agreement on the risk grade and asserts no threshold, because there is no basis yet for deciding what percentage is good enough. Its first run found that the model read `riskLevel` as rudeness rather than refusal: 「よろしく」 came back DANGER. The prompt had asked for both readings, and now asks for one.
+**The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` reports and asserts nothing: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build.
+
+A full pass needs 38 calls (24 sentences, 7 pairs at two each) and the free tier answers roughly a dozen a day, so answers accumulate in `model-answers.json` and each run asks only what is still missing. The file records the model and a prompt version with each answer; change either and that answer is asked again.
+
+Measured so far, on `gemini-3.6-flash` with the current prompt:
+
+| check | result |
+|---|---|
+| ordering pairs | 5 of 7 compared, **5 held** |
+| risk grade | 1 of 24 answered, **1 agreed** |
+
+The risk figure is one sentence. It is written here because the alternative is writing nothing and sounding more certain. The ordering run before it spent the day's quota, which is what prompted the incremental log.
+
+An earlier run is why the prompt changed: the model read `riskLevel` as rudeness rather than refusal, and 「よろしく」 came back DANGER. The prompt had asked for both readings; it now asks for one.
 
 **Scoring is deterministic.** `GEMINI_TEMPERATURE` defaults to 0. At 0.7 the same sentence scored 70/71/71 overall but 15/10/12 on etiquette across three identical requests.
 
@@ -154,7 +167,7 @@ Those numbers were 22/24 and 4/6 when the evaluation was first written. Matching
 - **No native speaker has reviewed the labels yet.** The politeness axis is decidable from 文化庁's categories, so it needs a reader of Japanese grammar rather than a judgement call. The cushion and refusal axes rest on convention, and there a native speaker's reading is the thing that is missing. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet for that review — it asks about those two axes only, says which judgements need no human because a published standard already decides them, and is checked against the evaluation files by a test so it cannot go stale. **Status: not yet returned.**
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **24 sentences and 7 pairs, written to cover known cases.** They are not a sample of real correspondence, so agreement on them says nothing about the distribution of sentences a user actually types.
-- **The model-side numbers are barely measured.** Quota allowed three answered calls before the prompt fix and one after. The rule layer is measured on every push; the model is not.
+- **The model-side numbers are barely measured.** One sentence of 24, and five ordering pairs of seven. The rule layer is measured on every push; the model accumulates a dozen answers a day at best.
 
 ## 📡 API
 

@@ -27,10 +27,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 몇 퍼센트여야 합격인지 정할 근거가 아직 없기 때문이다. 합격선을 지어내는 것보다
  * 추세를 눈으로 보는 편이 정직하다.
  *
+ * <p><b>이것은 합격/불합격을 가르는 테스트가 아니라 측정 도구다.</b> 쿼터가 비어 호출이
+ * 전부 실패해도 빌드를 깨지 않는다 — 그건 코드의 문제가 아니라 그날의 사정이고, 기록은
+ * 남으므로 다음 실행이 이어 간다. 읽어야 할 것은 초록불이 아니라 출력된 숫자다.
+ *
  * <p>재는 것은 리스크 등급 하나다. 총점은 비교할 정답이 없고(라벨에 "73점" 같은 값은 없다),
  * 등급은 세 값 중 하나라 일치 여부를 말할 수 있다.
  *
- * <p>기본은 라벨 전체. {@code -DevalLimit=5} 로 줄여서 쿼터를 아낄 수 있다.
+ * <p>무료 티어로는 하루에 전부 묻지 못한다. 그래서 받은 답을
+ * {@code src/test/resources/evaluation/model-answers.json} 에 적어 두고, 다음 실행은
+ * 아직 답이 없는 것부터 묻는다. 며칠 돌리면 전체가 채워지고, 그 사이의 일치율은
+ * "지금까지 받은 답 기준" 으로 보고된다.
+ *
+ * <p>{@code -DevalLimit=5} 로 한 번에 묻는 수를 줄일 수 있다.
  */
 @Tag("eval")
 class ModelEvaluationLiveTest {
@@ -54,14 +63,29 @@ class ModelEvaluationLiveTest {
         pairs = pairs.subList(0, Math.min(limit, pairs.size()));
 
         Judge judge = new Judge(apiKey);
+        EvaluationLog log = EvaluationLog.load();
         List<String> inverted = new ArrayList<>();
         int compared = 0;
+        int asked = 0;
 
         for (EvaluationSet.OrderingPair pair : pairs) {
-            Integer low = judge.axis(pair.lower(), pair.axis());
-            Integer high = judge.axis(pair.higher(), pair.axis());
+            String seen = log.recorded("order", pair.id(), judge.model());
+            Integer low;
+            Integer high;
+            if (seen != null) {
+                String[] parts = seen.split("/");
+                low = Integer.valueOf(parts[0]);
+                high = Integer.valueOf(parts[1]);
+            } else {
+                low = judge.axis(pair.lower(), pair.axis());
+                high = judge.axis(pair.higher(), pair.axis());
+                if (low != null && high != null) {
+                    log.record("order", pair.id(), judge.model(), low + "/" + high);
+                    asked++;
+                }
+            }
             if (low == null || high == null) {
-                System.out.printf("  %-18s 호출 실패로 건너뜀%n", pair.id());
+                System.out.printf("  %-18s 호출 실패로 건너뜀 (다음 실행에서 다시 묻는다)%n", pair.id());
                 continue;
             }
             compared++;
@@ -73,10 +97,13 @@ class ModelEvaluationLiveTest {
             }
         }
 
-        System.out.printf("%n=== 모델 순서 준수 ===%n비교한 쌍 %d 중 %d 쌍이 순서를 지켰다%n",
-                compared, compared - inverted.size());
+        log.save();
+        System.out.printf("%n=== 모델 순서 준수 ===%n비교한 쌍 %d/%d 중 %d 쌍이 순서를 지켰다 (이번에 새로 물은 쌍 %d)%n",
+                compared, pairs.size(), compared - inverted.size(), asked);
         inverted.forEach(System.out::println);
-        assertThat(compared).as("한 쌍도 비교하지 못했다 — 쿼터나 업스트림 상태를 확인할 것").isPositive();
+        if (compared == 0) {
+            System.out.println("오늘은 한 쌍도 받지 못했다 — 쿼터가 돌아오면 같은 명령을 다시 돌리면 이어서 묻는다.");
+        }
     }
 
     @Test
@@ -101,9 +128,11 @@ class ModelEvaluationLiveTest {
         NuanceModelClient client = new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
         String model = System.getenv().getOrDefault("GEMINI_MODEL", "gemini-3.6-flash");
         ObjectMapper mapper = new ObjectMapper();
+        EvaluationLog log = EvaluationLog.load();
 
         List<String> mismatches = new ArrayList<>();
-        int asked = 0;
+        int compared = 0;
+        int askedNow = 0;
         int agreed = 0;
         int failed = 0;
 
@@ -114,17 +143,22 @@ class ModelEvaluationLiveTest {
                     # User Input
                     %s
                     """.formatted(row.relationship().name(), row.text());
-            String raw;
-            try {
-                raw = client.generate(model, prompt, config);
-            } catch (RuntimeException e) {
-                // 503(과부하)과 429(쿼터)는 평가의 결과가 아니라 평가를 막은 사정이다.
-                failed++;
-                System.out.printf("  %-14s 호출 실패: %s%n", row.id(), e.getClass().getSimpleName());
-                continue;
+            String got = log.recorded("risk", row.id(), model);
+            if (got == null) {
+                try {
+                    got = mapper.readValue(client.generate(model, prompt, config), NuanceResponseDTO.class)
+                            .riskAnalysis().riskLevel();
+                } catch (RuntimeException e) {
+                    // 503(과부하)과 429(쿼터)는 평가의 결과가 아니라 평가를 막은 사정이다.
+                    failed++;
+                    System.out.printf("  %-14s 호출 실패: %s (다음 실행에서 다시 묻는다)%n",
+                            row.id(), e.getClass().getSimpleName());
+                    continue;
+                }
+                log.record("risk", row.id(), model, got);
+                askedNow++;
             }
-            asked++;
-            String got = mapper.readValue(raw, NuanceResponseDTO.class).riskAnalysis().riskLevel();
+            compared++;
             if (row.risk().equalsIgnoreCase(got)) {
                 agreed++;
             } else {
@@ -133,15 +167,17 @@ class ModelEvaluationLiveTest {
             }
         }
 
+        log.save();
         System.out.printf("%n=== 모델 리스크 판정 일치율 ===%n");
-        System.out.printf("물어본 문장 %d건 중 %d건 일치 (%s)%s%n",
-                asked, agreed,
-                asked == 0 ? "측정 불가" : "%.0f%%".formatted(100.0 * agreed / asked),
+        System.out.printf("답을 받은 문장 %d/%d 중 %d건 일치 (%s). 이번에 새로 물은 문장 %d건%s%n",
+                compared, rows.size(), agreed,
+                compared == 0 ? "측정 불가" : "%.0f%%".formatted(100.0 * agreed / compared),
+                askedNow,
                 failed > 0 ? ", 호출 실패 %d건".formatted(failed) : "");
         mismatches.forEach(System.out::println);
-
-        // 합격선은 두지 않는다. 다만 한 건도 묻지 못했다면 측정 자체가 없던 일이다.
-        assertThat(asked).as("모델에 한 건도 묻지 못했다 — 쿼터나 업스트림 상태를 확인할 것").isPositive();
+        if (compared == 0) {
+            System.out.println("오늘은 한 건도 받지 못했다 — 쿼터가 돌아오면 같은 명령을 다시 돌리면 이어서 묻는다.");
+        }
     }
 
     /** 한 문장을 모델에 물어 지표 하나를 꺼낸다. 호출이 실패하면 null 이다. */
@@ -161,6 +197,10 @@ class ModelEvaluationLiveTest {
                     .responseSchema(schema)
                     .build();
             this.client = new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
+        }
+
+        String model() {
+            return model;
         }
 
         Integer axis(String text, String axis) {
