@@ -8,7 +8,7 @@ import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +30,7 @@ public final class NuanceSchemaFactory {
 
     public static ObjectNode build(Class<?> type) {
         // 옵션 없이도 @JsonProperty 필드명과 @JsonPropertyDescription 설명을 그대로 반영한다.
-        JacksonModule jacksonModule = new JacksonModule();
+        JacksonSchemaModule jacksonModule = new JacksonSchemaModule();
 
         SchemaGeneratorConfigBuilder configBuilder =
                 new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
