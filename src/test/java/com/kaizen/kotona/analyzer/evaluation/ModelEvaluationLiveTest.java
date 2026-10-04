@@ -10,6 +10,9 @@ import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.utils.NuanceSchemaFactory;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -42,7 +45,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>{@code -DevalLimit=5} 로 한 번에 묻는 수를 줄일 수 있다.
  */
 @Tag("eval")
+// 쿼터가 조금씩만 들어오므로 어느 쪽을 먼저 묻는지가 그날의 측정을 정한다.
+// 리스크 평가를 먼저 둔다 — 문장당 1회로 34개의 자료점을 모으는 쪽이, 쌍당 2회로
+// 7개를 모으는 쪽보다 같은 호출 수에서 더 많이 알려 준다.
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ModelEvaluationLiveTest {
+
+    /**
+     * 연속 실패 허용치. 쿼터가 비면 남은 호출도 전부 같은 이유로 실패하므로,
+     * 세 번 연달아 막히면 그만둔다 — 실제로 33 건을 모두 시도하며 3분을 버린 적이 있다.
+     */
+    private static final int CONSECUTIVE_FAILURE_LIMIT = 3;
 
     private static final String SYSTEM_INSTRUCTION = """
             You are a "Business Japanese Communication Expert".
@@ -51,6 +64,7 @@ class ModelEvaluationLiveTest {
             """;
 
     @Test
+    @Order(2)
     @DisplayName("모델이 문장의 순서를 뒤집지 않는지 본다")
     void respectsTheOrderingPairs() throws Exception {
         // 지표에는 비교할 정답 점수가 없지만 순서에는 있다. 쌍마다 두 번 부르므로 비싸다 —
@@ -68,7 +82,12 @@ class ModelEvaluationLiveTest {
         int compared = 0;
         int asked = 0;
 
+        int consecutiveFailures = 0;
         for (EvaluationSet.OrderingPair pair : pairs) {
+            if (consecutiveFailures >= CONSECUTIVE_FAILURE_LIMIT) {
+                System.out.printf("  연속 %d회 실패 — 쿼터가 비었다고 보고 중단한다.%n", consecutiveFailures);
+                break;
+            }
             String seen = log.recorded("order", pair.id(), judge.model());
             Integer low;
             Integer high;
@@ -85,9 +104,11 @@ class ModelEvaluationLiveTest {
                 }
             }
             if (low == null || high == null) {
+                consecutiveFailures++;
                 System.out.printf("  %-18s 호출 실패로 건너뜀 (다음 실행에서 다시 묻는다)%n", pair.id());
                 continue;
             }
+            consecutiveFailures = 0;
             compared++;
             System.out.printf("  %-18s %-12s %2d → %2d%s%n", pair.id(), pair.axis(), low, high,
                     high >= low ? "" : "   뒤집힘");
@@ -107,6 +128,7 @@ class ModelEvaluationLiveTest {
     }
 
     @Test
+    @Order(1)
     @DisplayName("모델의 리스크 판정을 라벨과 맞대어 본다")
     void reportsAgreementWithTheLabels() throws Exception {
         String apiKey = System.getenv("GEMINI_API_KEY");
@@ -136,7 +158,13 @@ class ModelEvaluationLiveTest {
         int agreed = 0;
         int failed = 0;
 
+        int consecutiveFailures = 0;
         for (EvaluationSet.Row row : rows) {
+            if (consecutiveFailures >= CONSECUTIVE_FAILURE_LIMIT) {
+                System.out.printf("  연속 %d회 실패 — 쿼터가 비었다고 보고 중단한다. 남은 %d건은 다음 실행에서 묻는다.%n",
+                        consecutiveFailures, rows.size() - compared - failed);
+                break;
+            }
             String prompt = """
                     # Relationship Context: %s
 
@@ -151,12 +179,14 @@ class ModelEvaluationLiveTest {
                 } catch (RuntimeException e) {
                     // 503(과부하)과 429(쿼터)는 평가의 결과가 아니라 평가를 막은 사정이다.
                     failed++;
+                    consecutiveFailures++;
                     System.out.printf("  %-14s 호출 실패: %s (다음 실행에서 다시 묻는다)%n",
                             row.id(), e.getClass().getSimpleName());
                     continue;
                 }
                 log.record("risk", row.id(), model, got);
                 askedNow++;
+                consecutiveFailures = 0;
             }
             compared++;
             if (row.risk().equalsIgnoreCase(got)) {
