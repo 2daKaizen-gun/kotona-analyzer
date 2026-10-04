@@ -82,7 +82,7 @@ class NuanceSchemaFactoryTest {
             List<String> names = new ArrayList<>(properties.propertyNames());
 
             List<String> requiredNames = new ArrayList<>();
-            if (required != null) required.forEach(entry -> requiredNames.add(entry.asText()));
+            if (required != null) required.forEach(entry -> requiredNames.add(entry.asString()));
 
             if (!requiredNames.containsAll(names)) {
                 incomplete.add(node.path());
@@ -108,10 +108,10 @@ class NuanceSchemaFactoryTest {
     void carriesTheFieldDescriptions() {
         // 프롬프트에서 스키마 블록을 지운 근거가 이것이다.
         // 설명이 빠지면 모델은 허용값(SAFE/CAUTION/DANGER 등)을 알 길이 없다.
-        assertThat(schema.path("properties").path("category").path("description").asText())
+        assertThat(schema.path("properties").path("category").path("description").asString())
                 .contains("INTERNAL_CHAT");
         assertThat(schema.path("properties").path("riskAnalysis").path("properties")
-                .path("riskLevel").path("description").asText())
+                .path("riskLevel").path("description").asString())
                 .contains("DANGER");
     }
 
@@ -120,7 +120,7 @@ class NuanceSchemaFactoryTest {
     void expandsNestedObjectsAndArrays() {
         // 배열 항목이 비어 있으면 모델이 임의의 모양으로 답한다
         JsonNode smartReplies = schema.path("properties").path("smartReplies");
-        assertThat(smartReplies.path("type").asText()).isEqualTo("array");
+        assertThat(smartReplies.path("type").asString()).isEqualTo("array");
         assertThat(smartReplies.path("items").path("properties").has("content")).isTrue();
 
         JsonNode honne = schema.path("properties").path("sentiment")
@@ -133,10 +133,10 @@ class NuanceSchemaFactoryTest {
     @DisplayName("숫자 필드의 타입이 정수와 실수로 나뉜다")
     void distinguishesIntegersFromDecimals() {
         // confidence 가 integer 로 나가면 0.85 를 돌려줄 수 없다
-        assertThat(schema.path("properties").path("totalScore").path("type").asText())
+        assertThat(schema.path("properties").path("totalScore").path("type").asString())
                 .isEqualTo("integer");
         assertThat(schema.path("properties").path("sentiment").path("properties")
-                .path("confidence").path("type").asText())
+                .path("confidence").path("type").asString())
                 .isEqualTo("number");
     }
 

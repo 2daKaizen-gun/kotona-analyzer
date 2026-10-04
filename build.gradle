@@ -62,6 +62,11 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
 }
 
+// 경고를 숨기지 않는다. 제거 예정 API 를 쓰면 어디서 쓰는지 보이게 한다.
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-Xlint:deprecation'
+}
+
 tasks.named('test') {
     // 'live' 와 'eval' 은 진짜 Gemini 를 부른다. 매 푸시마다 쿼터를 쓰지 않도록 기본 테스트에서는 뺀다.
     useJUnitPlatform {

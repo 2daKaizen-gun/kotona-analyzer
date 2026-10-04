@@ -117,7 +117,7 @@ Everything is an environment variable with a working default, so a clone runs wi
 
 A number out of 100 looks like a measurement. This one is a model's judgement, adjusted by a layer of rules, and it is worth being precise about what stands behind each part.
 
-**The model's part has no ground truth.** Gemini is asked to rate politeness, indirectness and etiquette. Nothing verifies those ratings against an authority, because no such labelled corpus exists here. What exists is `src/test/resources/evaluation/business-sentences.json`: 24 Japanese business sentences, each labelled on three axes, each axis carrying its own basis.
+**The model's part has no ground truth.** Gemini is asked to rate politeness, indirectness and etiquette. Nothing verifies those ratings against an authority, because no such labelled corpus exists here. What exists is `src/test/resources/evaluation/business-sentences.json`: 34 Japanese business sentences, each labelled on three axes, each axis carrying its own basis. Twenty-four were written here; ten came from a reviewer as expressions that cause trouble in practice, and their labels were re-derived rather than taken on trust.
 
 Those bases are not all the same kind of claim, and the file distinguishes them:
 
@@ -133,16 +133,18 @@ Those bases are not all the same kind of claim, and the file distinguishes them:
 
 | axis | agreement |
 |---|---|
-| polite form (Kuromoji) | 24/24 |
-| cushion phrase | 24/24 |
-| refusal signal, recall | 6/6 |
-| refusal signal, false alarms | 0/18 |
+| polite form (Kuromoji) | 34/34 |
+| cushion phrase | 34/34 |
+| refusal signal, recall | 12/13 |
+| refusal signal, false alarms | 0/21 |
 
-Those numbers were 22/24 and 4/6 when the evaluation was first written. Matching raw strings missed 「恐れ入りますが」 and 「考えておきます」; matching Kuromoji base forms does not.
+Each number moved because the evaluation found something. Matching raw strings missed 「恐れ入りますが」 and 「考えておきます」, so matching is on Kuromoji base forms now. The ten added sentences then dropped recall to 7 of 13 — 「ご希望に添いかねます」「予定はございません」「持ち帰らせていただく」「善処いたします」 all read as safe — and five of the six were recovered by extending the dictionaries.
+
+**The sixth was left missed on purpose.** 「お声がけいたします」 defers; 「何かあればお声がけください」 invites. One dictionary entry cannot tell them apart, and a false alarm — telling someone a harmless message is dangerous — is worse than a miss, which the model may still catch. So recall is held to a floor rather than to 100%: demanding perfection from a keyword dictionary over arbitrary Japanese would only produce a dictionary overfitted to this file. False alarms are asserted at zero.
 
 **The three metrics have ordering constraints.** No source says 「ご確認ください」 is 35 out of 40, so there is nothing to compare an absolute score against. Ordering is another matter: 「よろしく」 cannot be more polite than 「よろしくお願い申し上げます」, and adding a cushion phrase to a request cannot lower its etiquette. `ordering-pairs.json` holds seven such pairs with the grammatical reason for each, and `RuleLayerOrderingTest` gives both sentences identical model scores so that any difference is the rules' doing. All seven hold; `evalTest` runs the same check against the model, at two calls per pair.
 
-**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift: they have to reproduce the grades on all 24 labelled sentences, so changing one breaks the build.
+**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift: they have to reproduce the grades on all 34 labelled sentences, so changing one breaks the build.
 
 **The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` reports and asserts nothing: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build.
 
@@ -152,10 +154,10 @@ Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | result |
 |---|---|
-| ordering pairs | 5 of 7 compared, **5 held** |
-| risk grade | 1 of 24 answered, **1 agreed** |
+| ordering pairs | 6 of 7 compared, **6 held** |
+| risk grade | 1 of 34 answered, **1 agreed** |
 
-The risk figure is one sentence. It is written here because the alternative is writing nothing and sounding more certain. The ordering run before it spent the day's quota, which is what prompted the incremental log.
+The risk figure is one sentence. It is written here with its denominator because the alternative is writing nothing and sounding more certain. The quota arrives in a trickle, so the risk check runs first — one call per sentence tells us more per call than two calls per pair — and both checks stop after three consecutive failures instead of collecting the same error thirty times.
 
 An earlier run is why the prompt changed: the model read `riskLevel` as rudeness rather than refusal, and 「よろしく」 came back DANGER. The prompt had asked for both readings; it now asks for one.
 
@@ -164,9 +166,11 @@ An earlier run is why the prompt changed: the model read `riskLevel` as rudeness
 **Every rule adjustment is returned** in `scoreAdjustments` and shown in the UI: which metric, before, after, and why. A reader can see whether 73 came from the model or from a rule taking ten off.
 
 ### What is still unverified
-- **No native speaker has reviewed the labels yet.** The politeness axis is decidable from 文化庁's categories, so it needs a reader of Japanese grammar rather than a judgement call. The cushion and refusal axes rest on convention, and there a native speaker's reading is the thing that is missing. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet for that review — it asks about those two axes only, says which judgements need no human because a published standard already decides them, and is checked against the evaluation files by a test so it cannot go stale. **Status: not yet returned.**
+- **No native speaker has reviewed the labels yet.** The politeness axis is decidable from 文化庁's categories, so it needs a reader of Japanese grammar rather than a judgement call. The cushion and refusal axes rest on convention, and there a native speaker's reading is the thing that is missing. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet for that review — it asks about those two axes only, says which judgements need no human because a published standard already decides them, and is checked against the evaluation files by a test so it cannot go stale.
+
+**Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
-- **24 sentences and 7 pairs, written to cover known cases.** They are not a sample of real correspondence, so agreement on them says nothing about the distribution of sentences a user actually types.
+- **34 sentences and 7 pairs.** Ten now come from expressions a reviewer called troublesome in practice, which is closer to real use than the first 24, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
 - **The model-side numbers are barely measured.** One sentence of 24, and five ordering pairs of seven. The rule layer is measured on every push; the model accumulates a dozen answers a day at best.
 
 ## 📡 API

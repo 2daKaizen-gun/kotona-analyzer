@@ -5,4 +5,11 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-03",
   "value" : "SAFE"
+}, {
+  "id" : "polite-ladder-01",
+  "kind" : "order",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-04",
+  "value" : "0/20"
 } ]

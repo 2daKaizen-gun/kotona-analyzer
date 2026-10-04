@@ -81,6 +81,14 @@ public class AnalysisValidator {
                 detectedRedFlags.add(entry.getValue().description());
             }
         }
+        // 굳은 표현은 낱말로 환원되지 않으므로 구 그대로 찾는다.
+        for (Map.Entry<String, EtiquetteConstants.SoftRejectionSignal> entry
+                : EtiquetteConstants.SOFT_REJECTION_PHRASES.entrySet()) {
+            if (cleanInput.contains(entry.getKey())) {
+                riskScore += entry.getValue().weight();
+                detectedRedFlags.add(entry.getValue().description());
+            }
+        }
 
         // 컨텍스트 가중치($W$) 적용. 배수는 enum 이 들고 있다 — 값이 늘어날 때
         // default 가 조용히 1.0 을 주는 일을 막는다.

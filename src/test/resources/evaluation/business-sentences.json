@@ -262,5 +262,115 @@
     "cushionBasis": "なし",
     "risk": "SAFE",
     "riskBasis": "共有と依頼。拒否ではない"
+  },
+  {
+    "id": "real-01",
+    "text": "恐れ入りますが、あいにく先約がございまして、今回はご希望に添いかねます。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "丁寧語「ございます・ます」+ 謙譲語Ⅰ「添いかねる」の丁重な言い回し",
+    "cushion": true,
+    "cushionBasis": "「恐れ入りますが」「あいにく」— 断り時のクッション言葉",
+    "risk": "DANGER",
+    "riskBasis": "「ご希望に添いかねます」は丁寧だが明確な拒否"
+  },
+  {
+    "id": "real-02",
+    "text": "検討のうえ、必要に応じてご連絡させていただきます。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "CAUTION",
+    "riskBasis": "「検討」に加えて連絡の条件が相手任せ。実務では拒否として読まれることも多いが、文面としては期限も約束もない保留なので CAUTION とする"
+  },
+  {
+    "id": "real-03",
+    "text": "せっかくのご提案ですが、現時点では導入の予定はございません。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "丁寧語「ございません」",
+    "cushion": true,
+    "cushionBasis": "「せっかくのご提案ですが」— 断り時のクッション言葉",
+    "risk": "DANGER",
+    "riskBasis": "「予定はございません」は現時点での明確な拒否"
+  },
+  {
+    "id": "real-04",
+    "text": "こちらの件、一度持ち帰らせていただけますでしょうか。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "CAUTION",
+    "riskBasis": "「持ち帰る」は社内相談のための保留。期限も約束もない"
+  },
+  {
+    "id": "real-05",
+    "text": "状況が変わりましたら、こちらからお声がけいたします。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "CAUTION",
+    "riskBasis": "連絡の起点を自分側に移し、条件も相手に委ねない。実務では見送りの定型だが、文面としては条件付きの保留なので CAUTION とする"
+  },
+  {
+    "id": "real-06",
+    "text": "諸事情により、スケジュールの再調整をお願いできますと幸いです。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "丁寧語「ます」+ 謙譲語Ⅰ「お願いする」",
+    "cushion": true,
+    "cushionBasis": "「諸事情により」— 理由を明示せず配慮を示す前置き",
+    "risk": "SAFE",
+    "riskBasis": "再調整の依頼であって拒否ではない"
+  },
+  {
+    "id": "real-07",
+    "text": "ご期待に添えず誠に申し訳ございませんが、何卒ご理解のほどよろしくお願い申し上げます。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「申し上げる」+ 丁寧語「ございます」",
+    "cushion": true,
+    "cushionBasis": "「ご期待に添えず誠に申し訳ございませんが」— 断り時のクッション言葉",
+    "risk": "DANGER",
+    "riskBasis": "「ご期待に添えず」で拒否が確定しており、理解を求める段"
+  },
+  {
+    "id": "real-08",
+    "text": "担当者に確認いたしましてから、明日17時までにご回答いたします。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "SAFE",
+    "riskBasis": "期限と次の行動が明示されている。「確認」が入っても回避ではない"
+  },
+  {
+    "id": "real-09",
+    "text": "差し支えなければ、理由についてお伺いしてもよろしいでしょうか。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「伺う」+ 丁寧語「ます」",
+    "cushion": true,
+    "cushionBasis": "「差し支えなければ」— 相手に断る余地を残すクッション言葉",
+    "risk": "SAFE",
+    "riskBasis": "配慮のある質問。拒否ではない"
+  },
+  {
+    "id": "real-10",
+    "text": "前向きに善処いたします。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "CAUTION",
+    "riskBasis": "「善処」は何も確約しない。「前向きに」が付いても保留のまま"
   }
 ]
