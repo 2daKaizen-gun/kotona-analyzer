@@ -12,4 +12,11 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-04",
   "value" : "0/20"
+}, {
+  "id" : "polite-01",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-05",
+  "value" : "SAFE"
 } ]

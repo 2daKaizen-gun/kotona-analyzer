@@ -7,6 +7,60 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 
 Spring Boot 4 · Java 21 · MySQL 8 · Gemini via Google AI Studio
 
+## ✅ Verified
+
+Each line below names a command. Run it and you get the number — that is the only kind of claim in this
+table. Anything that cannot be checked this way is in [What is still unverified](#what-is-still-unverified)
+instead, with its denominator.
+
+| what | measured | how to check it |
+|---|---|---|
+| Backend tests | **210** passing | `./gradlew test` — runs on every push |
+| Backend coverage | **96.49%** lines, **86.14%** branches (97.06% of instructions) | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
+| Frontend tests | **142** unit, **12** browser | `npm test` and `npm run test:browser` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
+| Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
+| Polite form, rules vs. labels | **34 / 34** | `./gradlew test --tests '*RuleLayerEvaluationTest'` |
+| Cushion phrase, rules vs. labels | **34 / 34** | same test |
+| Refusal signals caught, of the risky sentences | **12 / 13** | same test — held as a floor, not a target; the one miss is explained below |
+| False alarms, of the safe sentences | **0 / 21** | same test — asserted at zero |
+| Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
+| Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
+| Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
+| The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
+| Model agreement, risk grade | **2 / 34** answered, **2** agreed | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
+| Model agreement, ordering | **1 / 7** compared, **1** held | same command |
+| Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
+| Known dependency vulnerabilities | **0** | `npm audit --omit=dev`; Dependabot alerts enabled on both repos |
+
+Two of those numbers are small on purpose, and two cannot grow by working harder — [What the measurement
+found](#-what-the-measurement-found) explains the first, [What is still
+unverified](#what-is-still-unverified) the second.
+
+## 🧪 What the measurement found
+
+A test suite that only ever passes has proved nothing except that it was written afterwards. These are the
+defects the numbers above caught — each one was in `main`, each is now held by something that fails if it
+comes back.
+
+| what was wrong | how it surfaced | what holds it now |
+|---|---|---|
+| **Flyway stopped running** after the Boot 4 upgrade. The module was split out, the starter was missing, and migrations silently did not apply — invisible locally, where the schema already existed | CI runs against an empty database: `Schema validation: missing table [analysis_history]` | `spring-boot-starter-flyway`, and a CI job that still starts from an empty database on every push |
+| **The save path behind every analysis was untested** — 0% on the branch that writes the history row, in a service whose whole job is to write it | the first coverage report, once JaCoCo was wired into `check` | `AnalysisHistorySaveTest`, plus a 0.90 line floor that fails the build |
+| **「ご確認ください」 was scored impolite.** The check looked for です・ます as literal strings, so a 尊敬語 imperative counted as plain speech | the labelled evaluation set, on its first run | Kuromoji conjugation types instead of substrings — polite form **34 / 34** |
+| **A missing dictionary entry quietly cost 10 points.** 「恐れ入りますが」 is a cushion phrase; the rules did not know it, so a polite request was penalised as if it had none. Same sentence, same manners, ten points apart — decided by a file, not by the Japanese | cushion agreement against the labels | lemma matching on Kuromoji base forms — cushion **34 / 34** |
+| **Base forms then over-matched.** 「考えておきます」 defers, 「貢献したいと考えております」 is an aspiration, and both reduce to 考える — so a sentence about wanting to contribute was read as a brush-off | the false-alarm check on the 21 safe sentences | a companion-lemma requirement (`考える` + `おく`) — false alarms **0 / 21** |
+| **The model read `riskLevel` as rudeness.** 「よろしく」 came back `DANGER`: terse, yes, but it refuses nothing. The prompt had asked for two readings at once | the first `evalTest` run against the model | one definition in the prompt and in `@JsonPropertyDescription`, with worked examples; the risk check re-asks whenever the prompt version changes |
+
+One more was found in the measuring itself: the first `evalTest` spent a day's quota collecting the same
+`429` thirty-three times, and the ordering check ran first and left nothing for the sentences. It now stops
+after three consecutive failures, asks the cheaper check first, and keeps every answer it has already paid
+for in `model-answers.json`.
+
+The one miss that was left in place is 「お声がけいたします」. It defers; 「何かあればお声がけください」
+invites; one dictionary entry cannot tell them apart. A false alarm — telling someone a harmless message is
+dangerous — is worse than a miss the model may still catch, so recall is held at a floor of 12/13 rather
+than driven to 100% by fitting the dictionary to this file.
+
 ## 🎯 Background & Motivation
 - **The Context**: "Engineering with Respect"
   - Japanese business etiquette, centered on consideration for others and indirect expressions, is a beautiful and delicate culture. However, for non-native engineers, failing to grasp these subtle nuances can lead to unintended misunderstandings during collaboration.
@@ -115,6 +169,10 @@ Everything is an environment variable with a working default, so a clone runs wi
 
 ## 🔍 What the score is
 
+[`docs/SCORE_PATH.md`](docs/SCORE_PATH.md) follows one sentence through the whole path on a single page —
+normalize, morphology, model, rules, adjustment record, UI — with the test that holds each stage. This
+section is about what stands behind the numbers it produces.
+
 A number out of 100 looks like a measurement. This one is a model's judgement, adjusted by a layer of rules, and it is worth being precise about what stands behind each part.
 
 **The model's part has no ground truth.** Gemini is asked to rate politeness, indirectness and etiquette. Nothing verifies those ratings against an authority, because no such labelled corpus exists here. What exists is `src/test/resources/evaluation/business-sentences.json`: 34 Japanese business sentences, each labelled on three axes, each axis carrying its own basis. Twenty-four were written here; ten came from a reviewer as expressions that cause trouble in practice, and their labels were re-derived rather than taken on trust.
@@ -148,14 +206,18 @@ Each number moved because the evaluation found something. Matching raw strings m
 
 **The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` reports and asserts nothing: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build.
 
-A full pass needs 38 calls (24 sentences, 7 pairs at two each) and the free tier answers roughly a dozen a day, so answers accumulate in `model-answers.json` and each run asks only what is still missing. The file records the model and a prompt version with each answer; change either and that answer is asked again.
+A full pass needs 48 calls — 34 sentences at one each, 7 pairs at two — and the free tier answers roughly a dozen a day. So the measurement is built to accumulate: answers are kept in `model-answers.json`, each run asks only what is still missing, and an empty quota ends the run instead of failing it. **A partly filled column is the normal state of this number, not an unfinished task** — it fills at the rate Google gives answers away, about four days of runs from here. The file records the model and the prompt version with each answer, so changing either re-asks it rather than leaving a stale agreement on the page.
 
 Measured so far, on `gemini-3.6-flash` with the current prompt:
 
-| check | result |
-|---|---|
-| ordering pairs | 6 of 7 compared, **6 held** |
-| risk grade | 1 of 34 answered, **1 agreed** |
+| check | answers kept in `model-answers.json` | agreed |
+|---|---|---|
+| risk grade | 2 of 34 | **2** |
+| ordering pairs | 1 of 7 | **1** |
+
+An earlier run compared six of the seven pairs and all six held, but that was before answers were kept on
+disk, so it cannot be reproduced from the file — and a number that cannot be re-checked does not belong in a
+table like this one. It is history, not evidence; the column above counts only what the log can show.
 
 The risk figure is one sentence. It is written here with its denominator because the alternative is writing nothing and sounding more certain. The quota arrives in a trickle, so the risk check runs first — one call per sentence tells us more per call than two calls per pair — and both checks stop after three consecutive failures instead of collecting the same error thirty times.
 
@@ -166,12 +228,24 @@ An earlier run is why the prompt changed: the model read `riskLevel` as rudeness
 **Every rule adjustment is returned** in `scoreAdjustments` and shown in the UI: which metric, before, after, and why. A reader can see whether 73 came from the model or from a rule taking ten off.
 
 ### What is still unverified
+
+Each of these has a denominator, which is the point of the section: a limit stated as a fraction can be
+checked and can move, while a limit stated as a disclaimer only sounds humble.
+
+| limit | where it stands | what would move it |
+|---|---|---|
+| native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
+| model agreement, risk grade | **2 / 34** sentences | free quota — 32 calls, which is three or four good days |
+| model agreement, ordering | **1 / 7** pairs | free quota — 12 calls |
+| calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
+| sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |
+
 - **No native speaker has reviewed the labels yet.** The politeness axis is decidable from 文化庁's categories, so it needs a reader of Japanese grammar rather than a judgement call. The cushion and refusal axes rest on convention, and there a native speaker's reading is the thing that is missing. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet for that review — it asks about those two axes only, says which judgements need no human because a published standard already decides them, and is checked against the evaluation files by a test so it cannot go stale.
 
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **34 sentences and 7 pairs.** Ten now come from expressions a reviewer called troublesome in practice, which is closer to real use than the first 24, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **The model-side numbers are barely measured.** One sentence of 24, and five ordering pairs of seven. The rule layer is measured on every push; the model accumulates a dozen answers a day at best.
+- **The model-side numbers are thin, and they fill with quota rather than with effort.** Risk grade: **2 of 34**. Ordering: **1 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds. How many a day is not ours to decide: 2026-10-05 gave one answer and then three `429`s in a row, at which point the run stopped itself and kept what it had. Running `./gradlew evalTest` on more days finishes the column, and nothing in the code is waiting on it.
 
 ## 📡 API
 
@@ -283,6 +357,9 @@ remove or narrow one, so a deleted field left its column behind forever and a re
     - [x] Phase 6-1: Coverage measured in both repositories, with a floor enforced in CI
     - [x] Phase 6-2: Dependabot watching npm, Gradle and Actions, with alerts enabled
     - [x] Phase 6-3: Migration to Spring Boot 4 (Jackson 3, victools 5, springdoc 3)
+    - [x] Phase 6-4: Grounding the score — labelled evaluation set, rule layer measured on every push, ordering constraints, every adjustment returned to the reader
+    - [x] Phase 6-5: Every number in the docs paired with the command that prints it, and every limit with its denominator
+    - [ ] Phase 6-6: Native-speaker review of the two convention axes, and the model-side columns filled as quota allows — both outside this repo's reach, both tracked where they stand
 
 ## 🔥 Troubleshooting & Lessons Learned
 **1. External Resource Path Resolution (Classpath vs FileSystem)** *(historical — resolved by removing the key file entirely)*
@@ -321,7 +398,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 210 backend tests covering 97% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 210 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 
