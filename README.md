@@ -32,8 +32,34 @@ instead, with its denominator.
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
 | Known dependency vulnerabilities | **0** | `npm audit --omit=dev`; Dependabot alerts enabled on both repos |
 
-Two of those numbers are small on purpose, and two of them cannot grow by working harder. Which is which
-is in [What is still unverified](#what-is-still-unverified).
+Two of those numbers are small on purpose, and two cannot grow by working harder — [What the measurement
+found](#-what-the-measurement-found) explains the first, [What is still
+unverified](#what-is-still-unverified) the second.
+
+## 🧪 What the measurement found
+
+A test suite that only ever passes has proved nothing except that it was written afterwards. These are the
+defects the numbers above caught — each one was in `main`, each is now held by something that fails if it
+comes back.
+
+| what was wrong | how it surfaced | what holds it now |
+|---|---|---|
+| **Flyway stopped running** after the Boot 4 upgrade. The module was split out, the starter was missing, and migrations silently did not apply — invisible locally, where the schema already existed | CI runs against an empty database: `Schema validation: missing table [analysis_history]` | `spring-boot-starter-flyway`, and a CI job that still starts from an empty database on every push |
+| **The save path behind every analysis was untested** — 0% on the branch that writes the history row, in a service whose whole job is to write it | the first coverage report, once JaCoCo was wired into `check` | `AnalysisHistorySaveTest`, plus a 0.90 line floor that fails the build |
+| **「ご確認ください」 was scored impolite.** The check looked for です・ます as literal strings, so a 尊敬語 imperative counted as plain speech | the labelled evaluation set, on its first run | Kuromoji conjugation types instead of substrings — polite form **34 / 34** |
+| **A missing dictionary entry quietly cost 10 points.** 「恐れ入りますが」 is a cushion phrase; the rules did not know it, so a polite request was penalised as if it had none. Same sentence, same manners, ten points apart — decided by a file, not by the Japanese | cushion agreement against the labels | lemma matching on Kuromoji base forms — cushion **34 / 34** |
+| **Base forms then over-matched.** 「考えておきます」 defers, 「貢献したいと考えております」 is an aspiration, and both reduce to 考える — so a sentence about wanting to contribute was read as a brush-off | the false-alarm check on the 21 safe sentences | a companion-lemma requirement (`考える` + `おく`) — false alarms **0 / 21** |
+| **The model read `riskLevel` as rudeness.** 「よろしく」 came back `DANGER`: terse, yes, but it refuses nothing. The prompt had asked for two readings at once | the first `evalTest` run against the model | one definition in the prompt and in `@JsonPropertyDescription`, with worked examples; the risk check re-asks whenever the prompt version changes |
+
+One more was found in the measuring itself: the first `evalTest` spent a day's quota collecting the same
+`429` thirty-three times, and the ordering check ran first and left nothing for the sentences. It now stops
+after three consecutive failures, asks the cheaper check first, and keeps every answer it has already paid
+for in `model-answers.json`.
+
+The one miss that was left in place is 「お声がけいたします」. It defers; 「何かあればお声がけください」
+invites; one dictionary entry cannot tell them apart. A false alarm — telling someone a harmless message is
+dangerous — is worse than a miss the model may still catch, so recall is held at a floor of 12/13 rather
+than driven to 100% by fitting the dictionary to this file.
 
 ## 🎯 Background & Motivation
 - **The Context**: "Engineering with Respect"
