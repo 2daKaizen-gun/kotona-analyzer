@@ -20,7 +20,7 @@ import java.util.Set;
  *
  * <p>목록을 늘리거나 가중치를 바꿀 때는 {@code src/test/resources/evaluation/business-sentences.json}
  * 의 라벨된 문장과 맞대어 확인한다({@code RuleLayerEvaluationTest}). 가중치는 여전히 손으로 고른
- * 값이지만, 이제는 그 값이 라벨된 24문장의 판정을 재현해야 한다 — 임의로 바꾸면 테스트가 깨진다.
+ * 값이지만, 이제는 그 값이 라벨된 34문장의 판정을 재현해야 한다 — 임의로 바꾸면 테스트가 깨진다.
  */
 public final class EtiquetteConstants {
 
