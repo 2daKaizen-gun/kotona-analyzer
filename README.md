@@ -202,7 +202,7 @@ Each number moved because the evaluation found something. Matching raw strings m
 
 **The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` reports and asserts nothing: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build.
 
-A full pass needs 38 calls (24 sentences, 7 pairs at two each) and the free tier answers roughly a dozen a day, so answers accumulate in `model-answers.json` and each run asks only what is still missing. The file records the model and a prompt version with each answer; change either and that answer is asked again.
+A full pass needs 48 calls — 34 sentences at one each, 7 pairs at two — and the free tier answers roughly a dozen a day. So the measurement is built to accumulate: answers are kept in `model-answers.json`, each run asks only what is still missing, and an empty quota ends the run instead of failing it. **A partly filled column is the normal state of this number, not an unfinished task** — it fills at the rate Google gives answers away, about four days of runs from here. The file records the model and the prompt version with each answer, so changing either re-asks it rather than leaving a stale agreement on the page.
 
 Measured so far, on `gemini-3.6-flash` with the current prompt:
 
@@ -220,12 +220,24 @@ An earlier run is why the prompt changed: the model read `riskLevel` as rudeness
 **Every rule adjustment is returned** in `scoreAdjustments` and shown in the UI: which metric, before, after, and why. A reader can see whether 73 came from the model or from a rule taking ten off.
 
 ### What is still unverified
+
+Each of these has a denominator, which is the point of the section: a limit stated as a fraction can be
+checked and can move, while a limit stated as a disclaimer only sounds humble.
+
+| limit | where it stands | what would move it |
+|---|---|---|
+| native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
+| model agreement, risk grade | **1 / 34** sentences | about four more days of free quota |
+| model agreement, ordering | **6 / 7** pairs | two calls |
+| calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
+| sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |
+
 - **No native speaker has reviewed the labels yet.** The politeness axis is decidable from 文化庁's categories, so it needs a reader of Japanese grammar rather than a judgement call. The cushion and refusal axes rest on convention, and there a native speaker's reading is the thing that is missing. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet for that review — it asks about those two axes only, says which judgements need no human because a published standard already decides them, and is checked against the evaluation files by a test so it cannot go stale.
 
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **34 sentences and 7 pairs.** Ten now come from expressions a reviewer called troublesome in practice, which is closer to real use than the first 24, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **The model-side numbers are barely measured.** One sentence of 24, and five ordering pairs of seven. The rule layer is measured on every push; the model accumulates a dozen answers a day at best.
+- **The model-side numbers are thin, and they fill with quota rather than with effort.** Risk grade: **1 of 34**. Ordering: **6 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds, and the free tier gives about a dozen a day. Running `./gradlew evalTest` on four more days finishes the column; nothing in the code is waiting on anything.
 
 ## 📡 API
 
