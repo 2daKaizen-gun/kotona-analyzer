@@ -7,6 +7,34 @@ An AI-driven Japanese business communication analyzer that deciphers "本音" (t
 
 Spring Boot 4 · Java 21 · MySQL 8 · Gemini via Google AI Studio
 
+## ✅ Verified
+
+Each line below names a command. Run it and you get the number — that is the only kind of claim in this
+table. Anything that cannot be checked this way is in [What is still unverified](#what-is-still-unverified)
+instead, with its denominator.
+
+| what | measured | how to check it |
+|---|---|---|
+| Backend tests | **210** passing | `./gradlew test` — runs on every push |
+| Backend coverage | **97%** lines, **86%** branches | `./gradlew check` — JaCoCo floors of 0.90 / 0.80 are wired into `check`, so this cannot quietly fall |
+| Frontend tests | **142** unit, **12** browser | `npm test` and `npm run test:browser` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
+| Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
+| Polite form, rules vs. labels | **34 / 34** | `./gradlew test --tests '*RuleLayerEvaluationTest'` |
+| Cushion phrase, rules vs. labels | **34 / 34** | same test |
+| Refusal signals caught, of the risky sentences | **12 / 13** | same test — held as a floor, not a target; the one miss is explained below |
+| False alarms, of the safe sentences | **0 / 21** | same test — asserted at zero |
+| Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
+| Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
+| Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
+| The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
+| Model agreement, risk grade | **1 / 34** answered, **1** agreed | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
+| Model agreement, ordering | **6 / 7** compared, **6** held | same command |
+| Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
+| Known dependency vulnerabilities | **0** | `npm audit --omit=dev`; Dependabot alerts enabled on both repos |
+
+Two of those numbers are small on purpose, and two of them cannot grow by working harder. Which is which
+is in [What is still unverified](#what-is-still-unverified).
+
 ## 🎯 Background & Motivation
 - **The Context**: "Engineering with Respect"
   - Japanese business etiquette, centered on consideration for others and indirect expressions, is a beautiful and delicate culture. However, for non-native engineers, failing to grasp these subtle nuances can lead to unintended misunderstandings during collaboration.
