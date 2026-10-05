@@ -169,6 +169,10 @@ Everything is an environment variable with a working default, so a clone runs wi
 
 ## 🔍 What the score is
 
+[`docs/SCORE_PATH.md`](docs/SCORE_PATH.md) follows one sentence through the whole path on a single page —
+normalize, morphology, model, rules, adjustment record, UI — with the test that holds each stage. This
+section is about what stands behind the numbers it produces.
+
 A number out of 100 looks like a measurement. This one is a model's judgement, adjusted by a layer of rules, and it is worth being precise about what stands behind each part.
 
 **The model's part has no ground truth.** Gemini is asked to rate politeness, indirectness and etiquette. Nothing verifies those ratings against an authority, because no such labelled corpus exists here. What exists is `src/test/resources/evaluation/business-sentences.json`: 34 Japanese business sentences, each labelled on three axes, each axis carrying its own basis. Twenty-four were written here; ten came from a reviewer as expressions that cause trouble in practice, and their labels were re-derived rather than taken on trust.
