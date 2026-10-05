@@ -27,8 +27,8 @@ instead, with its denominator.
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
-| Model agreement, risk grade | **1 / 34** answered, **1** agreed | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
-| Model agreement, ordering | **6 / 7** compared, **6** held | same command |
+| Model agreement, risk grade | **2 / 34** answered, **2** agreed | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
+| Model agreement, ordering | **1 / 7** compared, **1** held | same command |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
 | Known dependency vulnerabilities | **0** | `npm audit --omit=dev`; Dependabot alerts enabled on both repos |
 
@@ -210,10 +210,14 @@ A full pass needs 48 calls — 34 sentences at one each, 7 pairs at two — and 
 
 Measured so far, on `gemini-3.6-flash` with the current prompt:
 
-| check | result |
-|---|---|
-| ordering pairs | 6 of 7 compared, **6 held** |
-| risk grade | 1 of 34 answered, **1 agreed** |
+| check | answers kept in `model-answers.json` | agreed |
+|---|---|---|
+| risk grade | 2 of 34 | **2** |
+| ordering pairs | 1 of 7 | **1** |
+
+An earlier run compared six of the seven pairs and all six held, but that was before answers were kept on
+disk, so it cannot be reproduced from the file — and a number that cannot be re-checked does not belong in a
+table like this one. It is history, not evidence; the column above counts only what the log can show.
 
 The risk figure is one sentence. It is written here with its denominator because the alternative is writing nothing and sounding more certain. The quota arrives in a trickle, so the risk check runs first — one call per sentence tells us more per call than two calls per pair — and both checks stop after three consecutive failures instead of collecting the same error thirty times.
 
@@ -231,8 +235,8 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 | limit | where it stands | what would move it |
 |---|---|---|
 | native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
-| model agreement, risk grade | **1 / 34** sentences | about four more days of free quota |
-| model agreement, ordering | **6 / 7** pairs | two calls |
+| model agreement, risk grade | **2 / 34** sentences | free quota — 32 calls, which is three or four good days |
+| model agreement, ordering | **1 / 7** pairs | free quota — 12 calls |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |
 
@@ -241,7 +245,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **34 sentences and 7 pairs.** Ten now come from expressions a reviewer called troublesome in practice, which is closer to real use than the first 24, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **The model-side numbers are thin, and they fill with quota rather than with effort.** Risk grade: **1 of 34**. Ordering: **6 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds, and the free tier gives about a dozen a day. Running `./gradlew evalTest` on four more days finishes the column; nothing in the code is waiting on anything.
+- **The model-side numbers are thin, and they fill with quota rather than with effort.** Risk grade: **2 of 34**. Ordering: **1 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds. How many a day is not ours to decide: 2026-10-05 gave one answer and then three `429`s in a row, at which point the run stopped itself and kept what it had. Running `./gradlew evalTest` on more days finishes the column, and nothing in the code is waiting on it.
 
 ## 📡 API
 
