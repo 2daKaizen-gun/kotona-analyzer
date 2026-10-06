@@ -29,6 +29,7 @@ instead, with its denominator.
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
 | Model agreement, risk grade | **2 / 34** answered, **2** agreed | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
 | Model agreement, ordering | **1 / 7** compared, **1** held | same command |
+| Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
 | Known dependency vulnerabilities | **0** | `npm audit --omit=dev`; Dependabot alerts enabled on both repos |
 
@@ -51,10 +52,18 @@ comes back.
 | **Base forms then over-matched.** 「考えておきます」 defers, 「貢献したいと考えております」 is an aspiration, and both reduce to 考える — so a sentence about wanting to contribute was read as a brush-off | the false-alarm check on the 21 safe sentences | a companion-lemma requirement (`考える` + `おく`) — false alarms **0 / 21** |
 | **The model read `riskLevel` as rudeness.** 「よろしく」 came back `DANGER`: terse, yes, but it refuses nothing. The prompt had asked for two readings at once | the first `evalTest` run against the model | one definition in the prompt and in `@JsonPropertyDescription`, with worked examples; the risk check re-asks whenever the prompt version changes |
 
-One more was found in the measuring itself: the first `evalTest` spent a day's quota collecting the same
-`429` thirty-three times, and the ordering check ran first and left nothing for the sentences. It now stops
+Two more were found in the measuring itself. The first `evalTest` spent a day's quota collecting the same
+`429` thirty-three times, and the ordering check ran first and left nothing for the sentences; it now stops
 after three consecutive failures, asks the cheaper check first, and keeps every answer it has already paid
 for in `model-answers.json`.
+
+And the report it printed was a guess. Every failure was logged as `호출 실패: ClientException` followed by
+"quota is empty, stopping" — a conclusion the code had no way to reach. A dead API key, a retired model name
+and a rejected schema all produced that same line, a green build and a report blaming the quota. The status
+is now read out of the SDK's message: `429 RESOURCE_EXHAUSTED` keeps the run green and prints when the window
+reopens, and **any other reason fails the run**, because that is not the day's circumstances, it is a break.
+Checked in both directions — a spent quota reports `쿼터 소진 … 23h39m 뒤에 다시 열린다` and passes, a bogus key
+reports `400 INVALID_ARGUMENT. API key not valid` and fails.
 
 The one miss that was left in place is 「お声がけいたします」. It defers; 「何かあればお声がけください」
 invites; one dictionary entry cannot tell them apart. A false alarm — telling someone a harmless message is
@@ -204,9 +213,9 @@ Each number moved because the evaluation found something. Matching raw strings m
 
 **The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift: they have to reproduce the grades on all 34 labelled sentences, so changing one breaks the build.
 
-**The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` reports and asserts nothing: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build.
+**The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` asserts nothing about the agreement itself: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build. It does assert that the quota is the reason, though — a call blocked for any other reason fails the run instead of being filed under "today's circumstances".
 
-A full pass needs 48 calls — 34 sentences at one each, 7 pairs at two — and the free tier answers roughly a dozen a day. So the measurement is built to accumulate: answers are kept in `model-answers.json`, each run asks only what is still missing, and an empty quota ends the run instead of failing it. **A partly filled column is the normal state of this number, not an unfinished task** — it fills at the rate Google gives answers away, about four days of runs from here. The file records the model and the prompt version with each answer, so changing either re-asks it rather than leaving a stale agreement on the page.
+A full pass needs 48 calls — 34 sentences at one each, 7 pairs at two — against a free-tier limit of **20 requests a day for this model**, which is not an estimate: the 429 names the quota (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`) and says how long until it reopens. So the measurement is built to accumulate: answers are kept in `model-answers.json`, each run asks only what is still missing, and an empty quota ends the run instead of failing it. **A partly filled column is the normal state of this number, not an unfinished task** — three clear days of the daily allowance would finish it, and a day spent on `liveTest` or on trying the app by hand is a day it does not advance. The file records the model and the prompt version with each answer, so changing either re-asks it rather than leaving a stale agreement on the page.
 
 Measured so far, on `gemini-3.6-flash` with the current prompt:
 
@@ -235,8 +244,8 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 | limit | where it stands | what would move it |
 |---|---|---|
 | native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
-| model agreement, risk grade | **2 / 34** sentences | free quota — 32 calls, which is three or four good days |
-| model agreement, ordering | **1 / 7** pairs | free quota — 12 calls |
+| model agreement, risk grade | **2 / 34** sentences | 32 calls, at 20 free requests a day |
+| model agreement, ordering | **1 / 7** pairs | 12 calls, out of the same 20 a day |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |
 
@@ -245,7 +254,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **34 sentences and 7 pairs.** Ten now come from expressions a reviewer called troublesome in practice, which is closer to real use than the first 24, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **The model-side numbers are thin, and they fill with quota rather than with effort.** Risk grade: **2 of 34**. Ordering: **1 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds. How many a day is not ours to decide: 2026-10-05 gave one answer and then three `429`s in a row, at which point the run stopped itself and kept what it had. Running `./gradlew evalTest` on more days finishes the column, and nothing in the code is waiting on it.
+- **The model-side numbers are thin, and they fill with quota rather than with effort.** Risk grade: **2 of 34**. Ordering: **1 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds out of twenty a day. How many a day is not ours to decide, and neither is when: on 2026-10-05 the run got one answer and then three `429`s; on 2026-10-06 it got none, because the day's twenty had gone the night before and the refusal said the window would reopen in 23h39m. That is the shape of this number — `./gradlew evalTest` on three clear days finishes the column, and nothing in the code is waiting on it.
 
 ## 📡 API
 
