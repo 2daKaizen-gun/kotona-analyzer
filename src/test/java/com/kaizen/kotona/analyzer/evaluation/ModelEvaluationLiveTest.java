@@ -8,6 +8,7 @@ import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.client.GenAiNuanceModelClient;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.support.ModelCallFailure;
 import com.kaizen.kotona.analyzer.utils.NuanceSchemaFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -33,6 +34,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>이것은 합격/불합격을 가르는 테스트가 아니라 측정 도구다.</b> 쿼터가 비어 호출이
  * 전부 실패해도 빌드를 깨지 않는다 — 그건 코드의 문제가 아니라 그날의 사정이고, 기록은
  * 남으므로 다음 실행이 이어 간다. 읽어야 할 것은 초록불이 아니라 출력된 숫자다.
+ *
+ * <p><b>단, 쿼터가 아닌 이유로 막히면 깨진다.</b> 키가 죽었거나 모델 이름이 사라진 것은
+ * 그날의 사정이 아니라 우리 쪽 문제이고, 그것까지 조용히 넘기면 이 테스트는 "오늘은 못
+ * 물었다" 라는 말밖에 못 하게 된다({@link ModelCallFailure}).
  *
  * <p>재는 것은 리스크 등급 하나다. 총점은 비교할 정답이 없고(라벨에 "73점" 같은 값은 없다),
  * 등급은 세 값 중 하나라 일치 여부를 말할 수 있다.
@@ -79,13 +84,14 @@ class ModelEvaluationLiveTest {
         Judge judge = new Judge(apiKey);
         EvaluationLog log = EvaluationLog.load();
         List<String> inverted = new ArrayList<>();
+        List<String> blocked = new ArrayList<>();
         int compared = 0;
         int asked = 0;
 
         int consecutiveFailures = 0;
         for (EvaluationSet.OrderingPair pair : pairs) {
             if (consecutiveFailures >= CONSECUTIVE_FAILURE_LIMIT) {
-                System.out.printf("  연속 %d회 실패 — 쿼터가 비었다고 보고 중단한다.%n", consecutiveFailures);
+                System.out.printf("  연속 %d회 실패 — 더 묻지 않고 중단한다.%n", consecutiveFailures);
                 break;
             }
             String seen = log.recorded("order", pair.id(), judge.model());
@@ -105,7 +111,12 @@ class ModelEvaluationLiveTest {
             }
             if (low == null || high == null) {
                 consecutiveFailures++;
-                System.out.printf("  %-18s 호출 실패로 건너뜀 (다음 실행에서 다시 묻는다)%n", pair.id());
+                ModelCallFailure failure = judge.lastFailure();
+                String reason = failure == null ? "이유 미기록" : failure.summary();
+                if (failure != null && !failure.quotaExhausted()) {
+                    blocked.add("  %s — %s".formatted(pair.id(), reason));
+                }
+                System.out.printf("  %-18s 호출 실패로 건너뜀: %s%n", pair.id(), reason);
                 continue;
             }
             consecutiveFailures = 0;
@@ -125,6 +136,7 @@ class ModelEvaluationLiveTest {
         if (compared == 0) {
             System.out.println("오늘은 한 쌍도 받지 못했다 — 쿼터가 돌아오면 같은 명령을 다시 돌리면 이어서 묻는다.");
         }
+        reportBlocked(blocked);
     }
 
     @Test
@@ -153,6 +165,8 @@ class ModelEvaluationLiveTest {
         EvaluationLog log = EvaluationLog.load();
 
         List<String> mismatches = new ArrayList<>();
+        // 쿼터가 아닌 이유로 막힌 호출. 비어 있지 않으면 이 측정은 고장 난 것이다.
+        List<String> blocked = new ArrayList<>();
         int compared = 0;
         int askedNow = 0;
         int agreed = 0;
@@ -161,7 +175,7 @@ class ModelEvaluationLiveTest {
         int consecutiveFailures = 0;
         for (EvaluationSet.Row row : rows) {
             if (consecutiveFailures >= CONSECUTIVE_FAILURE_LIMIT) {
-                System.out.printf("  연속 %d회 실패 — 쿼터가 비었다고 보고 중단한다. 남은 %d건은 다음 실행에서 묻는다.%n",
+                System.out.printf("  연속 %d회 실패 — 더 묻지 않고 중단한다. 남은 %d건은 다음 실행에서 묻는다.%n",
                         consecutiveFailures, rows.size() - compared - failed);
                 break;
             }
@@ -178,10 +192,15 @@ class ModelEvaluationLiveTest {
                             .riskAnalysis().riskLevel();
                 } catch (RuntimeException e) {
                     // 503(과부하)과 429(쿼터)는 평가의 결과가 아니라 평가를 막은 사정이다.
+                    // 그 둘이 아니면 우리 쪽 문제이므로, 따로 모아 두고 끝에 빨간불로 알린다.
+                    ModelCallFailure failure = ModelCallFailure.of(e);
                     failed++;
                     consecutiveFailures++;
+                    if (!failure.quotaExhausted()) {
+                        blocked.add("  %s — %s".formatted(row.id(), failure.summary()));
+                    }
                     System.out.printf("  %-14s 호출 실패: %s (다음 실행에서 다시 묻는다)%n",
-                            row.id(), e.getClass().getSimpleName());
+                            row.id(), failure.summary());
                     continue;
                 }
                 log.record("risk", row.id(), model, got);
@@ -208,6 +227,20 @@ class ModelEvaluationLiveTest {
         if (compared == 0) {
             System.out.println("오늘은 한 건도 받지 못했다 — 쿼터가 돌아오면 같은 명령을 다시 돌리면 이어서 묻는다.");
         }
+        reportBlocked(blocked);
+    }
+
+    /**
+     * 쿼터가 아닌 이유로 막혔으면 깨뜨린다.
+     *
+     * <p>이 테스트가 숫자를 단언하지 않는 것은 "몇 퍼센트가 합격인가" 를 정할 근거가 없기
+     * 때문이지, 무엇에도 실패하지 않기 위해서가 아니다. 키가 죽은 것은 근거가 없는 판단이
+     * 아니라 그냥 고장이다.
+     */
+    private static void reportBlocked(List<String> blocked) {
+        assertThat(blocked)
+                .as("쿼터가 아닌 이유로 호출이 막혔다 — 그날의 사정이 아니라 우리 쪽 문제다(키·모델 이름·스키마)")
+                .isEmpty();
     }
 
     /** 한 문장을 모델에 물어 지표 하나를 꺼낸다. 호출이 실패하면 null 이다. */
@@ -216,6 +249,8 @@ class ModelEvaluationLiveTest {
         private final GenerateContentConfig config;
         private final String model = System.getenv().getOrDefault("GEMINI_MODEL", "gemini-3.6-flash");
         private final ObjectMapper mapper = new ObjectMapper();
+        /** 마지막 호출이 왜 막혔는가. null 을 돌려주고 이유를 버리면 쿼터와 고장이 같아 보인다. */
+        private ModelCallFailure lastFailure;
 
         Judge(String apiKey) {
             Schema schema = Schema.fromJson(NuanceSchemaFactory.build(NuanceResponseDTO.class).toString());
@@ -231,6 +266,10 @@ class ModelEvaluationLiveTest {
 
         String model() {
             return model;
+        }
+
+        ModelCallFailure lastFailure() {
+            return lastFailure;
         }
 
         Integer axis(String text, String axis) {
@@ -249,6 +288,7 @@ class ModelEvaluationLiveTest {
                     default -> throw new IllegalArgumentException("모르는 축: " + axis);
                 };
             } catch (RuntimeException e) {
+                lastFailure = ModelCallFailure.of(e);
                 return null;
             }
         }

@@ -7,12 +7,14 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.support.ModelCallFailure;
 import com.kaizen.kotona.analyzer.utils.NuanceSchemaFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.abort;
 
 /**
  * 진짜 Gemini 를 부른다. {@code ./gradlew liveTest} 로만 돌고, 평소 {@code test} 에서는 빠진다.
@@ -63,8 +65,20 @@ class GenAiNuanceModelClientLiveTest {
         NuanceModelClient client =
                 new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
 
-        String raw = client.generate(System.getenv().getOrDefault("GEMINI_MODEL", "gemini-3.6-flash"),
-                PROMPT, config);
+        String raw;
+        try {
+            raw = client.generate(System.getenv().getOrDefault("GEMINI_MODEL", "gemini-3.6-flash"),
+                    PROMPT, config);
+        } catch (RuntimeException e) {
+            // 쿼터가 비어 못 부른 것은 SDK 경계가 깨진 것이 아니다. 빨간불로 적으면
+            // 「호출 방식이 틀렸다」 와 「오늘은 못 물었다」 가 같은 색으로 보인다 —
+            // 그래서 쿼터면 건너뛰고, 그 밖의 이유면 그대로 깨뜨린다.
+            ModelCallFailure failure = ModelCallFailure.of(e);
+            if (failure.quotaExhausted()) {
+                abort("쿼터가 비어 건너뛴다: " + failure.summary());
+            }
+            throw e;
+        }
 
         // 응답이 왔는가보다, 우리가 읽을 수 있는 모양으로 왔는가가 중요하다.
         assertThat(raw).isNotBlank();
