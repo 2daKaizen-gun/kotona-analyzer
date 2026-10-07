@@ -9,6 +9,8 @@ import com.kaizen.kotona.analyzer.client.GenAiNuanceModelClient;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.support.ModelCallFailure;
+
+import java.time.Duration;
 import com.kaizen.kotona.analyzer.utils.NuanceSchemaFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -187,13 +189,22 @@ class ModelEvaluationLiveTest {
                     """.formatted(row.relationship().name(), row.text());
             String got = log.recorded("risk", row.id(), model);
             if (got == null) {
-                try {
-                    got = mapper.readValue(client.generate(model, prompt, config), NuanceResponseDTO.class)
-                            .riskAnalysis().riskLevel();
-                } catch (RuntimeException e) {
-                    // 503(과부하)과 429(쿼터)는 평가의 결과가 아니라 평가를 막은 사정이다.
-                    // 그 둘이 아니면 우리 쪽 문제이므로, 따로 모아 두고 끝에 빨간불로 알린다.
-                    ModelCallFailure failure = ModelCallFailure.of(e);
+                ModelCallFailure failure = null;
+                for (int attempt = 1; attempt <= 2 && got == null; attempt++) {
+                    try {
+                        got = mapper.readValue(client.generate(model, prompt, config), NuanceResponseDTO.class)
+                                .riskAnalysis().riskLevel();
+                    } catch (RuntimeException e) {
+                        // 503(과부하)과 429(쿼터)는 평가의 결과가 아니라 평가를 막은 사정이다.
+                        // 그 둘이 아니면 우리 쪽 문제이므로, 따로 모아 두고 끝에 빨간불로 알린다.
+                        failure = ModelCallFailure.of(e);
+                        if (attempt == 1 && waitedOutTheThrottle(row.id(), failure)) {
+                            continue;
+                        }
+                        break;
+                    }
+                }
+                if (got == null) {
                     failed++;
                     consecutiveFailures++;
                     if (!failure.quotaExhausted()) {
@@ -228,6 +239,35 @@ class ModelEvaluationLiveTest {
             System.out.println("오늘은 한 건도 받지 못했다 — 쿼터가 돌아오면 같은 명령을 다시 돌리면 이어서 묻는다.");
         }
         reportBlocked(blocked);
+    }
+
+    /** 기다려 볼 만한 길이의 상한. 이보다 길면 그날이 끝난 것으로 본다. */
+    private static final Duration LONGEST_WAIT = Duration.ofSeconds(90);
+
+    /**
+     * 분당 제한이면 기다렸다가 한 번 더 묻는다.
+     *
+     * <p>하루 한도와 분당 한도가 같은 429 로 온다. 2026-10-07 의 실행에서 한 문장이
+     * 「5.04초 뒤에 다시 열린다」 로 막혔는데, 그날의 할당은 아직 남아 있었다 — 그런데도
+     * 그 문장은 건너뛰어지고 실패 횟수만 하나 올랐다. 세 번 쌓이면 남은 할당을 두고 실행이
+     * 끝나므로, 몇 초짜리 제한은 기다리는 편이 그날 더 많이 묻는다.
+     *
+     * @return 기다렸으니 다시 물어 보라면 {@code true}
+     */
+    private static boolean waitedOutTheThrottle(String id, ModelCallFailure failure) {
+        Duration retryAfter = failure.retryAfter();
+        if (!failure.quotaExhausted() || retryAfter == null || retryAfter.compareTo(LONGEST_WAIT) > 0) {
+            return false;
+        }
+        System.out.printf("  %-14s 분당 제한 — %.1f초 기다렸다가 다시 묻는다%n",
+                id, retryAfter.toMillis() / 1000.0);
+        try {
+            Thread.sleep(retryAfter.plusSeconds(1).toMillis());
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     /**
@@ -279,18 +319,24 @@ class ModelEvaluationLiveTest {
                     # User Input
                     %s
                     """.formatted(text);
-            try {
-                NuanceResponseDTO parsed = mapper.readValue(client.generate(model, prompt, config), NuanceResponseDTO.class);
-                return switch (axis) {
-                    case "politeness" -> parsed.metrics().politeness();
-                    case "indirectness" -> parsed.metrics().indirectness();
-                    case "etiquette" -> parsed.metrics().etiquette();
-                    default -> throw new IllegalArgumentException("모르는 축: " + axis);
-                };
-            } catch (RuntimeException e) {
-                lastFailure = ModelCallFailure.of(e);
-                return null;
+            for (int attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    NuanceResponseDTO parsed =
+                            mapper.readValue(client.generate(model, prompt, config), NuanceResponseDTO.class);
+                    return switch (axis) {
+                        case "politeness" -> parsed.metrics().politeness();
+                        case "indirectness" -> parsed.metrics().indirectness();
+                        case "etiquette" -> parsed.metrics().etiquette();
+                        default -> throw new IllegalArgumentException("모르는 축: " + axis);
+                    };
+                } catch (RuntimeException e) {
+                    lastFailure = ModelCallFailure.of(e);
+                    if (attempt == 2 || !waitedOutTheThrottle(axis, lastFailure)) {
+                        return null;
+                    }
+                }
             }
+            return null;
         }
     }
 }

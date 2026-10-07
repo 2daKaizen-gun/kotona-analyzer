@@ -19,4 +19,88 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-05",
   "value" : "SAFE"
+}, {
+  "id" : "plain-02",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "plain-03",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "polite-02",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "polite-03",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "polite-04",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "cushion-01",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "cushion-02",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "cushion-04",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "cushion-05",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "SAFE"
+}, {
+  "id" : "cushion-06",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "CAUTION"
+}, {
+  "id" : "reject-01",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "CAUTION"
+}, {
+  "id" : "reject-04",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-07",
+  "value" : "CAUTION"
 } ]
