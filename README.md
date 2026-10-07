@@ -15,7 +15,7 @@ instead, with its denominator.
 
 | what | measured | how to check it |
 |---|---|---|
-| Backend tests | **210** passing | `./gradlew test` — runs on every push |
+| Backend tests | **214** passing | `./gradlew test` — runs on every push |
 | Backend coverage | **96.49%** lines, **86.14%** branches (97.06% of instructions) | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
 | Frontend tests | **142** unit, **12** browser | `npm test` and `npm run test:browser` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
 | Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
@@ -56,6 +56,12 @@ Two more were found in the measuring itself. The first `evalTest` spent a day's 
 `429` thirty-three times, and the ordering check ran first and left nothing for the sentences; it now stops
 after three consecutive failures, asks the cheaper check first, and keeps every answer it has already paid
 for in `model-answers.json`.
+
+A per-minute throttle was also being read as the end of the day. The daily cap and the rate limit arrive as
+the same `429`; only the retry hint differs — `23h39m` against `5.04s`. On 2026-10-07 one sentence was skipped
+on a five-second refusal while the day still had requests left, and it cost a strike toward the three that
+end the run. A short hint is now waited out and the sentence asked again; a long one still ends the day.
+`ModelCallFailureTest` pins both readings against messages actually received.
 
 And the report it printed was a guess. Every failure was logged as `호출 실패: ClientException` followed by
 "quota is empty, stopping" — a conclusion the code had no way to reach. A dead API key, a retired model name
@@ -411,7 +417,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 210 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 214 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 
