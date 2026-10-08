@@ -74,8 +74,8 @@ class GenAiNuanceModelClientLiveTest {
             // 「호출 방식이 틀렸다」 와 「오늘은 못 물었다」 가 같은 색으로 보인다 —
             // 그래서 쿼터면 건너뛰고, 그 밖의 이유면 그대로 깨뜨린다.
             ModelCallFailure failure = ModelCallFailure.of(e);
-            if (failure.quotaExhausted()) {
-                abort("쿼터가 비어 건너뛴다: " + failure.summary());
+            if (!failure.ours()) {
+                abort("오늘의 사정으로 건너뛴다: " + failure.summary());
             }
             throw e;
         }

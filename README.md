@@ -57,6 +57,12 @@ Two more were found in the measuring itself. The first `evalTest` spent a day's 
 after three consecutive failures, asks the cheaper check first, and keeps every answer it has already paid
 for in `model-answers.json`.
 
+The split itself was then too coarse. On 2026-10-08 the model answered one call with
+`503 UNAVAILABLE. This model is currently experiencing high demand` — not our breakage by any reading, but
+not a quota either, so the run went red. Failures are now sorted four ways rather than two: the daily cap
+(wait for tomorrow), a per-minute throttle (wait seconds), an overloaded model (wait seconds), and ours
+(fail). Only the last one turns the build red.
+
 A per-minute throttle was also being read as the end of the day. The daily cap and the rate limit arrive as
 the same `429`; only the retry hint differs — `23h39m` against `5.04s`. On 2026-10-07 one sentence was skipped
 on a five-second refusal while the day still had requests left, and it cost a strike toward the three that

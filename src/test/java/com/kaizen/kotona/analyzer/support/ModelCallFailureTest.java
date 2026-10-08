@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
+import com.kaizen.kotona.analyzer.support.ModelCallFailure.Kind;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -26,6 +28,11 @@ class ModelCallFailureTest {
             429 RESOURCE_EXHAUSTED. You exceeded your current quota, please check your plan and billing details.
             Please retry in 5.042516107s.""";
 
+    /** 2026-10-08 의 실행에서 받은 503. 모델이 붐비는 것은 우리 잘못이 아니다. */
+    private static final String OVERLOADED =
+            "503 UNAVAILABLE. This model is currently experiencing high demand. "
+                    + "Spikes in demand are usually temporary. Please try again later.";
+
     /** 키를 일부러 망가뜨려 확인한 응답. */
     private static final String BAD_KEY =
             "400 INVALID_ARGUMENT. API key not valid. Please pass a valid API key.";
@@ -35,8 +42,11 @@ class ModelCallFailureTest {
     void readsTheDailyLimit() {
         ModelCallFailure failure = ModelCallFailure.of(new RuntimeException(DAY_OVER));
 
-        assertThat(failure.quotaExhausted()).isTrue();
-        assertThat(failure.retryAfter()).isNotNull();
+        assertThat(failure.kind()).isEqualTo(Kind.DAILY_LIMIT);
+        assertThat(failure.ours()).isFalse();
+        assertThat(failure.dayIsOver()).isTrue();
+        // 기다려도 오늘은 소용없다 — 다음 실행이 이어 간다.
+        assertThat(failure.waitBeforeRetry()).isNull();
         // 23h39m36.2s — 시·분·초가 모두 있는 형태
         assertThat(failure.retryAfter()).isBetween(Duration.ofHours(23), Duration.ofHours(24));
         assertThat(failure.summary()).contains("쿼터 소진", "23h39m");
@@ -49,8 +59,9 @@ class ModelCallFailureTest {
 
         // 같은 429 이지만 기다리면 이어서 물을 수 있다. 이 둘을 가리지 못하면
         // 몇 초짜리 제한 때문에 그날 남은 할당을 버리게 된다.
-        assertThat(failure.quotaExhausted()).isTrue();
-        assertThat(failure.retryAfter()).isLessThan(Duration.ofSeconds(10));
+        assertThat(failure.kind()).isEqualTo(Kind.THROTTLE);
+        assertThat(failure.dayIsOver()).isFalse();
+        assertThat(failure.waitBeforeRetry()).isLessThan(Duration.ofSeconds(10));
     }
 
     @Test
@@ -58,8 +69,10 @@ class ModelCallFailureTest {
     void readsOurOwnBreakage() {
         ModelCallFailure failure = ModelCallFailure.of(new IllegalStateException(BAD_KEY));
 
-        assertThat(failure.quotaExhausted()).isFalse();
+        assertThat(failure.kind()).isEqualTo(Kind.OURS);
+        assertThat(failure.ours()).isTrue();
         assertThat(failure.retryAfter()).isNull();
+        assertThat(failure.waitBeforeRetry()).isNull();
         assertThat(failure.summary())
                 .contains("IllegalStateException")
                 .contains("API key not valid");
@@ -70,7 +83,33 @@ class ModelCallFailureTest {
     void survivesAMessagelessException() {
         ModelCallFailure failure = ModelCallFailure.of(new RuntimeException());
 
-        assertThat(failure.quotaExhausted()).isFalse();
+        assertThat(failure.ours()).isTrue();
         assertThat(failure.summary()).contains("RuntimeException");
+    }
+
+    @Test
+    @DisplayName("모델 과부하는 우리 쪽 문제가 아니라, 잠깐 기다릴 일이다")
+    void readsAnOverloadedModel() {
+        // 이 503 때문에 2026-10-08 의 측정이 빨간불로 끝났다. 429 만 사정으로 보고 있었던 탓이다.
+        ModelCallFailure failure = ModelCallFailure.of(new RuntimeException(OVERLOADED));
+
+        assertThat(failure.kind()).isEqualTo(Kind.UPSTREAM);
+        assertThat(failure.ours()).isFalse();
+        assertThat(failure.dayIsOver()).isFalse();
+        assertThat(failure.waitBeforeRetry()).isNotNull().isLessThan(Duration.ofSeconds(30));
+        assertThat(failure.summary()).contains("과부하");
+    }
+
+    @Test
+    @DisplayName("예외 클래스 이름만으로도 서버 쪽 실패를 알아본다")
+    void readsAServerExceptionByItsName() {
+        // SDK 가 문구를 바꿔도 ServerException 은 5xx 라는 뜻이다.
+        class ServerException extends RuntimeException {
+            ServerException() {
+                super("something upstream went wrong");
+            }
+        }
+
+        assertThat(ModelCallFailure.of(new ServerException()).kind()).isEqualTo(Kind.UPSTREAM);
     }
 }
