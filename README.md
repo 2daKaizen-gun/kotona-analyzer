@@ -27,7 +27,7 @@ instead, with its denominator.
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
-| Model agreement, risk grade | **14 / 34** answered, **13** agreed (93%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
+| Model agreement, risk grade | **22 / 34** answered, **20** agreed (91%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
 | Model agreement, ordering | **1 / 7** compared, **1** held | same command |
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
@@ -227,7 +227,7 @@ Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | answers kept in `model-answers.json` | agreed |
 |---|---|---|
-| risk grade | 14 of 34 | **13** (93%) |
+| risk grade | 22 of 34 | **20** (91%) |
 | ordering pairs | 1 of 7 | **1** |
 
 An earlier run compared six of the seven pairs and all six held, but that was before answers were kept on
@@ -236,7 +236,11 @@ table like this one. It is history, not evidence; the column above counts only w
 
 Every figure here is written with its denominator, because the alternative is writing nothing and sounding more certain. The quota arrives in a trickle, so the risk check runs first — one call per sentence tells us more per call than two calls per pair — and both checks stop after three consecutive failures instead of collecting the same error thirty times.
 
-**The one disagreement so far is a scoped refusal.** `cushion-06`, 「申し訳ございませんが、本日中の対応は難しい状況です」 — labelled `DANGER`, answered `CAUTION`. 「難しい」 is listed in the prompt as a refusal, and the label follows that; the model appears to read it as softer because the refusal is bounded to *today* rather than to the request itself. Both readings are arguable, and neither definition in the prompt covers the case: `DANGER` says "a refusal, however softly worded" and `CAUTION` says "deferred with no commitment and no deadline", and a refusal of the deadline sits between them.
+**Two sentences disagree, and they disagree in opposite directions.**
+
+`cushion-06`, 「申し訳ございませんが、本日中の対応は難しい状況です」 — labelled `DANGER`, answered `CAUTION`. 「難しい」 is listed in the prompt as a refusal, and the label follows that; the model appears to read it as softer because the refusal is bounded to *today* rather than to the request itself. Both readings are arguable, and neither definition in the prompt covers the case: `DANGER` says "a refusal, however softly worded" and `CAUTION` says "deferred with no commitment and no deadline", and a refusal of the deadline sits between them.
+
+`reject-03`, 「少し考えておきます」 to an `EXTERNAL` contact — answered `DANGER`, and **the label was wrong**. The prompt lists 「考えておきます」 under `CAUTION`, which is where the label came from, but the label carries a relationship and the grade is computed with it: 考える+おく weighs 0.6, `EXTERNAL` multiplies by 1.2, and 0.72 is past the 0.7 boundary. Our own rules had been calling that sentence `DANGER` all along. The model agreed with the rules, and the label — written from the sentence while ignoring the multiplier its own `relationship` field implies — was the odd one out. It is now `DANGER`, and a test makes that class of inconsistency impossible to leave in (see [What the measurement found](#-what-the-measurement-found)).
 
 It is left as it is, for now, for two reasons. The user-facing grade is unaffected — 「難しい」 carries 0.8, EXTERNAL multiplies by 1.2, and the final grade takes the more severe of rules and model, so the product still says `DANGER` and the adjustment record says why. And editing the prompt would change `PROMPT_VERSION`, which re-asks all 14 answers already paid for — one boundary case out of 14 is not enough evidence to spend two days of quota redefining an axis. If more scoped refusals disagree the same way once the column is full, that is a reason to add the case to the prompt with a worked example, and to re-measure deliberately.
 
@@ -254,7 +258,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 | limit | where it stands | what would move it |
 |---|---|---|
 | native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
-| model agreement, risk grade | **14 / 34** sentences | 20 calls, at 12–20 free answers a day |
+| model agreement, risk grade | **22 / 34** sentences | 12 calls, at 8–12 free answers a day |
 | model agreement, ordering | **1 / 7** pairs | 12 calls, out of the same daily allowance |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |

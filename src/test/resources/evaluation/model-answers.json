@@ -103,4 +103,60 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-07",
   "value" : "CAUTION"
+}, {
+  "id" : "cushion-03",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-08",
+  "value" : "SAFE"
+}, {
+  "id" : "reject-02",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-08",
+  "value" : "DANGER"
+}, {
+  "id" : "reject-03",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-08",
+  "value" : "DANGER"
+}, {
+  "id" : "reject-06",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-08",
+  "value" : "DANGER"
+}, {
+  "id" : "accept-01",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-08",
+  "value" : "SAFE"
+}, {
+  "id" : "interview-01",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-08",
+  "value" : "SAFE"
+}, {
+  "id" : "interview-02",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-08",
+  "value" : "SAFE"
+}, {
+  "id" : "chat-01",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-08",
+  "value" : "SAFE"
 } ]
