@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -110,6 +111,51 @@ class RuleLayerEvaluationTest {
         }
         report("오경보", (int) set.rows().stream().filter(r -> r.risk().equals("SAFE")).count(), falseAlarms);
         assertThat(falseAlarms).isEmpty();
+    }
+
+    /**
+     * 규칙이 매긴 등급이 라벨보다 위험해지지 않는다.
+     *
+     * <p>지금까지 이 축은 두 가지만 봤다 — 위험한 문장을 놓치지 않는가(재현율), 멀쩡한 문장을
+     * 위험하다고 하지 않는가(오경보). 그 사이가 비어 있었다: CAUTION 라벨을 DANGER 로 올려
+     * 읽는 것은 오경보 검사에 걸리지 않는다. SAFE 가 아니기 때문이다.
+     *
+     * <p>그 틈에 실제로 하나가 있었다. 「少し考えておきます」(EXTERNAL) 는 라벨이 CAUTION
+     * 인데 규칙은 DANGER 였다 — 考える+おく 0.6 에 사외 1.2 가 곱해져 0.72, 경계는 0.7.
+     * 라벨은 문장만 보고 쓰였고, 자기 자신이 들고 있는 relationship 이 뜻하는 배수를 적용하지
+     * 않았다. 2026-10-08 에 모델이 그 문장을 DANGER 로 답하면서 드러났고, 그래서 라벨을 고쳤다.
+     *
+     * <p>이 방향만 단언한다. 반대 방향(라벨이 더 위험한데 규칙이 못 따라가는 것)은 사전의
+     * 한계이고 재현율이 이미 재고 있으며, 최종 등급은 모델과 규칙 중 더 위험한 쪽을 택한다.
+     */
+    @Test
+    @DisplayName("규칙이 라벨보다 위험하게 읽는 문장이 없다")
+    void ruleGradeNeverOutrunsTheLabel() {
+        List<String> tooSevere = new ArrayList<>();
+        for (EvaluationSet.Row row : set.rows()) {
+            String ruleGrade = gradeFromRules(row);
+            if (SEVERITY.get(ruleGrade) > SEVERITY.get(row.risk())) {
+                tooSevere.add("%s: 라벨 %s, 규칙 %s (점수 %.2f × %s %.1f) — %s".formatted(
+                        row.id(), row.risk(), ruleGrade,
+                        refusalScore(row.text()), row.relationship(), row.relationship().riskMultiplier(),
+                        row.text()));
+            }
+        }
+        report("등급 과잉", set.rows().size(), tooSevere);
+        assertThat(tooSevere)
+                .as("규칙이 라벨보다 높은 등급을 매겼다 — 가중치가 과한 것이거나 라벨이 배수를 빼먹은 것이다")
+                .isEmpty();
+    }
+
+    private static final Map<String, Integer> SEVERITY = Map.of("SAFE", 0, "CAUTION", 1, "DANGER", 2);
+
+    /** 검증기와 같은 계산. 점수에 관계 배수를 곱하고 같은 경계로 자른다. */
+    private String gradeFromRules(EvaluationSet.Row row) {
+        double score = refusalScore(row.text()) * row.relationship().riskMultiplier();
+        if (score >= 0.7) {
+            return "DANGER";
+        }
+        return score >= 0.3 ? "CAUTION" : "SAFE";
     }
 
     /** 낱말 사전과 구 사전을 함께 본다. 검증기와 같은 판정이어야 평가가 의미를 갖는다. */

@@ -172,8 +172,8 @@
     "politeFormBasis": "丁寧語「ます」",
     "cushion": false,
     "cushionBasis": "なし",
-    "risk": "CAUTION",
-    "riskBasis": "「考えておく」は期限も約束もない保留"
+    "risk": "DANGER",
+    "riskBasis": "「考えておく」は期限も約束もない保留。ただし社外相手では事実上の断りとして読まれる（0.6 × 1.2 = 0.72、境界 0.7）"
   },
   {
     "id": "reject-04",

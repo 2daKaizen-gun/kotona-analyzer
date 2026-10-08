@@ -15,7 +15,7 @@ instead, with its denominator.
 
 | what | measured | how to check it |
 |---|---|---|
-| Backend tests | **214** passing | `./gradlew test` — runs on every push |
+| Backend tests | **221** passing | `./gradlew test` — runs on every push |
 | Backend coverage | **96.49%** lines, **86.14%** branches (97.06% of instructions) | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
 | Frontend tests | **142** unit, **12** browser | `npm test` and `npm run test:browser` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
 | Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
@@ -24,10 +24,12 @@ instead, with its denominator.
 | Refusal signals caught, of the risky sentences | **12 / 13** | same test — held as a floor, not a target; the one miss is explained below |
 | False alarms, of the safe sentences | **0 / 21** | same test — asserted at zero |
 | Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
+| Sentences the rules grade *more* severely than the label | **0 / 34** | same test as above — the weights and the labels have to agree on the grade, not only on the signal |
+| Review sheet's verdict column matches the labels | **34 / 34** | `ReviewDocumentTest` — a changed label makes the stale sheet fail |
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
-| Model agreement, risk grade | **14 / 34** answered, **13** agreed (93%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
+| Model agreement, risk grade | **22 / 34** answered, **21** agreed (95%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
 | Model agreement, ordering | **1 / 7** compared, **1** held | same command |
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
@@ -50,12 +52,20 @@ comes back.
 | **「ご確認ください」 was scored impolite.** The check looked for です・ます as literal strings, so a 尊敬語 imperative counted as plain speech | the labelled evaluation set, on its first run | Kuromoji conjugation types instead of substrings — polite form **34 / 34** |
 | **A missing dictionary entry quietly cost 10 points.** 「恐れ入りますが」 is a cushion phrase; the rules did not know it, so a polite request was penalised as if it had none. Same sentence, same manners, ten points apart — decided by a file, not by the Japanese | cushion agreement against the labels | lemma matching on Kuromoji base forms — cushion **34 / 34** |
 | **Base forms then over-matched.** 「考えておきます」 defers, 「貢献したいと考えております」 is an aspiration, and both reduce to 考える — so a sentence about wanting to contribute was read as a brush-off | the false-alarm check on the 21 safe sentences | a companion-lemma requirement (`考える` + `おく`) — false alarms **0 / 21** |
+| **A label contradicted our own weights, and nothing could see it.** 「少し考えておきます」 to an `EXTERNAL` contact was labelled `CAUTION`, while the rules graded it `DANGER` — 考える+おく is 0.6, `EXTERNAL` multiplies by 1.2, and 0.72 is past the 0.7 boundary. The label had been written from the sentence alone, ignoring the multiplier its own `relationship` field implies. Recall could not catch it (the signal *was* found) and the false-alarm check could not either (the row is not `SAFE`), so it sat between the two tests | the model answered `DANGER` on 2026-10-08, against the label | the label is corrected, and a new check asserts the rules never grade a sentence more severely than its label — **0 / 34** |
+| **The review sheet kept the old verdict.** `docs/NATIVE_REVIEW.md` prints our judgement next to each sentence for the reviewer to confirm, and only the sentences were checked against the evaluation set — so the corrected label left a stale `CAUTION` on the sheet. A reviewer would have confirmed a verdict we no longer hold | found while correcting the label above | `ReviewDocumentTest` now compares the sheet's verdict and cushion columns with the labels, **34 / 34** |
 | **The model read `riskLevel` as rudeness.** 「よろしく」 came back `DANGER`: terse, yes, but it refuses nothing. The prompt had asked for two readings at once | the first `evalTest` run against the model | one definition in the prompt and in `@JsonPropertyDescription`, with worked examples; the risk check re-asks whenever the prompt version changes |
 
 Two more were found in the measuring itself. The first `evalTest` spent a day's quota collecting the same
 `429` thirty-three times, and the ordering check ran first and left nothing for the sentences; it now stops
 after three consecutive failures, asks the cheaper check first, and keeps every answer it has already paid
 for in `model-answers.json`.
+
+The split itself was then too coarse. On 2026-10-08 the model answered one call with
+`503 UNAVAILABLE. This model is currently experiencing high demand` — not our breakage by any reading, but
+not a quota either, so the run went red. Failures are now sorted four ways rather than two: the daily cap
+(wait for tomorrow), a per-minute throttle (wait seconds), an overloaded model (wait seconds), and ours
+(fail). Only the last one turns the build red.
 
 A per-minute throttle was also being read as the end of the day. The daily cap and the rate limit arrive as
 the same `429`; only the retry hint differs — `23h39m` against `5.04s`. On 2026-10-07 one sentence was skipped
@@ -162,6 +172,7 @@ Everything is an environment variable with a working default, so a clone runs wi
 | `GEMINI_THINKING_LEVEL` | `high` | `low` is faster and mixes languages into the Japanese replies — see `PROMPT_DESIGN.md` |
 | `GEMINI_MAX_OUTPUT_TOKENS` | `8000` | Three smart replies plus alternatives, in Japanese and Korean |
 | `GEMINI_TEMPERATURE` | `0.0` | Scoring is a judgement, not a draft. At 0.7 the same sentence scored 70/71/71 overall but 15/10/12 on etiquette across three identical requests |
+| `GEMINI_TIMEOUT_MS` | `180000` | How long one call may take. The SDK's own default is to wait forever, which hands a stalled upstream a Tomcat thread permanently; 3 minutes is about double the slowest call observed (79s). Must be positive — the app refuses to start on 0 |
 | `API_KEY` | *(none)* | When set, `X-API-KEY` is required on `/analyze`, history and dictionary writes. Unset, the filter logs a warning and lets everything through |
 | `DB_HOST` / `DB_PORT` | `127.0.0.1` / `3306` | `docker compose` sets these for the container network |
 | `DB_NAME` | `kotona` | Created on first connect if missing |
@@ -210,6 +221,7 @@ Those bases are not all the same kind of claim, and the file distinguishes them:
 | cushion phrase | 34/34 |
 | refusal signal, recall | 12/13 |
 | refusal signal, false alarms | 0/21 |
+| grade not more severe than the label | 34/34 |
 
 Each number moved because the evaluation found something. Matching raw strings missed 「恐れ入りますが」 and 「考えておきます」, so matching is on Kuromoji base forms now. The ten added sentences then dropped recall to 7 of 13 — 「ご希望に添いかねます」「予定はございません」「持ち帰らせていただく」「善処いたします」 all read as safe — and five of the six were recovered by extending the dictionaries.
 
@@ -217,7 +229,9 @@ Each number moved because the evaluation found something. Matching raw strings m
 
 **The three metrics have ordering constraints.** No source says 「ご確認ください」 is 35 out of 40, so there is nothing to compare an absolute score against. Ordering is another matter: 「よろしく」 cannot be more polite than 「よろしくお願い申し上げます」, and adding a cushion phrase to a request cannot lower its etiquette. `ordering-pairs.json` holds seven such pairs with the grammatical reason for each, and `RuleLayerOrderingTest` gives both sentences identical model scores so that any difference is the rules' doing. All seven hold; `evalTest` runs the same check against the model, at two calls per pair.
 
-**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift: they have to reproduce the grades on all 34 labelled sentences, so changing one breaks the build.
+**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift. Four things are checked against the 34 labelled sentences on every push: polite form and cushion detection must match exactly, the refusal dictionary must stay above its recall floor, it must raise no false alarm on the 21 safe sentences, and **the grade the weights produce must not be more severe than the label**. Raising a weight past a boundary now breaks the build.
+
+That last check was missing until 2026-10-08, and the gap had something in it — see [What the measurement found](#-what-the-measurement-found).
 
 **The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` asserts nothing about the agreement itself: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build. It does assert that the quota is the reason, though — a call blocked for any other reason fails the run instead of being filed under "today's circumstances".
 
@@ -227,7 +241,7 @@ Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | answers kept in `model-answers.json` | agreed |
 |---|---|---|
-| risk grade | 14 of 34 | **13** (93%) |
+| risk grade | 22 of 34 | **21** (95%) |
 | ordering pairs | 1 of 7 | **1** |
 
 An earlier run compared six of the seven pairs and all six held, but that was before answers were kept on
@@ -236,7 +250,11 @@ table like this one. It is history, not evidence; the column above counts only w
 
 Every figure here is written with its denominator, because the alternative is writing nothing and sounding more certain. The quota arrives in a trickle, so the risk check runs first — one call per sentence tells us more per call than two calls per pair — and both checks stop after three consecutive failures instead of collecting the same error thirty times.
 
-**The one disagreement so far is a scoped refusal.** `cushion-06`, 「申し訳ございませんが、本日中の対応は難しい状況です」 — labelled `DANGER`, answered `CAUTION`. 「難しい」 is listed in the prompt as a refusal, and the label follows that; the model appears to read it as softer because the refusal is bounded to *today* rather than to the request itself. Both readings are arguable, and neither definition in the prompt covers the case: `DANGER` says "a refusal, however softly worded" and `CAUTION` says "deferred with no commitment and no deadline", and a refusal of the deadline sits between them.
+**Two sentences disagree, and they disagree in opposite directions.**
+
+`cushion-06`, 「申し訳ございませんが、本日中の対応は難しい状況です」 — labelled `DANGER`, answered `CAUTION`. 「難しい」 is listed in the prompt as a refusal, and the label follows that; the model appears to read it as softer because the refusal is bounded to *today* rather than to the request itself. Both readings are arguable, and neither definition in the prompt covers the case: `DANGER` says "a refusal, however softly worded" and `CAUTION` says "deferred with no commitment and no deadline", and a refusal of the deadline sits between them.
+
+`reject-03`, 「少し考えておきます」 to an `EXTERNAL` contact — answered `DANGER`, and **the label was wrong**. The prompt lists 「考えておきます」 under `CAUTION`, which is where the label came from, but the label carries a relationship and the grade is computed with it: 考える+おく weighs 0.6, `EXTERNAL` multiplies by 1.2, and 0.72 is past the 0.7 boundary. Our own rules had been calling that sentence `DANGER` all along. The model agreed with the rules, and the label — written from the sentence while ignoring the multiplier its own `relationship` field implies — was the odd one out. It is now `DANGER`, and a test makes that class of inconsistency impossible to leave in (see [What the measurement found](#-what-the-measurement-found)).
 
 It is left as it is, for now, for two reasons. The user-facing grade is unaffected — 「難しい」 carries 0.8, EXTERNAL multiplies by 1.2, and the final grade takes the more severe of rules and model, so the product still says `DANGER` and the adjustment record says why. And editing the prompt would change `PROMPT_VERSION`, which re-asks all 14 answers already paid for — one boundary case out of 14 is not enough evidence to spend two days of quota redefining an axis. If more scoped refusals disagree the same way once the column is full, that is a reason to add the case to the prompt with a worked example, and to re-measure deliberately.
 
@@ -254,7 +272,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 | limit | where it stands | what would move it |
 |---|---|---|
 | native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
-| model agreement, risk grade | **14 / 34** sentences | 20 calls, at 12–20 free answers a day |
+| model agreement, risk grade | **22 / 34** sentences | 12 calls, at 8–12 free answers a day |
 | model agreement, ordering | **1 / 7** pairs | 12 calls, out of the same daily allowance |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |
@@ -405,7 +423,14 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **Lesson**: When a dependency feels heavy, check whether you are on the wrong on-ramp before you replace the destination.
 
-**5. A Major Upgrade Is a Set, Not a Line**
+**5. A Call With No Deadline**
+- **Challenge**: The model call had no timeout. `google-genai` waits indefinitely by default, and this call takes 20–30 seconds normally with a tail to 79 seconds — so from the caller's side "slow" and "never" look identical. A stalled upstream would hold the request's thread for as long as the process lived, and nothing in the code could tell that it had happened.
+
+- **Resolution**: `GEMINI_TIMEOUT_MS`, defaulting to three minutes — roughly double the slowest call measured, so a legitimate response is never cut, and a stalled one is given up. A non-positive value is refused at startup rather than quietly restoring the old behaviour, and the mapping from property to `HttpOptions` has its own test.
+
+- **Lesson**: An SDK's default is a decision someone else made about your service. The ones that cost nothing to accept are the ones worth reading.
+
+**6. A Major Upgrade Is a Set, Not a Line**
 - **Challenge**: Spring Boot 4 looked like a version bump. It is four moves that only work together: Boot 4 auto-configures **Jackson 3**, whose packages are `tools.jackson.*`; victools 5 builds its schema on Jackson 3; and springdoc 2 fails to start on Boot 4 at all, looking up a `WebMvcProperties` class that moved. Changing any one of them alone leaves the context unable to start.
 
 - **Resolution**: Moved all four in one commit, then checked the two contracts that matter rather than trusting a green build. The JSON Schema sent to Gemini came out **byte-identical** to the one victools 4 produced, and the OpenAPI spec springdoc 3 publishes differs from springdoc 2's by **zero** keys — so the frontend's generated types needed no regeneration.
@@ -417,7 +442,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 214 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 221 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 

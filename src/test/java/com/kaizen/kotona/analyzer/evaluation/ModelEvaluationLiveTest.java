@@ -8,6 +8,7 @@ import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.client.GenAiNuanceModelClient;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.config.GeminiConfig;
 import com.kaizen.kotona.analyzer.support.ModelCallFailure;
 
 import java.time.Duration;
@@ -64,6 +65,15 @@ class ModelEvaluationLiveTest {
      */
     private static final int CONSECUTIVE_FAILURE_LIMIT = 3;
 
+    /**
+     * 호출 한 건의 시간 상한. 운영과 같은 값을 쓴다.
+     *
+     * <p>측정도 멈춘 호출에 걸릴 수 있다. 기다려 주는 한계가 없으면 그 실행은 영원히 끝나지
+     * 않고, 쿼터가 비었는지 모델이 멈췄는지도 알 수 없다 — 둘 다 "아무 일도 일어나지 않음"
+     * 으로 보인다.
+     */
+    private static final int CALL_TIMEOUT_MS = 180_000;
+
     private static final String SYSTEM_INSTRUCTION = """
             You are a "Business Japanese Communication Expert".
             Judge the risk of a soft rejection: SAFE, CAUTION or DANGER.
@@ -115,7 +125,7 @@ class ModelEvaluationLiveTest {
                 consecutiveFailures++;
                 ModelCallFailure failure = judge.lastFailure();
                 String reason = failure == null ? "이유 미기록" : failure.summary();
-                if (failure != null && !failure.quotaExhausted()) {
+                if (failure != null && failure.ours()) {
                     blocked.add("  %s — %s".formatted(pair.id(), reason));
                 }
                 System.out.printf("  %-18s 호출 실패로 건너뜀: %s%n", pair.id(), reason);
@@ -161,7 +171,8 @@ class ModelEvaluationLiveTest {
                 .responseMimeType("application/json")
                 .responseSchema(schema)
                 .build();
-        NuanceModelClient client = new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
+        NuanceModelClient client = new GenAiNuanceModelClient(
+                Client.builder().apiKey(apiKey).httpOptions(GeminiConfig.httpOptions(CALL_TIMEOUT_MS)).build());
         String model = System.getenv().getOrDefault("GEMINI_MODEL", "gemini-3.6-flash");
         ObjectMapper mapper = new ObjectMapper();
         EvaluationLog log = EvaluationLog.load();
@@ -198,7 +209,7 @@ class ModelEvaluationLiveTest {
                         // 503(과부하)과 429(쿼터)는 평가의 결과가 아니라 평가를 막은 사정이다.
                         // 그 둘이 아니면 우리 쪽 문제이므로, 따로 모아 두고 끝에 빨간불로 알린다.
                         failure = ModelCallFailure.of(e);
-                        if (attempt == 1 && waitedOutTheThrottle(row.id(), failure)) {
+                        if (attempt == 1 && waitedBeforeRetrying(row.id(), failure)) {
                             continue;
                         }
                         break;
@@ -207,7 +218,7 @@ class ModelEvaluationLiveTest {
                 if (got == null) {
                     failed++;
                     consecutiveFailures++;
-                    if (!failure.quotaExhausted()) {
+                    if (failure.ours()) {
                         blocked.add("  %s — %s".formatted(row.id(), failure.summary()));
                     }
                     System.out.printf("  %-14s 호출 실패: %s (다음 실행에서 다시 묻는다)%n",
@@ -241,28 +252,25 @@ class ModelEvaluationLiveTest {
         reportBlocked(blocked);
     }
 
-    /** 기다려 볼 만한 길이의 상한. 이보다 길면 그날이 끝난 것으로 본다. */
-    private static final Duration LONGEST_WAIT = Duration.ofSeconds(90);
-
     /**
-     * 분당 제한이면 기다렸다가 한 번 더 묻는다.
+     * 기다리면 될 실패면 기다렸다가 한 번 더 묻는다.
      *
      * <p>하루 한도와 분당 한도가 같은 429 로 온다. 2026-10-07 의 실행에서 한 문장이
      * 「5.04초 뒤에 다시 열린다」 로 막혔는데, 그날의 할당은 아직 남아 있었다 — 그런데도
      * 그 문장은 건너뛰어지고 실패 횟수만 하나 올랐다. 세 번 쌓이면 남은 할당을 두고 실행이
-     * 끝나므로, 몇 초짜리 제한은 기다리는 편이 그날 더 많이 묻는다.
+     * 끝나므로, 짧은 제한은 기다리는 편이 그날 더 많이 묻는다. 모델 과부하(503)도 같다.
      *
      * @return 기다렸으니 다시 물어 보라면 {@code true}
      */
-    private static boolean waitedOutTheThrottle(String id, ModelCallFailure failure) {
-        Duration retryAfter = failure.retryAfter();
-        if (!failure.quotaExhausted() || retryAfter == null || retryAfter.compareTo(LONGEST_WAIT) > 0) {
+    private static boolean waitedBeforeRetrying(String id, ModelCallFailure failure) {
+        Duration wait = failure.waitBeforeRetry();
+        if (wait == null) {
             return false;
         }
-        System.out.printf("  %-14s 분당 제한 — %.1f초 기다렸다가 다시 묻는다%n",
-                id, retryAfter.toMillis() / 1000.0);
+        System.out.printf("  %-14s %s — %.1f초 기다렸다가 다시 묻는다%n",
+                id, failure.kind(), wait.toMillis() / 1000.0);
         try {
-            Thread.sleep(retryAfter.plusSeconds(1).toMillis());
+            Thread.sleep(wait.plusSeconds(1).toMillis());
             return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -301,7 +309,10 @@ class ModelEvaluationLiveTest {
                     .responseMimeType("application/json")
                     .responseSchema(schema)
                     .build();
-            this.client = new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
+            this.client = new GenAiNuanceModelClient(Client.builder()
+                    .apiKey(apiKey)
+                    .httpOptions(GeminiConfig.httpOptions(CALL_TIMEOUT_MS))
+                    .build());
         }
 
         String model() {
@@ -331,7 +342,7 @@ class ModelEvaluationLiveTest {
                     };
                 } catch (RuntimeException e) {
                     lastFailure = ModelCallFailure.of(e);
-                    if (attempt == 2 || !waitedOutTheThrottle(axis, lastFailure)) {
+                    if (attempt == 2 || !waitedBeforeRetrying(axis, lastFailure)) {
                         return null;
                     }
                 }

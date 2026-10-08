@@ -6,6 +6,7 @@ import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
+import com.kaizen.kotona.analyzer.config.GeminiConfig;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
 import com.kaizen.kotona.analyzer.support.ModelCallFailure;
 import com.kaizen.kotona.analyzer.utils.NuanceSchemaFactory;
@@ -62,8 +63,9 @@ class GenAiNuanceModelClientLiveTest {
                 .responseSchema(schema)
                 .build();
 
-        NuanceModelClient client =
-                new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
+        // 운영과 같은 시간 상한을 둔다. 멈춘 호출을 영원히 기다리면 이 테스트는 실패도 성공도 하지 않는다.
+        NuanceModelClient client = new GenAiNuanceModelClient(
+                Client.builder().apiKey(apiKey).httpOptions(GeminiConfig.httpOptions(180_000)).build());
 
         String raw;
         try {
@@ -74,8 +76,8 @@ class GenAiNuanceModelClientLiveTest {
             // 「호출 방식이 틀렸다」 와 「오늘은 못 물었다」 가 같은 색으로 보인다 —
             // 그래서 쿼터면 건너뛰고, 그 밖의 이유면 그대로 깨뜨린다.
             ModelCallFailure failure = ModelCallFailure.of(e);
-            if (failure.quotaExhausted()) {
-                abort("쿼터가 비어 건너뛴다: " + failure.summary());
+            if (!failure.ours()) {
+                abort("오늘의 사정으로 건너뛴다: " + failure.summary());
             }
             throw e;
         }
