@@ -8,6 +8,7 @@ import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.client.GenAiNuanceModelClient;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.kaizen.kotona.analyzer.dto.NuanceResponseDTO;
+import com.kaizen.kotona.analyzer.config.GeminiConfig;
 import com.kaizen.kotona.analyzer.support.ModelCallFailure;
 
 import java.time.Duration;
@@ -63,6 +64,15 @@ class ModelEvaluationLiveTest {
      * 세 번 연달아 막히면 그만둔다 — 실제로 33 건을 모두 시도하며 3분을 버린 적이 있다.
      */
     private static final int CONSECUTIVE_FAILURE_LIMIT = 3;
+
+    /**
+     * 호출 한 건의 시간 상한. 운영과 같은 값을 쓴다.
+     *
+     * <p>측정도 멈춘 호출에 걸릴 수 있다. 기다려 주는 한계가 없으면 그 실행은 영원히 끝나지
+     * 않고, 쿼터가 비었는지 모델이 멈췄는지도 알 수 없다 — 둘 다 "아무 일도 일어나지 않음"
+     * 으로 보인다.
+     */
+    private static final int CALL_TIMEOUT_MS = 180_000;
 
     private static final String SYSTEM_INSTRUCTION = """
             You are a "Business Japanese Communication Expert".
@@ -161,7 +171,8 @@ class ModelEvaluationLiveTest {
                 .responseMimeType("application/json")
                 .responseSchema(schema)
                 .build();
-        NuanceModelClient client = new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
+        NuanceModelClient client = new GenAiNuanceModelClient(
+                Client.builder().apiKey(apiKey).httpOptions(GeminiConfig.httpOptions(CALL_TIMEOUT_MS)).build());
         String model = System.getenv().getOrDefault("GEMINI_MODEL", "gemini-3.6-flash");
         ObjectMapper mapper = new ObjectMapper();
         EvaluationLog log = EvaluationLog.load();
@@ -298,7 +309,10 @@ class ModelEvaluationLiveTest {
                     .responseMimeType("application/json")
                     .responseSchema(schema)
                     .build();
-            this.client = new GenAiNuanceModelClient(Client.builder().apiKey(apiKey).build());
+            this.client = new GenAiNuanceModelClient(Client.builder()
+                    .apiKey(apiKey)
+                    .httpOptions(GeminiConfig.httpOptions(CALL_TIMEOUT_MS))
+                    .build());
         }
 
         String model() {

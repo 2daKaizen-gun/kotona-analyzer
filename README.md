@@ -15,7 +15,7 @@ instead, with its denominator.
 
 | what | measured | how to check it |
 |---|---|---|
-| Backend tests | **218** passing | `./gradlew test` — runs on every push |
+| Backend tests | **221** passing | `./gradlew test` — runs on every push |
 | Backend coverage | **96.49%** lines, **86.14%** branches (97.06% of instructions) | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
 | Frontend tests | **142** unit, **12** browser | `npm test` and `npm run test:browser` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
 | Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
@@ -172,6 +172,7 @@ Everything is an environment variable with a working default, so a clone runs wi
 | `GEMINI_THINKING_LEVEL` | `high` | `low` is faster and mixes languages into the Japanese replies — see `PROMPT_DESIGN.md` |
 | `GEMINI_MAX_OUTPUT_TOKENS` | `8000` | Three smart replies plus alternatives, in Japanese and Korean |
 | `GEMINI_TEMPERATURE` | `0.0` | Scoring is a judgement, not a draft. At 0.7 the same sentence scored 70/71/71 overall but 15/10/12 on etiquette across three identical requests |
+| `GEMINI_TIMEOUT_MS` | `180000` | How long one call may take. The SDK's own default is to wait forever, which hands a stalled upstream a Tomcat thread permanently; 3 minutes is about double the slowest call observed (79s). Must be positive — the app refuses to start on 0 |
 | `API_KEY` | *(none)* | When set, `X-API-KEY` is required on `/analyze`, history and dictionary writes. Unset, the filter logs a warning and lets everything through |
 | `DB_HOST` / `DB_PORT` | `127.0.0.1` / `3306` | `docker compose` sets these for the container network |
 | `DB_NAME` | `kotona` | Created on first connect if missing |
@@ -422,7 +423,14 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **Lesson**: When a dependency feels heavy, check whether you are on the wrong on-ramp before you replace the destination.
 
-**5. A Major Upgrade Is a Set, Not a Line**
+**5. A Call With No Deadline**
+- **Challenge**: The model call had no timeout. `google-genai` waits indefinitely by default, and this call takes 20–30 seconds normally with a tail to 79 seconds — so from the caller's side "slow" and "never" look identical. A stalled upstream would hold the request's thread for as long as the process lived, and nothing in the code could tell that it had happened.
+
+- **Resolution**: `GEMINI_TIMEOUT_MS`, defaulting to three minutes — roughly double the slowest call measured, so a legitimate response is never cut, and a stalled one is given up. A non-positive value is refused at startup rather than quietly restoring the old behaviour, and the mapping from property to `HttpOptions` has its own test.
+
+- **Lesson**: An SDK's default is a decision someone else made about your service. The ones that cost nothing to accept are the ones worth reading.
+
+**6. A Major Upgrade Is a Set, Not a Line**
 - **Challenge**: Spring Boot 4 looked like a version bump. It is four moves that only work together: Boot 4 auto-configures **Jackson 3**, whose packages are `tools.jackson.*`; victools 5 builds its schema on Jackson 3; and springdoc 2 fails to start on Boot 4 at all, looking up a `WebMvcProperties` class that moved. Changing any one of them alone leaves the context unable to start.
 
 - **Resolution**: Moved all four in one commit, then checked the two contracts that matter rather than trusting a green build. The JSON Schema sent to Gemini came out **byte-identical** to the one victools 4 produced, and the OpenAPI spec springdoc 3 publishes differs from springdoc 2's by **zero** keys — so the frontend's generated types needed no regeneration.
@@ -434,7 +442,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 218 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 221 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 
