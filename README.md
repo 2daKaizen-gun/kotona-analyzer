@@ -15,7 +15,7 @@ instead, with its denominator.
 
 | what | measured | how to check it |
 |---|---|---|
-| Backend tests | **214** passing | `./gradlew test` — runs on every push |
+| Backend tests | **218** passing | `./gradlew test` — runs on every push |
 | Backend coverage | **96.49%** lines, **86.14%** branches (97.06% of instructions) | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
 | Frontend tests | **142** unit, **12** browser | `npm test` and `npm run test:browser` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
 | Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
@@ -24,10 +24,12 @@ instead, with its denominator.
 | Refusal signals caught, of the risky sentences | **12 / 13** | same test — held as a floor, not a target; the one miss is explained below |
 | False alarms, of the safe sentences | **0 / 21** | same test — asserted at zero |
 | Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
+| Sentences the rules grade *more* severely than the label | **0 / 34** | same test as above — the weights and the labels have to agree on the grade, not only on the signal |
+| Review sheet's verdict column matches the labels | **34 / 34** | `ReviewDocumentTest` — a changed label makes the stale sheet fail |
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
-| Model agreement, risk grade | **22 / 34** answered, **20** agreed (91%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
+| Model agreement, risk grade | **22 / 34** answered, **21** agreed (95%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
 | Model agreement, ordering | **1 / 7** compared, **1** held | same command |
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
@@ -50,6 +52,8 @@ comes back.
 | **「ご確認ください」 was scored impolite.** The check looked for です・ます as literal strings, so a 尊敬語 imperative counted as plain speech | the labelled evaluation set, on its first run | Kuromoji conjugation types instead of substrings — polite form **34 / 34** |
 | **A missing dictionary entry quietly cost 10 points.** 「恐れ入りますが」 is a cushion phrase; the rules did not know it, so a polite request was penalised as if it had none. Same sentence, same manners, ten points apart — decided by a file, not by the Japanese | cushion agreement against the labels | lemma matching on Kuromoji base forms — cushion **34 / 34** |
 | **Base forms then over-matched.** 「考えておきます」 defers, 「貢献したいと考えております」 is an aspiration, and both reduce to 考える — so a sentence about wanting to contribute was read as a brush-off | the false-alarm check on the 21 safe sentences | a companion-lemma requirement (`考える` + `おく`) — false alarms **0 / 21** |
+| **A label contradicted our own weights, and nothing could see it.** 「少し考えておきます」 to an `EXTERNAL` contact was labelled `CAUTION`, while the rules graded it `DANGER` — 考える+おく is 0.6, `EXTERNAL` multiplies by 1.2, and 0.72 is past the 0.7 boundary. The label had been written from the sentence alone, ignoring the multiplier its own `relationship` field implies. Recall could not catch it (the signal *was* found) and the false-alarm check could not either (the row is not `SAFE`), so it sat between the two tests | the model answered `DANGER` on 2026-10-08, against the label | the label is corrected, and a new check asserts the rules never grade a sentence more severely than its label — **0 / 34** |
+| **The review sheet kept the old verdict.** `docs/NATIVE_REVIEW.md` prints our judgement next to each sentence for the reviewer to confirm, and only the sentences were checked against the evaluation set — so the corrected label left a stale `CAUTION` on the sheet. A reviewer would have confirmed a verdict we no longer hold | found while correcting the label above | `ReviewDocumentTest` now compares the sheet's verdict and cushion columns with the labels, **34 / 34** |
 | **The model read `riskLevel` as rudeness.** 「よろしく」 came back `DANGER`: terse, yes, but it refuses nothing. The prompt had asked for two readings at once | the first `evalTest` run against the model | one definition in the prompt and in `@JsonPropertyDescription`, with worked examples; the risk check re-asks whenever the prompt version changes |
 
 Two more were found in the measuring itself. The first `evalTest` spent a day's quota collecting the same
@@ -216,6 +220,7 @@ Those bases are not all the same kind of claim, and the file distinguishes them:
 | cushion phrase | 34/34 |
 | refusal signal, recall | 12/13 |
 | refusal signal, false alarms | 0/21 |
+| grade not more severe than the label | 34/34 |
 
 Each number moved because the evaluation found something. Matching raw strings missed 「恐れ入りますが」 and 「考えておきます」, so matching is on Kuromoji base forms now. The ten added sentences then dropped recall to 7 of 13 — 「ご希望に添いかねます」「予定はございません」「持ち帰らせていただく」「善処いたします」 all read as safe — and five of the six were recovered by extending the dictionaries.
 
@@ -223,7 +228,9 @@ Each number moved because the evaluation found something. Matching raw strings m
 
 **The three metrics have ordering constraints.** No source says 「ご確認ください」 is 35 out of 40, so there is nothing to compare an absolute score against. Ordering is another matter: 「よろしく」 cannot be more polite than 「よろしくお願い申し上げます」, and adding a cushion phrase to a request cannot lower its etiquette. `ordering-pairs.json` holds seven such pairs with the grammatical reason for each, and `RuleLayerOrderingTest` gives both sentences identical model scores so that any difference is the rules' doing. All seven hold; `evalTest` runs the same check against the model, at two calls per pair.
 
-**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift: they have to reproduce the grades on all 34 labelled sentences, so changing one breaks the build.
+**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift. Four things are checked against the 34 labelled sentences on every push: polite form and cushion detection must match exactly, the refusal dictionary must stay above its recall floor, it must raise no false alarm on the 21 safe sentences, and **the grade the weights produce must not be more severe than the label**. Raising a weight past a boundary now breaks the build.
+
+That last check was missing until 2026-10-08, and the gap had something in it — see [What the measurement found](#-what-the-measurement-found).
 
 **The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` asserts nothing about the agreement itself: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build. It does assert that the quota is the reason, though — a call blocked for any other reason fails the run instead of being filed under "today's circumstances".
 
@@ -233,7 +240,7 @@ Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | answers kept in `model-answers.json` | agreed |
 |---|---|---|
-| risk grade | 22 of 34 | **20** (91%) |
+| risk grade | 22 of 34 | **21** (95%) |
 | ordering pairs | 1 of 7 | **1** |
 
 An earlier run compared six of the seven pairs and all six held, but that was before answers were kept on
@@ -427,7 +434,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 214 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 218 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 

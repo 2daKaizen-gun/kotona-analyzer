@@ -42,6 +42,45 @@ class ReviewDocumentTest {
                 .isEmpty();
     }
 
+    /**
+     * 시트에 적힌 판정이 라벨과 같은지.
+     *
+     * <p>이 문서는 문장마다 우리 판정을 함께 적어 둔다. 그런데 지금까지 검사한 것은 문장이
+     * 들어 있는지뿐이어서, 라벨을 고쳐도 시트의 판정 칸은 조용히 옛 값으로 남았다 —
+     * 2026-10-08 에 reject-03 을 CAUTION 에서 DANGER 로 고쳤을 때 실제로 그랬다.
+     * 틀린 판정을 적어 보내면 검수자는 틀린 것을 확인해 준다.
+     */
+    @Test
+    @DisplayName("시트에 적힌 판정이 라벨과 같다")
+    void theSheetShowsTheSameVerdictAsTheLabels() throws Exception {
+        List<String> drifted = new ArrayList<>();
+        List<String> lines = Files.readAllLines(DOC);
+
+        for (EvaluationSet.Row row : EvaluationSet.load().rows()) {
+            String line = lines.stream()
+                    .filter(candidate -> candidate.startsWith("|") && candidate.contains("| " + row.text() + " |"))
+                    .findFirst()
+                    .orElse(null);
+            if (line == null) {
+                continue; // 문장 누락은 위 테스트가 잡는다
+            }
+            String[] cells = line.split("\\|");
+            String cushionCell = cells[4].trim();
+            String riskCell = cells[5].trim();
+            if (!riskCell.startsWith(row.risk())) {
+                drifted.add("%s: 라벨 %s, 시트 %s".formatted(row.id(), row.risk(), riskCell));
+            }
+            String expectedCushion = row.cushion() ? "あり" : "なし";
+            if (!cushionCell.equals(expectedCushion)) {
+                drifted.add("%s: 쿠션어 라벨 %s, 시트 %s".formatted(row.id(), expectedCushion, cushionCell));
+            }
+        }
+
+        assertThat(drifted)
+                .as("docs/NATIVE_REVIEW.md 의 판정 칸이 라벨과 어긋난다 — 이대로 보내면 틀린 판정을 검수받는다")
+                .isEmpty();
+    }
+
     @Test
     @DisplayName("검수 문서는 확인이 필요한 축만 묻는다")
     void theReviewDocumentAsksOnlyAboutWhatNeedsAHuman() throws Exception {
