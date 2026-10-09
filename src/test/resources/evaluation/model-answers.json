@@ -159,4 +159,81 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-08",
   "value" : "SAFE"
+}, {
+  "id" : "reject-05",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "CAUTION"
+}, {
+  "id" : "accept-02",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "SAFE"
+}, {
+  "id" : "real-01",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "DANGER"
+}, {
+  "id" : "real-02",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "DANGER"
+}, {
+  "id" : "real-03",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "DANGER"
+}, {
+  "id" : "real-04",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "CAUTION"
+}, {
+  "id" : "real-05",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "DANGER"
+}, {
+  "id" : "real-06",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "SAFE"
+}, {
+  "id" : "real-07",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "DANGER"
+}, {
+  "id" : "real-08",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "SAFE"
+}, {
+  "id" : "real-09",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-09",
+  "value" : "SAFE"
 } ]

@@ -29,7 +29,7 @@ instead, with its denominator.
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
-| Model agreement, risk grade | **22 / 34** answered, **21** agreed (95%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
+| Model agreement, risk grade | **33 / 34** answered, **29** agreed (88%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
 | Model agreement, ordering | **1 / 7** compared, **1** held | same command |
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
@@ -241,7 +241,7 @@ Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | answers kept in `model-answers.json` | agreed |
 |---|---|---|
-| risk grade | 22 of 34 | **21** (95%) |
+| risk grade | 33 of 34 | **29** (88%) |
 | ordering pairs | 1 of 7 | **1** |
 
 An earlier run compared six of the seven pairs and all six held, but that was before answers were kept on
@@ -250,11 +250,15 @@ table like this one. It is history, not evidence; the column above counts only w
 
 Every figure here is written with its denominator, because the alternative is writing nothing and sounding more certain. The quota arrives in a trickle, so the risk check runs first — one call per sentence tells us more per call than two calls per pair — and both checks stop after three consecutive failures instead of collecting the same error thirty times.
 
-**Two sentences disagree, and they disagree in opposite directions.**
+**Four sentences disagree, and three of them disagree the same way.**
 
 `cushion-06`, 「申し訳ございませんが、本日中の対応は難しい状況です」 — labelled `DANGER`, answered `CAUTION`. 「難しい」 is listed in the prompt as a refusal, and the label follows that; the model appears to read it as softer because the refusal is bounded to *today* rather than to the request itself. Both readings are arguable, and neither definition in the prompt covers the case: `DANGER` says "a refusal, however softly worded" and `CAUTION` says "deferred with no commitment and no deadline", and a refusal of the deadline sits between them.
 
 `reject-03`, 「少し考えておきます」 to an `EXTERNAL` contact — answered `DANGER`, and **the label was wrong**. The prompt lists 「考えておきます」 under `CAUTION`, which is where the label came from, but the label carries a relationship and the grade is computed with it: 考える+おく weighs 0.6, `EXTERNAL` multiplies by 1.2, and 0.72 is past the 0.7 boundary. Our own rules had been calling that sentence `DANGER` all along. The model agreed with the rules, and the label — written from the sentence while ignoring the multiplier its own `relationship` field implies — was the odd one out. It is now `DANGER`, and a test makes that class of inconsistency impossible to leave in (see [What the measurement found](#-what-the-measurement-found)).
+
+**`real-02` and `real-05` are the same disagreement twice, and it is definitional.** 「検討のうえ、必要に応じてご連絡させていただきます」 and 「状況が変わりましたら、こちらからお声がけいたします」 are both labelled `CAUTION` and both answered `DANGER`. Their labels say why in their own basis field: *実務では拒否として読まれることも多いが、文面としては期限も約束もない保留なので CAUTION とする* — we deliberately labelled what the sentence says, while the model answers what the sentence does in practice. Across three days of answers that looks like a consistent difference in reading rather than an error on either side, so the labels keep their text-level reading and the disagreement is recorded instead of resolved by moving whichever side is cheaper.
+
+**`reject-05` is the one the model simply got wrong.** 「社内で確認のうえ、改めてご連絡いたします」 is labelled `SAFE`, and the prompt names that very sentence as its example of `SAFE` — "names a next step". The model answered `CAUTION`. Nothing is ambiguous about it; it is an ordinary procedural reply. This one matters more than the others because of what it does to the grade on screen, which is now measured.
 
 It is left as it is, for now, for two reasons. The user-facing grade is unaffected — 「難しい」 carries 0.8, EXTERNAL multiplies by 1.2, and the final grade takes the more severe of rules and model, so the product still says `DANGER` and the adjustment record says why. And editing the prompt would change `PROMPT_VERSION`, which re-asks all 14 answers already paid for — one boundary case out of 14 is not enough evidence to spend two days of quota redefining an axis. If more scoped refusals disagree the same way once the column is full, that is a reason to add the case to the prompt with a worked example, and to re-measure deliberately.
 
@@ -272,8 +276,8 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 | limit | where it stands | what would move it |
 |---|---|---|
 | native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
-| model agreement, risk grade | **22 / 34** sentences | 12 calls, at 8–12 free answers a day |
-| model agreement, ordering | **1 / 7** pairs | 12 calls, out of the same daily allowance |
+| model agreement, risk grade | **33 / 34** sentences | 1 call |
+| model agreement, ordering | **1 / 7** pairs | 12 calls, out of a daily allowance of 20 |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |
 
@@ -282,7 +286,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **34 sentences and 7 pairs.** Ten now come from expressions a reviewer called troublesome in practice, which is closer to real use than the first 24, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **The model-side numbers fill with quota rather than with effort.** Risk grade: **14 of 34**. Ordering: **1 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds out of a daily allowance. How many a day is not ours to decide, and neither is when: 2026-10-05 gave one answer and then three `429`s, 2026-10-06 gave none because the day's requests had gone the night before, and 2026-10-07 gave twelve in twelve minutes before the window closed again. That is the shape of this number — two or three more days of running `./gradlew evalTest` finishes it, and nothing in the code is waiting on it.
+- **The model-side numbers fill with quota rather than with effort.** Risk grade: **33 of 34**. Ordering: **1 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds out of a daily allowance. How many a day is not ours to decide, and neither is when: 2026-10-05 gave one answer and then three `429`s, 2026-10-06 gave none because the day's requests had gone the night before, 2026-10-07 gave twelve in twelve minutes, 2026-10-08 eight, and 2026-10-09 eleven — leaving the risk column one sentence short. That is the shape of this number: one more day finishes the sentences, and the ordering pairs need twelve calls after that.
 
 ## 📡 API
 
