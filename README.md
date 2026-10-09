@@ -26,11 +26,11 @@ instead, with its denominator.
 | Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
 | Sentences the rules grade *more* severely than the label | **0 / 34** | same test as above — the weights and the labels have to agree on the grade, not only on the signal |
 | Review sheet's verdict column matches the labels | **34 / 34** | `ReviewDocumentTest` — a changed label makes the stale sheet fail |
-| **The grade a reader actually sees**, vs. the labels | **30 / 33** answered sentences — 3 more severe, 0 less | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
+| **The grade a reader actually sees**, vs. the labels | **31 / 34** — 3 more severe, 0 less | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
-| Model agreement, risk grade | **33 / 34** answered, **29** agreed (88%) | `./gradlew evalTest` — free-tier quota; answers accumulate, see below |
+| Model agreement, risk grade | **34 / 34** answered — the column is full — **30** agreed (88%) | `./gradlew evalTest` — the answers are checked in; re-running asks nothing until the prompt or model changes |
 | Model agreement, ordering | **1 / 7** compared, **1** held | same command |
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
@@ -58,7 +58,7 @@ comes back.
 | **A missing dictionary entry quietly cost 10 points.** 「恐れ入りますが」 is a cushion phrase; the rules did not know it, so a polite request was penalised as if it had none. Same sentence, same manners, ten points apart — decided by a file, not by the Japanese | cushion agreement against the labels | lemma matching on Kuromoji base forms — cushion **34 / 34** |
 | **Base forms then over-matched.** 「考えておきます」 defers, 「貢献したいと考えております」 is an aspiration, and both reduce to 考える — so a sentence about wanting to contribute was read as a brush-off | the false-alarm check on the 21 safe sentences | a companion-lemma requirement (`考える` + `おく`) — false alarms **0 / 21** |
 | **A label contradicted our own weights, and nothing could see it.** 「少し考えておきます」 to an `EXTERNAL` contact was labelled `CAUTION`, while the rules graded it `DANGER` — 考える+おく is 0.6, `EXTERNAL` multiplies by 1.2, and 0.72 is past the 0.7 boundary. The label had been written from the sentence alone, ignoring the multiplier its own `relationship` field implies. Recall could not catch it (the signal *was* found) and the false-alarm check could not either (the row is not `SAFE`), so it sat between the two tests | the model answered `DANGER` on 2026-10-08, against the label | the label is corrected, and a new check asserts the rules never grade a sentence more severely than its label — **0 / 34** |
-| **Nobody was measuring the number on the screen.** Agreement was measured for the rules and for the model separately, while the grade shown is the more severe of the two. So the rules' zero false alarms said nothing about what a user sees: the model's `CAUTION` on 「社内で確認のうえ、改めてご連絡いたします」 — a sentence the prompt itself gives as the example of `SAFE` — becomes the grade, and a harmless reply gets a warning | measured on 2026-10-09, once 33 of 34 answers were in | `ProductGradeTest` recomputes the composed grade from the recorded answers on every push: **30 / 33**, with the three over-severe sentences named so a fourth breaks the build |
+| **Nobody was measuring the number on the screen.** Agreement was measured for the rules and for the model separately, while the grade shown is the more severe of the two. So the rules' zero false alarms said nothing about what a user sees: the model's `CAUTION` on 「社内で確認のうえ、改めてご連絡いたします」 — a sentence the prompt itself gives as the example of `SAFE` — becomes the grade, and a harmless reply gets a warning | measured on 2026-10-09, once 33 of 34 answers were in | `ProductGradeTest` recomputes the composed grade from the recorded answers on every push: **31 / 34**, with the three over-severe sentences named so a fourth breaks the build |
 | **The review sheet kept the old verdict.** `docs/NATIVE_REVIEW.md` prints our judgement next to each sentence for the reviewer to confirm, and only the sentences were checked against the evaluation set — so the corrected label left a stale `CAUTION` on the sheet. A reviewer would have confirmed a verdict we no longer hold | found while correcting the label above | `ReviewDocumentTest` now compares the sheet's verdict and cushion columns with the labels, **34 / 34** |
 | **The model read `riskLevel` as rudeness.** 「よろしく」 came back `DANGER`: terse, yes, but it refuses nothing. The prompt had asked for two readings at once | the first `evalTest` run against the model | one definition in the prompt and in `@JsonPropertyDescription`, with worked examples; the risk check re-asks whenever the prompt version changes |
 
@@ -250,7 +250,7 @@ Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | answers kept in `model-answers.json` | agreed |
 |---|---|---|
-| risk grade | 33 of 34 | **29** (88%) |
+| risk grade | **34 of 34** | **30** (88%) |
 | ordering pairs | 1 of 7 | **1** |
 
 An earlier run compared six of the seven pairs and all six held, but that was before answers were kept on
@@ -269,19 +269,19 @@ Every figure here is written with its denominator, because the alternative is wr
 
 **`reject-05` is the one the model simply got wrong.** 「社内で確認のうえ、改めてご連絡いたします」 is labelled `SAFE`, and the prompt names that very sentence as its example of `SAFE` — "names a next step". The model answered `CAUTION`. Nothing is ambiguous about it; it is an ordinary procedural reply. This one matters more than the others because of what it does to the grade on screen, which is now measured.
 
-It is left as it is, for now, for two reasons. The user-facing grade is unaffected — 「難しい」 carries 0.8, EXTERNAL multiplies by 1.2, and the final grade takes the more severe of rules and model, so the product still says `DANGER` and the adjustment record says why. And editing the prompt would change `PROMPT_VERSION`, which re-asks all 14 answers already paid for — one boundary case out of 14 is not enough evidence to spend two days of quota redefining an axis. If more scoped refusals disagree the same way once the column is full, that is a reason to add the case to the prompt with a worked example, and to re-measure deliberately.
+It is left as it is — **decided, not deferred**, now that the column is full ([`PROMPT_DESIGN.md`](PROMPT_DESIGN.md)) — for two reasons. The user-facing grade is unaffected — 「難しい」 carries 0.8, EXTERNAL multiplies by 1.2, and the final grade takes the more severe of rules and model, so the product still says `DANGER` and the adjustment record says why. And editing the prompt would change `PROMPT_VERSION`, which re-asks all 14 answers already paid for — one boundary case out of 14 is not enough evidence to spend two days of quota redefining an axis. If more scoped refusals disagree the same way once the column is full, that is a reason to add the case to the prompt with a worked example, and to re-measure deliberately.
 
 An earlier run is why the prompt changed: the model read `riskLevel` as rudeness rather than refusal, and 「よろしく」 came back DANGER. The prompt had asked for both readings; it now asks for one.
 
 **What the screen shows is neither of the two numbers above.** The grade is the more severe of the rules' and the model's, so neither agreement rate describes what a user is told. That composition is now measured, from the answers already recorded — no quota needed, so it runs on every push:
 
-| on the 33 sentences the model has answered | agrees with the label |
+| on all 34 labelled sentences | agrees with the label |
 |---|---|
-| the rules alone | 32 |
-| the model alone | 29 |
-| **the grade on screen** (more severe of the two) | **30** — 3 more severe than the label, 0 less |
+| the rules alone | 33 |
+| the model alone | 30 |
+| **the grade on screen** (more severe of the two) | **31** — 3 more severe than the label, 0 less |
 
-**Read the first row with suspicion.** The dictionaries and weights were built against these same labels, so 32 of 33 is partly a measurement of itself. The model never saw the labels, which is what makes its 29 the more informative number — and what makes the third row the one that matters, because it is the only one a user experiences.
+**Read the first row with suspicion.** The dictionaries and weights were built against these same labels, so 33 of 34 is partly a measurement of itself. The model never saw the labels, which is what makes its 30 the more informative number — and what makes the third row the one that matters, because it is the only one a user experiences.
 
 **Three sentences come out more severe than the label, and zero come out less.** For this tool that asymmetry is the intended direction: a missed refusal is a reply sent to a client in good faith. But the cost is now visible with a denominator. `reject-05` 「社内で確認のうえ、改めてご連絡いたします」 is labelled `SAFE`, the rules agree, and the model's `CAUTION` wins by being the more severe — so a reader is warned about an ordinary procedural reply. The rules' false alarms are asserted at zero; the model's are not, and `ProductGradeTest` names the three so a fourth fails the build rather than joining them quietly.
 
@@ -297,7 +297,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 | limit | where it stands | what would move it |
 |---|---|---|
 | native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
-| model agreement, risk grade | **33 / 34** sentences | 1 call |
+| model agreement, risk grade | **34 / 34** sentences — done | — |
 | model agreement, ordering | **1 / 7** pairs | 12 calls, out of a daily allowance of 20 |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |
@@ -307,7 +307,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **34 sentences and 7 pairs.** Ten now come from expressions a reviewer called troublesome in practice, which is closer to real use than the first 24, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **The model-side numbers fill with quota rather than with effort.** Risk grade: **33 of 34**. Ordering: **1 of 7**. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds out of a daily allowance. How many a day is not ours to decide, and neither is when: 2026-10-05 gave one answer and then three `429`s, 2026-10-06 gave none because the day's requests had gone the night before, 2026-10-07 gave twelve in twelve minutes, 2026-10-08 eight, and 2026-10-09 eleven — leaving the risk column one sentence short. That is the shape of this number: one more day finishes the sentences, and the ordering pairs need twelve calls after that.
+- **The risk column is finished; the ordering column is not.** Risk grade: **34 of 34**, 30 agreed. Ordering: **1 of 7**, and it needs 12 calls. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds out of a daily allowance that is neither ours to size nor to schedule — 2026-10-05 gave one answer, 10-06 none, 10-07 twelve, 10-08 eight, 10-09 eleven, 10-10 one. Six days for 34 sentences. The ordering pairs are two calls each and the quota decides when.
 
 ## 📡 API
 

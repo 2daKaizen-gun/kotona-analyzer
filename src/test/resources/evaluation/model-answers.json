@@ -236,4 +236,11 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-09",
   "value" : "SAFE"
+}, {
+  "id" : "real-10",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-10",
+  "value" : "CAUTION"
 } ]

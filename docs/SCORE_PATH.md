@@ -61,8 +61,8 @@ tested against (**0 / 21** on the safe sentences) — only the rules, which is t
 about: nothing asserts that the model will not raise one, and the model's answer wins whenever it is the
 more severe.
 
-What that asymmetry costs is measured rather than assumed. On the 33 sentences the model has answered, the
-composed grade — the one this stage returns — agrees with the label 30 times, and the three it does not are
+What that asymmetry costs is measured rather than assumed. On all 34 labelled sentences, the
+composed grade — the one this stage returns — agrees with the label 31 times, and the three it does not are
 all *more* severe than the label, none less. One of them is 「社内で確認のうえ、改めてご連絡いたします」: the
 rules call it `SAFE`, the label calls it `SAFE`, and the model's `CAUTION` becomes the answer because it is
 the more severe. The design says that is the right direction to err in; the number says how often erring
@@ -98,4 +98,4 @@ calibrates what a polite request is *worth* out of 40. What is verified is narro
 denominator in the [README](../README.md#what-is-still-unverified): polite form and cushion detection match
 the labels on all **34** sentences, the refusal dictionary finds **12 of 13** risky ones and raises **0 of
 21** false alarms, the rules grade **0 of 34** more severely than the label, all **7** ordering pairs hold,
-and the composed grade agrees with the label on **30 of the 33** sentences the model has answered.
+and the composed grade agrees with the label on **31 of the 34** sentences.
