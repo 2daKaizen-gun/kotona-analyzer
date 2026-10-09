@@ -17,16 +17,16 @@ instead, with its denominator.
 |---|---|---|
 | Backend tests | **222** passing | `./gradlew test` — runs on every push |
 | Backend coverage | **96.51%** lines, **86.27%** branches | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
-| Frontend tests | **142** unit, **12** browser | `npm test` and `npm run test:browser` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
+| Frontend tests | **143** unit, **12** browser | `npm test` and `npm run test:e2e` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
 | Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
 | Polite form, rules vs. labels | **34 / 34** | `./gradlew test --tests '*RuleLayerEvaluationTest'` |
 | Cushion phrase, rules vs. labels | **34 / 34** | same test |
-| Refusal signals caught, of the risky sentences | **12 / 13** | same test — held as a floor, not a target; the one miss is explained below |
-| False alarms, of the safe sentences | **0 / 21** | same test — asserted at zero |
+| Refusal signals the **rules** catch, of the risky sentences | **12 / 13** | same test — held as a floor, not a target; the one miss is explained below |
+| False alarms **by the rules**, of the safe sentences | **0 / 21** | same test — asserted at zero. This is one layer, not the product: the model's false alarms are measured but not asserted, and they reach the reader through the row below |
 | Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
 | Sentences the rules grade *more* severely than the label | **0 / 34** | same test as above — the weights and the labels have to agree on the grade, not only on the signal |
 | Review sheet's verdict column matches the labels | **34 / 34** | `ReviewDocumentTest` — a changed label makes the stale sheet fail |
-| The grade a user actually sees, vs. the labels | **30 / 33** answered sentences | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
+| **The grade a reader actually sees**, vs. the labels | **30 / 33** answered sentences — 3 more severe, 0 less | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
@@ -35,6 +35,10 @@ instead, with its denominator.
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
 | Known dependency vulnerabilities | **0** | `npm audit --omit=dev`; Dependabot alerts enabled on both repos |
+
+A row that names the rules measures **one layer**, not the product. The grade on screen is the more severe
+of the rules' reading and the model's, so the row to read for "what does a user get" is the composed one —
+and the three sentences where it comes out more severe than the label are named in the test.
 
 Two of those numbers are small on purpose, and two cannot grow by working harder — [What the measurement
 found](#-what-the-measurement-found) explains the first, [What is still
@@ -217,6 +221,9 @@ Those bases are not all the same kind of claim, and the file distinguishes them:
 
 **The rule layer is measured against those labels on every push.** `RuleLayerEvaluationTest` scores the dictionaries and the morphological check:
 
+These four rows are the **rule layer alone**. What a reader sees is this layer combined with the model's
+answer, which is measured separately further down.
+
 | axis | agreement |
 |---|---|
 | polite form (Kuromoji) | 34/34 |
@@ -227,11 +234,11 @@ Those bases are not all the same kind of claim, and the file distinguishes them:
 
 Each number moved because the evaluation found something. Matching raw strings missed 「恐れ入りますが」 and 「考えておきます」, so matching is on Kuromoji base forms now. The ten added sentences then dropped recall to 7 of 13 — 「ご希望に添いかねます」「予定はございません」「持ち帰らせていただく」「善処いたします」 all read as safe — and five of the six were recovered by extending the dictionaries.
 
-**The sixth was left missed on purpose.** 「お声がけいたします」 defers; 「何かあればお声がけください」 invites. One dictionary entry cannot tell them apart, and a false alarm — telling someone a harmless message is dangerous — is worse than a miss, which the model may still catch. So recall is held to a floor rather than to 100%: demanding perfection from a keyword dictionary over arbitrary Japanese would only produce a dictionary overfitted to this file. False alarms are asserted at zero.
+**The sixth was left missed on purpose.** 「お声がけいたします」 defers; 「何かあればお声がけください」 invites. One dictionary entry cannot tell them apart, and a false alarm — telling someone a harmless message is dangerous — is worse than a miss, which the model may still catch. So recall is held to a floor rather than to 100%: demanding perfection from a keyword dictionary over arbitrary Japanese would only produce a dictionary overfitted to this file. **The rules'** false alarms are asserted at zero — the model's are not asserted at all, and since the grade takes the more severe of the two, the model's over-reading is what a reader ends up seeing. That is measured below, with its denominator.
 
 **The three metrics have ordering constraints.** No source says 「ご確認ください」 is 35 out of 40, so there is nothing to compare an absolute score against. Ordering is another matter: 「よろしく」 cannot be more polite than 「よろしくお願い申し上げます」, and adding a cushion phrase to a request cannot lower its etiquette. `ordering-pairs.json` holds seven such pairs with the grammatical reason for each, and `RuleLayerOrderingTest` gives both sentences identical model scores so that any difference is the rules' doing. All seven hold; `evalTest` runs the same check against the model, at two calls per pair.
 
-**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift. Four things are checked against the 34 labelled sentences on every push: polite form and cushion detection must match exactly, the refusal dictionary must stay above its recall floor, it must raise no false alarm on the 21 safe sentences, and **the grade the weights produce must not be more severe than the label**. Raising a weight past a boundary now breaks the build.
+**The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift. Five checks run against the 34 labelled sentences on every push: polite form must match exactly, cushion detection must match exactly, the refusal dictionary must stay above its recall floor, it must raise no false alarm on the 21 safe sentences, and **the grade the weights produce must not be more severe than the label**. Raising a weight past a boundary now breaks the build.
 
 That last check was missing until 2026-10-08, and the gap had something in it — see [What the measurement found](#-what-the-measurement-found).
 
@@ -460,7 +467,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 222 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 222 backend tests covering 96% of lines and 86% of branches, plus 143 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 

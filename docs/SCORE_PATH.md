@@ -56,8 +56,10 @@ Taking the more severe of the two is the one place the design is deliberately as
 the words in their dictionary, so they miss anything outside it; the model reads the sentence but has no
 fixed definition it can be held to. Either may be right alone, and the cost of the two mistakes is not
 symmetric — a missed refusal is a reply sent to a client in good faith, a false alarm is a sentence the user
-rewrites for nothing. So a miss is corrected by the other side, and a false alarm is what the rules are
-tested against (**0 / 21** on the safe sentences).
+rewrites for nothing. So a miss is corrected by the other side, and a false alarm is what **the rules** are
+tested against (**0 / 21** on the safe sentences) — only the rules, which is the part worth being careful
+about: nothing asserts that the model will not raise one, and the model's answer wins whenever it is the
+more severe.
 
 What that asymmetry costs is measured rather than assumed. On the 33 sentences the model has answered, the
 composed grade — the one this stage returns — agrees with the label 30 times, and the three it does not are
