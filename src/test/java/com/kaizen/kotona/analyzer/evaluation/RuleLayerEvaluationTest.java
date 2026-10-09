@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -133,8 +132,8 @@ class RuleLayerEvaluationTest {
     void ruleGradeNeverOutrunsTheLabel() {
         List<String> tooSevere = new ArrayList<>();
         for (EvaluationSet.Row row : set.rows()) {
-            String ruleGrade = gradeFromRules(row);
-            if (SEVERITY.get(ruleGrade) > SEVERITY.get(row.risk())) {
+            String ruleGrade = RuleGrade.of(refusalScore(row.text()), row.relationship());
+            if (RuleGrade.SEVERITY.get(ruleGrade) > RuleGrade.SEVERITY.get(row.risk())) {
                 tooSevere.add("%s: 라벨 %s, 규칙 %s (점수 %.2f × %s %.1f) — %s".formatted(
                         row.id(), row.risk(), ruleGrade,
                         refusalScore(row.text()), row.relationship(), row.relationship().riskMultiplier(),
@@ -147,33 +146,13 @@ class RuleLayerEvaluationTest {
                 .isEmpty();
     }
 
-    private static final Map<String, Integer> SEVERITY = Map.of("SAFE", 0, "CAUTION", 1, "DANGER", 2);
-
-    /** 검증기와 같은 계산. 점수에 관계 배수를 곱하고 같은 경계로 자른다. */
-    private String gradeFromRules(EvaluationSet.Row row) {
-        double score = refusalScore(row.text()) * row.relationship().riskMultiplier();
-        if (score >= 0.7) {
-            return "DANGER";
-        }
-        return score >= 0.3 ? "CAUTION" : "SAFE";
-    }
-
     /** 낱말 사전과 구 사전을 함께 본다. 검증기와 같은 판정이어야 평가가 의미를 갖는다. */
     private boolean detectsRefusal(String text) {
         return refusalScore(text) > 0;
     }
 
     private double refusalScore(String text) {
-        Set<String> lemmas = tokenService.baseForms(text);
-        double fromLemmas = EtiquetteConstants.SOFT_REJECTION_SIGNALS.entrySet().stream()
-                .filter(entry -> EtiquetteConstants.signalMatches(entry, lemmas))
-                .mapToDouble(entry -> entry.getValue().weight())
-                .sum();
-        double fromPhrases = EtiquetteConstants.SOFT_REJECTION_PHRASES.entrySet().stream()
-                .filter(entry -> text.contains(entry.getKey()))
-                .mapToDouble(entry -> entry.getValue().weight())
-                .sum();
-        return fromLemmas + fromPhrases;
+        return RuleGrade.score(tokenService, text);
     }
 
     private void report(String axis, int total, List<String> wrong) {

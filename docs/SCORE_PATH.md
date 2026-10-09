@@ -59,6 +59,14 @@ symmetric — a missed refusal is a reply sent to a client in good faith, a fals
 rewrites for nothing. So a miss is corrected by the other side, and a false alarm is what the rules are
 tested against (**0 / 21** on the safe sentences).
 
+What that asymmetry costs is measured rather than assumed. On the 33 sentences the model has answered, the
+composed grade — the one this stage returns — agrees with the label 30 times, and the three it does not are
+all *more* severe than the label, none less. One of them is 「社内で確認のうえ、改めてご連絡いたします」: the
+rules call it `SAFE`, the label calls it `SAFE`, and the model's `CAUTION` becomes the answer because it is
+the more severe. The design says that is the right direction to err in; the number says how often erring
+costs a reader a warning they did not need. `ProductGradeTest` recomputes it from the recorded answers on
+every push and names those three, so a fourth fails the build instead of joining them.
+
 `redFlags` merges both lists for the same reason. It used to carry only the model's, which produced
 `riskLevel: SAFE` next to a list of warning signs when the rules had found something the model had not.
 
@@ -84,6 +92,8 @@ which, because that is the difference between a score and a verdict.
 ## What this page does not claim
 
 The model's three numbers have no authority behind them, the weights above were chosen by hand, and nothing
-calibrates what a polite request is *worth* out of 40. What is verified is narrower and stated with its
-denominator in the [README](../README.md#what-is-still-unverified): that the rules reproduce the labels on
-all 34 sentences, hold all 7 ordering pairs, and raise no false alarm on the 21 safe ones.
+calibrates what a polite request is *worth* out of 40. What is verified is narrower and each part carries its
+denominator in the [README](../README.md#what-is-still-unverified): polite form and cushion detection match
+the labels on all **34** sentences, the refusal dictionary finds **12 of 13** risky ones and raises **0 of
+21** false alarms, the rules grade **0 of 34** more severely than the label, all **7** ordering pairs hold,
+and the composed grade agrees with the label on **30 of the 33** sentences the model has answered.
