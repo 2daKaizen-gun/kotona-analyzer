@@ -53,6 +53,19 @@ final class EvaluationLog {
         return log;
     }
 
+    /**
+     * 이 설정으로 받은 답 전부.
+     *
+     * <p>측정 결과를 다시 계산해 보는 테스트가 쓴다 — 기록이 파일로 남아 있으므로,
+     * 모델을 다시 부르지 않고도 "그때 받은 답으로 지금 규칙을 합치면 사용자는 무엇을 보는가"
+     * 를 매 푸시마다 계산할 수 있다.
+     */
+    java.util.List<Answer> recorded(String kind) {
+        return answers.values().stream()
+                .filter(a -> a.kind().equals(kind) && a.promptVersion().equals(PROMPT_VERSION))
+                .toList();
+    }
+
     /** 이 설정으로 이미 받은 답. 설정이 다르면 없는 것으로 본다. */
     String recorded(String kind, String id, String model) {
         Answer a = answers.get(key(kind, id));

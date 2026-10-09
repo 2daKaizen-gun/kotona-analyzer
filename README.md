@@ -15,8 +15,8 @@ instead, with its denominator.
 
 | what | measured | how to check it |
 |---|---|---|
-| Backend tests | **221** passing | `./gradlew test` — runs on every push |
-| Backend coverage | **96.49%** lines, **86.14%** branches (97.06% of instructions) | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
+| Backend tests | **222** passing | `./gradlew test` — runs on every push |
+| Backend coverage | **96.51%** lines, **86.27%** branches | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
 | Frontend tests | **142** unit, **12** browser | `npm test` and `npm run test:browser` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
 | Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
 | Polite form, rules vs. labels | **34 / 34** | `./gradlew test --tests '*RuleLayerEvaluationTest'` |
@@ -26,6 +26,7 @@ instead, with its denominator.
 | Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
 | Sentences the rules grade *more* severely than the label | **0 / 34** | same test as above — the weights and the labels have to agree on the grade, not only on the signal |
 | Review sheet's verdict column matches the labels | **34 / 34** | `ReviewDocumentTest` — a changed label makes the stale sheet fail |
+| The grade a user actually sees, vs. the labels | **30 / 33** answered sentences | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
@@ -53,6 +54,7 @@ comes back.
 | **A missing dictionary entry quietly cost 10 points.** 「恐れ入りますが」 is a cushion phrase; the rules did not know it, so a polite request was penalised as if it had none. Same sentence, same manners, ten points apart — decided by a file, not by the Japanese | cushion agreement against the labels | lemma matching on Kuromoji base forms — cushion **34 / 34** |
 | **Base forms then over-matched.** 「考えておきます」 defers, 「貢献したいと考えております」 is an aspiration, and both reduce to 考える — so a sentence about wanting to contribute was read as a brush-off | the false-alarm check on the 21 safe sentences | a companion-lemma requirement (`考える` + `おく`) — false alarms **0 / 21** |
 | **A label contradicted our own weights, and nothing could see it.** 「少し考えておきます」 to an `EXTERNAL` contact was labelled `CAUTION`, while the rules graded it `DANGER` — 考える+おく is 0.6, `EXTERNAL` multiplies by 1.2, and 0.72 is past the 0.7 boundary. The label had been written from the sentence alone, ignoring the multiplier its own `relationship` field implies. Recall could not catch it (the signal *was* found) and the false-alarm check could not either (the row is not `SAFE`), so it sat between the two tests | the model answered `DANGER` on 2026-10-08, against the label | the label is corrected, and a new check asserts the rules never grade a sentence more severely than its label — **0 / 34** |
+| **Nobody was measuring the number on the screen.** Agreement was measured for the rules and for the model separately, while the grade shown is the more severe of the two. So the rules' zero false alarms said nothing about what a user sees: the model's `CAUTION` on 「社内で確認のうえ、改めてご連絡いたします」 — a sentence the prompt itself gives as the example of `SAFE` — becomes the grade, and a harmless reply gets a warning | measured on 2026-10-09, once 33 of 34 answers were in | `ProductGradeTest` recomputes the composed grade from the recorded answers on every push: **30 / 33**, with the three over-severe sentences named so a fourth breaks the build |
 | **The review sheet kept the old verdict.** `docs/NATIVE_REVIEW.md` prints our judgement next to each sentence for the reviewer to confirm, and only the sentences were checked against the evaluation set — so the corrected label left a stale `CAUTION` on the sheet. A reviewer would have confirmed a verdict we no longer hold | found while correcting the label above | `ReviewDocumentTest` now compares the sheet's verdict and cushion columns with the labels, **34 / 34** |
 | **The model read `riskLevel` as rudeness.** 「よろしく」 came back `DANGER`: terse, yes, but it refuses nothing. The prompt had asked for two readings at once | the first `evalTest` run against the model | one definition in the prompt and in `@JsonPropertyDescription`, with worked examples; the risk check re-asks whenever the prompt version changes |
 
@@ -264,6 +266,18 @@ It is left as it is, for now, for two reasons. The user-facing grade is unaffect
 
 An earlier run is why the prompt changed: the model read `riskLevel` as rudeness rather than refusal, and 「よろしく」 came back DANGER. The prompt had asked for both readings; it now asks for one.
 
+**What the screen shows is neither of the two numbers above.** The grade is the more severe of the rules' and the model's, so neither agreement rate describes what a user is told. That composition is now measured, from the answers already recorded — no quota needed, so it runs on every push:
+
+| on the 33 sentences the model has answered | agrees with the label |
+|---|---|
+| the rules alone | 32 |
+| the model alone | 29 |
+| **the grade on screen** (more severe of the two) | **30** — 3 more severe than the label, 0 less |
+
+**Read the first row with suspicion.** The dictionaries and weights were built against these same labels, so 32 of 33 is partly a measurement of itself. The model never saw the labels, which is what makes its 29 the more informative number — and what makes the third row the one that matters, because it is the only one a user experiences.
+
+**Three sentences come out more severe than the label, and zero come out less.** For this tool that asymmetry is the intended direction: a missed refusal is a reply sent to a client in good faith. But the cost is now visible with a denominator. `reject-05` 「社内で確認のうえ、改めてご連絡いたします」 is labelled `SAFE`, the rules agree, and the model's `CAUTION` wins by being the more severe — so a reader is warned about an ordinary procedural reply. The rules' false alarms are asserted at zero; the model's are not, and `ProductGradeTest` names the three so a fourth fails the build rather than joining them quietly.
+
 **Scoring is deterministic.** `GEMINI_TEMPERATURE` defaults to 0. At 0.7 the same sentence scored 70/71/71 overall but 15/10/12 on etiquette across three identical requests.
 
 **Every rule adjustment is returned** in `scoreAdjustments` and shown in the UI: which metric, before, after, and why. A reader can see whether 73 came from the model or from a rule taking ten off.
@@ -446,7 +460,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 221 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 222 backend tests covering 96% of lines and 86% of branches, plus 142 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 
