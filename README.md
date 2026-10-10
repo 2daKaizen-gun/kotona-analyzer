@@ -31,7 +31,7 @@ instead, with its denominator.
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
 | Model agreement, risk grade | **34 / 34** answered — the column is full — **30** agreed (88%) | `./gradlew evalTest` — the answers are checked in; re-running asks nothing until the prompt or model changes |
-| Model agreement, ordering | **1 / 7** compared, **1** held | same command |
+| Model agreement, ordering | **7 / 7** compared, **7** held — 6 strictly higher, 1 tied | same command |
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
 | Known dependency vulnerabilities | **0** | `npm audit --omit=dev`; Dependabot alerts enabled on both repos |
@@ -236,7 +236,7 @@ Each number moved because the evaluation found something. Matching raw strings m
 
 **The sixth was left missed on purpose.** 「お声がけいたします」 defers; 「何かあればお声がけください」 invites. One dictionary entry cannot tell them apart, and a false alarm — telling someone a harmless message is dangerous — is worse than a miss, which the model may still catch. So recall is held to a floor rather than to 100%: demanding perfection from a keyword dictionary over arbitrary Japanese would only produce a dictionary overfitted to this file. **The rules'** false alarms are asserted at zero — the model's are not asserted at all, and since the grade takes the more severe of the two, the model's over-reading is what a reader ends up seeing. That is measured below, with its denominator.
 
-**The three metrics have ordering constraints.** No source says 「ご確認ください」 is 35 out of 40, so there is nothing to compare an absolute score against. Ordering is another matter: 「よろしく」 cannot be more polite than 「よろしくお願い申し上げます」, and adding a cushion phrase to a request cannot lower its etiquette. `ordering-pairs.json` holds seven such pairs with the grammatical reason for each, and `RuleLayerOrderingTest` gives both sentences identical model scores so that any difference is the rules' doing. All seven hold; `evalTest` runs the same check against the model, at two calls per pair.
+**The three metrics have ordering constraints.** No source says 「ご確認ください」 is 35 out of 40, so there is nothing to compare an absolute score against. Ordering is another matter: 「よろしく」 cannot be more polite than 「よろしくお願い申し上げます」, and adding a cushion phrase to a request cannot lower its etiquette. `ordering-pairs.json` holds seven such pairs with the grammatical reason for each, and `RuleLayerOrderingTest` gives both sentences identical model scores so that any difference is the rules' doing. All seven hold; `evalTest` ran the same check against the model, at two calls per pair, and all seven held there too — six strictly, one level.
 
 **The weights are still chosen by hand.** 40/30/30, the −10/−10/−5 penalties, the 0.8/0.6/0.5/0.2 signal weights, the 0.3/0.7 grade boundaries, the 1.0/1.2/1.5 relationship multipliers. None is derived from data. What changed is that they are no longer free to drift. Five checks run against the 34 labelled sentences on every push: polite form must match exactly, cushion detection must match exactly, the refusal dictionary must stay above its recall floor, it must raise no false alarm on the 21 safe sentences, and **the grade the weights produce must not be more severe than the label**. Raising a weight past a boundary now breaks the build.
 
@@ -244,18 +244,20 @@ That last check was missing until 2026-10-08, and the gap had something in it �
 
 **The model's agreement is measured by hand**, not in CI — one sentence costs 20–80 seconds and free-tier quota. `./gradlew evalTest` asserts nothing about the agreement itself: there is no basis yet for deciding what percentage is good enough, and a day when the quota is empty is not a failing build. It does assert that the quota is the reason, though — a call blocked for any other reason fails the run instead of being filed under "today's circumstances".
 
-A full pass needs 48 calls — 34 sentences at one each, 7 pairs at two — against a free-tier limit the 429 states itself: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, plus how long until the window reopens. In practice a day has yielded fewer than twenty (twelve on 2026-10-07), so the stated limit is a ceiling rather than a schedule. So the measurement is built to accumulate: answers are kept in `model-answers.json`, each run asks only what is still missing, and an empty quota ends the run instead of failing it. **A partly filled column is the normal state of this number, not an unfinished task** — three clear days of the daily allowance would finish it, and a day spent on `liveTest` or on trying the app by hand is a day it does not advance. The file records the model and the prompt version with each answer, so changing either re-asks it rather than leaving a stale agreement on the page.
+A full pass needed 48 calls — 34 sentences at one each, 7 pairs at two — against a free-tier limit the 429 states itself: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, plus how long until the window reopens. A day yielded between zero and twelve, so the stated limit was a ceiling rather than a schedule, and **the pass took a week**: 2026-10-05 to 10-11. The measurement is built for that — answers are kept in `model-answers.json`, each run asks only what is still missing, and an empty quota ends the run instead of failing it. Both columns are full now, so `evalTest` asks nothing and costs nothing until something invalidates an answer: the file records the model and the prompt version with each one, so changing either turns those answers back into questions rather than leaving a stale agreement on the page.
 
 Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | answers kept in `model-answers.json` | agreed |
 |---|---|---|
 | risk grade | **34 of 34** | **30** (88%) |
-| ordering pairs | 1 of 7 | **1** |
+| ordering pairs | **7 of 7** | **7** (6 strictly, 1 tied) |
 
-An earlier run compared six of the seven pairs and all six held, but that was before answers were kept on
-disk, so it cannot be reproduced from the file — and a number that cannot be re-checked does not belong in a
-table like this one. It is history, not evidence; the column above counts only what the log can show.
+**One of the seven is weaker than it looks.** `indirect-added-01` asks whether 「ご確認いただけますでしょうか」
+is more indirect than 「確認をお願いします」; the model scored both **25**. It did not invert the pair, which is
+what the constraint forbids, but it did not register the difference either — the ending that leaves the other
+person room to decline bought nothing. Six pairs came out strictly higher; this one came out level, and the
+log records the numbers so the distinction is visible rather than rounded into "7 of 7 held".
 
 Every figure here is written with its denominator, because the alternative is writing nothing and sounding more certain. The quota arrives in a trickle, so the risk check runs first — one call per sentence tells us more per call than two calls per pair — and both checks stop after three consecutive failures instead of collecting the same error thirty times.
 
@@ -298,7 +300,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 |---|---|---|
 | native-speaker review of the labels | **0 / 34** sentences | one reader of Japanese, on the two convention axes only |
 | model agreement, risk grade | **34 / 34** sentences — done | — |
-| model agreement, ordering | **1 / 7** pairs | 12 calls, out of a daily allowance of 20 |
+| model agreement, ordering | **7 / 7** pairs — done | — |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 34** | correspondence nobody can publish |
 
@@ -307,7 +309,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **34 sentences and 7 pairs.** Ten now come from expressions a reviewer called troublesome in practice, which is closer to real use than the first 24, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **The risk column is finished; the ordering column is not.** Risk grade: **34 of 34**, 30 agreed. Ordering: **1 of 7**, and it needs 12 calls. The rule layer is re-measured on every push because it costs nothing; the model costs a call and 20–80 seconds out of a daily allowance that is neither ours to size nor to schedule — 2026-10-05 gave one answer, 10-06 none, 10-07 twelve, 10-08 eight, 10-09 eleven, 10-10 one. Six days for 34 sentences. The ordering pairs are two calls each and the quota decides when.
+- **Both model columns are now full, and they took a week of free quota.** Risk grade: **34 of 34**, 30 agreed. Ordering: **7 of 7**, none inverted, one tied. The daily allowance was neither ours to size nor to schedule — 2026-10-05 gave one answer, 10-06 none, 10-07 twelve, 10-08 eight, 10-09 eleven, 10-10 one, and 10-11 the last six pairs. What finished the ordering column was not more quota but the risk column closing: the cheaper check is asked first, so until it was done the pairs never got a call.
 
 ## 📡 API
 
