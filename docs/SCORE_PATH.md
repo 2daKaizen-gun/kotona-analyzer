@@ -97,5 +97,5 @@ The model's three numbers have no authority behind them, the weights above were 
 calibrates what a polite request is *worth* out of 40. What is verified is narrower and each part carries its
 denominator in the [README](../README.md#what-is-still-unverified): polite form and cushion detection match
 the labels on all **34** sentences, the refusal dictionary finds **12 of 13** risky ones and raises **0 of
-21** false alarms, the rules grade **0 of 34** more severely than the label, all **7** ordering pairs hold,
+21** false alarms, the rules grade **0 of 34** more severely than the label, all **7** ordering pairs hold for the rules and for the model (six strictly, one level),
 and the composed grade agrees with the label on **31 of the 34** sentences.

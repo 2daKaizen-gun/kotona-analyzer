@@ -243,4 +243,46 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-10",
   "value" : "CAUTION"
+}, {
+  "id" : "polite-ladder-02",
+  "kind" : "order",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-11",
+  "value" : "25/38"
+}, {
+  "id" : "polite-ladder-03",
+  "kind" : "order",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-11",
+  "value" : "0/25"
+}, {
+  "id" : "polite-ladder-04",
+  "kind" : "order",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-11",
+  "value" : "30/35"
+}, {
+  "id" : "cushion-added-01",
+  "kind" : "order",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-11",
+  "value" : "20/30"
+}, {
+  "id" : "cushion-added-02",
+  "kind" : "order",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-11",
+  "value" : "25/30"
+}, {
+  "id" : "indirect-added-01",
+  "kind" : "order",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-11",
+  "value" : "25/25"
 } ]
