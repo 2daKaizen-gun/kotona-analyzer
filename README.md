@@ -40,9 +40,10 @@ A row that names the rules measures **one layer**, not the product. The grade on
 of the rules' reading and the model's, so the row to read for "what does a user get" is the composed one —
 and the three sentences where it comes out more severe than the label are named in the test.
 
-Two of those numbers are small on purpose, and two cannot grow by working harder — [What the measurement
-found](#-what-the-measurement-found) explains the first, [What is still
-unverified](#what-is-still-unverified) the second.
+Two of those numbers are deliberately not 100% — the refusal recall and the three over-severe grades — and
+[What the measurement found](#-what-the-measurement-found) explains why each is where it is. What no number
+here covers is in [What is still unverified](#what-is-still-unverified): one reader of Japanese, which is
+the last thing this project is waiting on.
 
 ## 🧪 What the measurement found
 
@@ -423,7 +424,8 @@ remove or narrow one, so a deleted field left its column behind forever and a re
     - [x] Phase 6-3: Migration to Spring Boot 4 (Jackson 3, victools 5, springdoc 3)
     - [x] Phase 6-4: Grounding the score — labelled evaluation set, rule layer measured on every push, ordering constraints, every adjustment returned to the reader
     - [x] Phase 6-5: Every number in the docs paired with the command that prints it, and every limit with its denominator
-    - [ ] Phase 6-6: Native-speaker review of the two convention axes, and the model-side columns filled as quota allows — both outside this repo's reach, both tracked where they stand
+    - [x] Phase 6-6: Model-side measurement filled to the end — risk 34/34, ordering 7/7, a week of free-tier quota (2026-10-05 → 10-11)
+    - [ ] Phase 6-7: Native-speaker review of the two convention axes — the one remaining item, and the only one that needs someone other than the author. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet, kept in step with the labels by a test
 
 ## 🔥 Troubleshooting & Lessons Learned
 **1. External Resource Path Resolution (Classpath vs FileSystem)** *(historical — resolved by removing the key file entirely)*
