@@ -166,6 +166,13 @@ docker compose up -d --build
 ```
 - API base: `http://localhost:8081`
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
+
+> **The runtime image runs as root.** For a local-only service that is a small
+> exposure, and it is written down rather than quietly left out: a non-root `USER`
+> in the Dockerfile is the fix, and it needs a container build to verify, which is
+> the one thing this machine could not do when the project was audited. Anyone
+> exposing this image to a network should make that change first, and check that
+> `/app` is readable by the new user.
 - Analyze (POST): `POST /analyze` with body `{ "text": "...", "relationshipType": "EXTERNAL" }` and header `X-API-KEY: <API_KEY>` when configured. `relationshipType` is one of `INTERNAL` / `EXTERNAL` / `INTERVIEW`; anything else is refused with the allowed list.
 
 ### Configuration
