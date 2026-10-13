@@ -65,7 +65,7 @@ class GenAiNuanceModelClientLiveTest {
 
         // 운영과 같은 시간 상한을 둔다. 멈춘 호출을 영원히 기다리면 이 테스트는 실패도 성공도 하지 않는다.
         NuanceModelClient client = new GenAiNuanceModelClient(
-                Client.builder().apiKey(apiKey).httpOptions(GeminiConfig.httpOptions(180_000)).build());
+                Client.builder().apiKey(apiKey).httpOptions(GeminiConfig.httpOptions(GeminiConfig.DEFAULT_TIMEOUT_MS)).build());
 
         String raw;
         try {

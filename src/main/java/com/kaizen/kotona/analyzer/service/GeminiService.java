@@ -2,6 +2,7 @@ package com.kaizen.kotona.analyzer.service;
 
 import tools.jackson.databind.ObjectMapper;
 import com.google.genai.errors.ApiException;
+import com.google.genai.errors.GenAiIOException;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
@@ -156,8 +157,9 @@ public class GeminiService {
 
             return validatedResult;
 
-        } catch (IllegalArgumentException | ApiException | AnalysisFailedException e) {
-            // 입력 검증 실패 → 400, Gemini API 오류 → 429/502, 우리가 문구를 쓴 실패는 그 문구 그대로.
+        } catch (IllegalArgumentException | ApiException | GenAiIOException | AnalysisFailedException e) {
+            // 입력 검증 실패 → 400, Gemini API 오류 → 429/502, 시간 초과·연결 실패 → 504/502,
+            // 우리가 문구를 쓴 실패는 그 문구 그대로.
             // GlobalExceptionHandler 가 상태코드로 매핑하므로 여기서 감싸지 않는다.
             // (감싸면 업스트림 원문이 500 응답 본문으로 그대로 새어 나간다.)
             throw e;

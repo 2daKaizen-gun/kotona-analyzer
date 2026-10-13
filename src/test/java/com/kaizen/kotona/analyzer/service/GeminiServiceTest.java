@@ -2,6 +2,7 @@ package com.kaizen.kotona.analyzer.service;
 
 import tools.jackson.databind.ObjectMapper;
 import com.google.genai.errors.ClientException;
+import com.google.genai.errors.GenAiIOException;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
@@ -17,6 +18,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.net.SocketTimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -241,6 +244,18 @@ class GeminiServiceTest {
 
             assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
                     .isInstanceOf(ClientException.class);
+        }
+
+        @Test
+        @DisplayName("시간 초과도 감싸지 않는다 — 감싸면 504 가 아니라 500 이 된다")
+        void letsTimeoutsThrough() {
+            // 예전에는 일반 예외 분기가 이것을 "분석 중 오류" 500 으로 바꿨다
+            given(modelClient.generate(anyString(), anyString(), any()))
+                    .willThrow(new GenAiIOException("Failed to execute HTTP request.",
+                            new SocketTimeoutException("timeout")));
+
+            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
+                    .isInstanceOf(GenAiIOException.class);
         }
 
         @Test

@@ -3,6 +3,7 @@ package com.kaizen.kotona.analyzer.exception;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.InvalidFormatException;
 import com.google.genai.errors.ApiException;
+import com.google.genai.errors.GenAiIOException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.io.InterruptedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +121,36 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(Map.of("error", "AI 분석 서비스에 일시적인 문제가 발생했습니다. 서버 로그를 확인하세요."));
+    }
+
+    /**
+     * 모델에 닿지 못했거나 답을 기다리다 포기함 → 504 / 502.
+     *
+     * <p>SDK 는 이 경우를 {@link ApiException} 이 아니라 {@link GenAiIOException} 으로 던진다.
+     * 둘은 형제라 위 핸들러에 걸리지 않고, 예전에는 서비스가 일반 예외로 감싸 500 "분석 중 오류" 가
+     * 나갔다 — 설정 파일은 502 라고 적고 있었다. 시간 초과는 다시 누르면 될 수도 있는 일이고,
+     * 우리 코드가 망가진 것과는 다르게 안내해야 한다.
+     */
+    @ExceptionHandler(GenAiIOException.class)
+    public ResponseEntity<?> handleGeminiUnreachable(GenAiIOException e) {
+        log.error("Gemini 호출이 끝나지 못함", e);
+
+        if (isTimeout(e)) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                    .body(Map.of("error", "AI 분석이 시간 안에 끝나지 않았습니다. 잠시 후 다시 시도해 주세요."));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(Map.of("error", "AI 분석 서비스에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요."));
+    }
+
+    /** 원인 사슬 어딘가에 시간 초과가 있는가. SDK 는 OkHttp 를 쓰고, 그 시간 초과는 SocketTimeoutException 이다. */
+    private static boolean isTimeout(Throwable e) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            if (cause instanceof InterruptedIOException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 분석 실패 → 500. 문구를 우리가 쓴 실패이므로 그대로 내보낸다. */

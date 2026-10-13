@@ -186,7 +186,7 @@ Everything is an environment variable with a working default, so a clone runs wi
 | `GEMINI_THINKING_LEVEL` | `high` | `low` is faster and mixes languages into the Japanese replies — see `PROMPT_DESIGN.md` |
 | `GEMINI_MAX_OUTPUT_TOKENS` | `8000` | Three smart replies plus alternatives, in Japanese and Korean |
 | `GEMINI_TEMPERATURE` | `0.0` | Scoring is a judgement, not a draft. At 0.7 the same sentence scored 70/71/71 overall but 15/10/12 on etiquette across three identical requests |
-| `GEMINI_TIMEOUT_MS` | `180000` | How long one call may take. The SDK's own default is to wait forever, which hands a stalled upstream a Tomcat thread permanently; 3 minutes is about double the slowest call observed (79s). Must be positive — the app refuses to start on 0 |
+| `GEMINI_TIMEOUT_MS` | `100000` | How long one call may take. The SDK's own default is to wait forever, which hands a stalled upstream a Tomcat thread permanently. 100 s sits above the slowest call observed (79 s) and below the point where the frontend gives up (110 s) — waiting past that only saves an answer nobody is waiting for. A call that runs out answers 504. Must be positive — the app refuses to start on 0 |
 | `API_KEY` | *(none)* | When set, `X-API-KEY` is required on `/analyze`, history and dictionary writes. Unset, the filter logs a warning and lets everything through |
 | `DB_HOST` / `DB_PORT` | `127.0.0.1` / `3306` | `docker compose` sets these for the container network |
 | `DB_NAME` | `kotona` | Created on first connect if missing |
@@ -462,7 +462,9 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 **5. A Call With No Deadline**
 - **Challenge**: The model call had no timeout. `google-genai` waits indefinitely by default, and this call takes 20–30 seconds normally with a tail to 79 seconds — so from the caller's side "slow" and "never" look identical. A stalled upstream would hold the request's thread for as long as the process lived, and nothing in the code could tell that it had happened.
 
-- **Resolution**: `GEMINI_TIMEOUT_MS`, defaulting to three minutes — roughly double the slowest call measured, so a legitimate response is never cut, and a stalled one is given up. A non-positive value is refused at startup rather than quietly restoring the old behaviour, and the mapping from property to `HttpOptions` has its own test.
+- **Resolution**: `GEMINI_TIMEOUT_MS`, first set to three minutes — roughly double the slowest call measured, so a legitimate response is never cut, and a stalled one is given up. A non-positive value is refused at startup rather than quietly restoring the old behaviour, and the mapping from property to `HttpOptions` has its own test.
+
+- **Then the deadline turned out to have a ceiling too.** The frontend gives up at 110 seconds. Three minutes meant a slow answer could still arrive here after the user had been told to try again — saved, billed, and then asked for a second time. The default is now 100 seconds, between the slowest call and the frontend's patience, and a test holds it there. The timeout itself was also being reported wrongly: the SDK throws it as `GenAiIOException`, a sibling of `ApiException` rather than a kind of it, so it fell through to a generic 500 while the config file promised 502. It now answers 504.
 
 - **Lesson**: An SDK's default is a decision someone else made about your service. The ones that cost nothing to accept are the ones worth reading.
 

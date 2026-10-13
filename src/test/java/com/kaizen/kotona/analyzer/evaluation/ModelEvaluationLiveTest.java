@@ -72,7 +72,7 @@ class ModelEvaluationLiveTest {
      * 않고, 쿼터가 비었는지 모델이 멈췄는지도 알 수 없다 — 둘 다 "아무 일도 일어나지 않음"
      * 으로 보인다.
      */
-    private static final int CALL_TIMEOUT_MS = 180_000;
+    private static final int CALL_TIMEOUT_MS = GeminiConfig.DEFAULT_TIMEOUT_MS;
 
     private static final String SYSTEM_INSTRUCTION = """
             You are a "Business Japanese Communication Expert".

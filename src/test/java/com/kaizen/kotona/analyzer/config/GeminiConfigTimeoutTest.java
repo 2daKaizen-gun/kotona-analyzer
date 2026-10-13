@@ -4,6 +4,10 @@ import com.google.genai.types.HttpOptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -25,13 +29,25 @@ class GeminiConfigTimeoutTest {
     }
 
     @Test
-    @DisplayName("기본값은 관측된 느린 꼬리보다 넉넉하다")
-    void theDefaultLeavesRoomForASlowCall() {
-        // 느린 쪽 꼬리가 79초까지 관측됐다. 기본값이 그보다 짧으면 정상 호출을 끊는다.
-        HttpOptions options = GeminiConfig.httpOptions(180_000);
+    @DisplayName("기본값은 느린 정상 호출보다 길고, 프론트가 포기하는 시점보다 짧다")
+    void theDefaultSitsBetweenTheSlowestCallAndTheFrontendsPatience() {
+        // 아래: 느린 쪽 꼬리가 79초까지 관측됐다. 그보다 짧으면 정상 호출을 끊는다.
+        // 위: kotona-web 은 110초에 끊고 "다시 시도" 를 띄운다. 그보다 길면 사용자가 떠난 뒤에
+        //     결과를 저장하고, 다시 누른 만큼 쿼터가 한 번 더 나간다. 180초였을 때가 그랬다.
+        assertThat(GeminiConfig.DEFAULT_TIMEOUT_MS).isGreaterThan(79_000).isLessThan(110_000);
+        assertThat(GeminiConfig.httpOptions(GeminiConfig.DEFAULT_TIMEOUT_MS).timeout())
+                .contains(GeminiConfig.DEFAULT_TIMEOUT_MS);
+    }
 
-        assertThat(options.timeout()).isPresent();
-        assertThat(options.timeout().orElseThrow()).isGreaterThan(79_000);
+    @Test
+    @DisplayName("application.yaml 의 기본값이 상수와 같다")
+    void theYamlDefaultMatchesTheConstant() throws IOException {
+        // 실제로 쓰이는 것은 yaml 쪽 기본값이다. 상수만 고치고 yaml 을 잊으면 위 테스트는
+        // 통과하면서 운영은 옛 값으로 돈다.
+        try (InputStream yaml = getClass().getResourceAsStream("/application.yaml")) {
+            String text = new String(yaml.readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(text).contains("${GEMINI_TIMEOUT_MS:" + GeminiConfig.DEFAULT_TIMEOUT_MS + "}");
+        }
     }
 
     @Test
