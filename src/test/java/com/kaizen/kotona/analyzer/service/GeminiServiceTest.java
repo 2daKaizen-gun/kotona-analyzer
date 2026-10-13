@@ -2,6 +2,7 @@ package com.kaizen.kotona.analyzer.service;
 
 import tools.jackson.databind.ObjectMapper;
 import com.google.genai.errors.ClientException;
+import com.google.genai.errors.GenAiIOException;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.Schema;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
@@ -17,6 +18,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.net.SocketTimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -202,6 +205,22 @@ class GeminiServiceTest {
         }
 
         @Test
+        @DisplayName("이력에는 정규화한 문장이 아니라 사용자가 쓴 문장을 남긴다")
+        void persistsTheSentenceAsTyped() {
+            // NFKC 는 반각 ｶﾀｶﾅ 를 전각으로, ① 을 1 로 바꾼다. 분석에는 필요하지만, 이력에서
+            // 그 문장을 "내가 쓴 것" 으로 보여 주면 사용자는 쓰지 않은 문장을 보게 된다.
+            givenModelAnswers();
+            given(analysisValidator.validate(any(), anyString(), any(), anyBoolean()))
+                    .willReturn(validatedResult());
+            String typed = "ｽｹｼﾞｭｰﾙの件、①から検討させていただきます。";
+
+            service.analyzeJapaneseNuance("  " + typed + "\n", RelationshipType.INTERNAL);
+
+            verify(historyService).saveHistory(eq(typed), any());
+            verify(analysisValidator).validate(any(), eq("スケジュールの件、1から検討させていただきます。"), any(), anyBoolean());
+        }
+
+        @Test
         @DisplayName("빈 응답은 저장하지 않는다")
         void doesNotPersistAnEmptyAnswer() {
             given(modelClient.generate(anyString(), anyString(), any())).willReturn("   ");
@@ -241,6 +260,18 @@ class GeminiServiceTest {
 
             assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
                     .isInstanceOf(ClientException.class);
+        }
+
+        @Test
+        @DisplayName("시간 초과도 감싸지 않는다 — 감싸면 504 가 아니라 500 이 된다")
+        void letsTimeoutsThrough() {
+            // 예전에는 일반 예외 분기가 이것을 "분석 중 오류" 500 으로 바꿨다
+            given(modelClient.generate(anyString(), anyString(), any()))
+                    .willThrow(new GenAiIOException("Failed to execute HTTP request.",
+                            new SocketTimeoutException("timeout")));
+
+            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
+                    .isInstanceOf(GenAiIOException.class);
         }
 
         @Test

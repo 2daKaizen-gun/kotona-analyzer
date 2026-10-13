@@ -2,6 +2,7 @@ package com.kaizen.kotona.analyzer.service;
 
 import tools.jackson.databind.ObjectMapper;
 import com.google.genai.errors.ApiException;
+import com.google.genai.errors.GenAiIOException;
 import com.kaizen.kotona.analyzer.client.NuanceModelClient;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
@@ -151,13 +152,15 @@ public class GeminiService {
             NuanceResponseDTO validatedResult =
                     analysisValidator.validate(aiResult, cleanInput, relationshipType, hasPoliteTokens);
 
-            // DB에 저장
-            historyService.saveHistory(cleanInput, validatedResult);
+            // DB에 저장. 이력에는 사용자가 쓴 그대로를 남긴다 — 정규화(NFKC)는 분석을 위한 것이고,
+            // 저장까지 하면 반각 ｶﾀｶﾅ 가 전각으로, ① 이 1 로 바뀐 문장이 "내가 쓴 문장" 으로 보인다.
+            historyService.saveHistory(userInput.strip(), validatedResult);
 
             return validatedResult;
 
-        } catch (IllegalArgumentException | ApiException | AnalysisFailedException e) {
-            // 입력 검증 실패 → 400, Gemini API 오류 → 429/502, 우리가 문구를 쓴 실패는 그 문구 그대로.
+        } catch (IllegalArgumentException | ApiException | GenAiIOException | AnalysisFailedException e) {
+            // 입력 검증 실패 → 400, Gemini API 오류 → 429/502, 시간 초과·연결 실패 → 504/502,
+            // 우리가 문구를 쓴 실패는 그 문구 그대로.
             // GlobalExceptionHandler 가 상태코드로 매핑하므로 여기서 감싸지 않는다.
             // (감싸면 업스트림 원문이 500 응답 본문으로 그대로 새어 나간다.)
             throw e;

@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -65,8 +66,18 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * 판정에 쓰는 경로는 컨트롤러를 고르는 경로와 같아야 한다.
+     *
+     * <p>{@code getRequestURI()} 는 디코딩 전의 원문이다. 예전에는 그것을 그대로 비교해서
+     * {@code /api/%68istory} 가 "/api/history 로 시작하지 않는다" 며 통과했고, Spring 은 같은
+     * 요청을 디코딩해 이력 컨트롤러로 보냈다 — 키 없이 입력 원문이 전부 나갔다.
+     * 디코딩하고, {@code ;} 파라미터를 걷어내고, {@code //} 를 접은 경로로 본다.
+     */
+    private static final UrlPathHelper PATHS = new UrlPathHelper();
+
     private boolean isProtected(HttpServletRequest request) {
-        String uri = request.getRequestURI();
+        String uri = PATHS.getPathWithinApplication(request);
         if (PROTECTED_PREFIXES.stream().anyMatch(uri::startsWith)) {
             return true;
         }

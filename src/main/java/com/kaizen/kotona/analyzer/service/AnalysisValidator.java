@@ -33,10 +33,11 @@ public class AnalysisValidator {
         Set<String> lemmas = tokenService.baseForms(cleanInput);
         // 규칙이 손댄 것은 전부 적어 둔다. 적지 않으면 사용자는 73점의 이유를 알 수 없다.
         List<ScoreAdjustmentDTO> adjustments = new ArrayList<>();
-        // 기존 Metrics 가져오기
-        int p = aiResponse.metrics().politeness();   // Max 40
-        int i = aiResponse.metrics().indirectness(); // Max 30
-        int e = aiResponse.metrics().etiquette();    // Max 30
+        // 기존 Metrics 가져오기. 배점 밖의 값은 먼저 배점 안으로 들인다 —
+        // 스키마는 설명으로만 범위를 말할 뿐 강제하지 않아서, -20 이 오면 총점 -10 이 그대로 나갔다.
+        int p = withinScale("politeness", aiResponse.metrics().politeness(), POLITENESS_MAX, adjustments);
+        int i = withinScale("indirectness", aiResponse.metrics().indirectness(), INDIRECTNESS_MAX, adjustments);
+        int e = withinScale("etiquette", aiResponse.metrics().etiquette(), ETIQUETTE_MAX, adjustments);
 
         // 1. Politeness 검증 (경어 사용 여부)
         if (p >= 30 && !hasPoliteEnding) {
@@ -129,9 +130,7 @@ public class AnalysisValidator {
         if (!finalRiskLevel.equalsIgnoreCase(aiResponse.riskAnalysis().riskLevel())) {
             adjustments.add(new ScoreAdjustmentDTO("riskLevel",
                     aiResponse.riskAnalysis().riskLevel(), finalRiskLevel,
-                    detectedRedFlags.isEmpty()
-                            ? "두 판정 중 더 위험한 쪽을 택했습니다."
-                            : "거절 신호를 찾았습니다: " + String.join(", ", detectedRedFlags)));
+                    riskReason(detectedRedFlags, aiResponse.riskAnalysis().riskLevel())));
         }
 
         RiskAnalysisDTO validatedRisk = new RiskAnalysisDTO(
@@ -190,6 +189,35 @@ public class AnalysisValidator {
             kept.add(new SmartReplyDTO(reply.scenario(), content, reply.description(), reply.nuanceLevel()));
         }
         return List.copyOf(kept);
+    }
+
+    /** 배점. 프롬프트의 Scoring Criteria 와 프론트의 막대 길이가 같은 숫자를 쓴다. */
+    static final int POLITENESS_MAX = 40;
+    static final int INDIRECTNESS_MAX = 30;
+    static final int ETIQUETTE_MAX = 30;
+
+    /** 배점 밖의 값을 끝으로 당긴다. 당겼으면 그렇다고 적는다 — 적지 않은 조정은 설명할 수 없다. */
+    private static int withinScale(String metric, int value, int max, List<ScoreAdjustmentDTO> adjustments) {
+        int bounded = Math.clamp(value, 0, max);
+        if (bounded != value) {
+            adjustments.add(new ScoreAdjustmentDTO(metric, String.valueOf(value), String.valueOf(bounded),
+                    "AI 가 배점(0~" + max + ") 밖의 점수를 주어 범위 안으로 맞췄습니다."));
+        }
+        return bounded;
+    }
+
+    /**
+     * 등급이 바뀐 이유. 예전에는 규칙이 아무것도 찾지 못하면 늘 "더 위험한 쪽을 택했다" 고 적었는데,
+     * 모델이 "LOW" 처럼 모르는 값을 줘서 SAFE 로 읽은 경우에는 더 위험한 쪽을 택한 일이 없다.
+     */
+    private String riskReason(List<String> detectedRedFlags, String modelRiskLevel) {
+        if (!detectedRedFlags.isEmpty()) {
+            return "거절 신호를 찾았습니다: " + String.join(", ", detectedRedFlags);
+        }
+        if (!RISK_SEVERITY.containsKey(modelRiskLevel == null ? "" : modelRiskLevel.toUpperCase())) {
+            return "AI 가 알 수 없는 등급을 돌려줘 규칙 판정을 따랐습니다.";
+        }
+        return "두 판정 중 더 위험한 쪽을 택했습니다.";
     }
 
     private static final Map<String, Integer> RISK_SEVERITY = Map.of("SAFE", 0, "CAUTION", 1, "DANGER", 2);

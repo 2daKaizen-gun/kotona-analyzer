@@ -30,7 +30,9 @@ spring:
     # 응답을 쓰는 동안까지 영속성 컨텍스트와 DB 연결을 붙잡지 않는다. 엔티티에 연관이
     # 없어서 지연 로딩이 일어날 곳도 없고, 켜 두면 Spring 이 기동할 때마다 경고한다.
     open-in-view: false
-    show-sql: true
+    # 기본은 끈다. 켜 두면 요청마다 SQL 이 줄 맞춰 찍혀 실제 오류 로그가 그 사이에 묻힌다.
+    # 쿼리를 보고 싶을 때만 SHOW_SQL=true.
+    show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true
@@ -63,11 +65,12 @@ gemini:
   # 움직였다는 뜻이다. 점수는 판정이지 창작이 아니므로 표본을 흔들 이유가 없다.
   # 답장 문장의 다양성은 줄지만, 매번 다른 점수를 주는 채점기보다는 낫다.
   temperature: ${GEMINI_TEMPERATURE:0.0}
-  # 한 번의 호출을 기다려 줄 한계(밀리초). 기본 3분.
+  # 한 번의 호출을 기다려 줄 한계(밀리초). 기본 100초.
   # SDK 기본값은 무한 대기다 — 업스트림이 응답을 멈추면 그 요청을 받은 스레드가
-  # 영원히 붙잡힌다. 느린 쪽 꼬리가 79초까지 관측됐으므로 정상 호출을 끊지 않는 선에서
-  # 상한을 둔다. 넘으면 SDK 가 예외를 내고, GlobalExceptionHandler 가 502 로 매핑한다.
-  timeout-ms: ${GEMINI_TIMEOUT_MS:180000}
+  # 영원히 붙잡힌다. 느린 쪽 꼬리가 79초까지 관측됐으므로 그보다는 길게, 프론트가 포기하는
+  # 110초보다는 짧게 둔다(GeminiConfig.DEFAULT_TIMEOUT_MS 와 같은 값 — 테스트가 맞대어 본다).
+  # 넘으면 SDK 가 GenAiIOException 을 내고, GlobalExceptionHandler 가 504 로 매핑한다.
+  timeout-ms: ${GEMINI_TIMEOUT_MS:100000}
 
 # 애플리케이션 보안 설정
 app:

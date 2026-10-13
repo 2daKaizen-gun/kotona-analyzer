@@ -12,7 +12,8 @@ public class HealthCheckController {
         // JSON 응답
         return Map.of(
                 "status", "up",
-                "message", "KOTONA Backend is running on Spring Boot 3 & Java 21!",
+                // 버전을 적지 않는다. "Spring Boot 3" 이라고 적힌 채로 4 로 올라간 적이 있다.
+                "message", "KOTONA Backend is running",
                 "serverTime", LocalDateTime.now().toString()
         );
     }

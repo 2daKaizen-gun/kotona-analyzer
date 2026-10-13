@@ -61,6 +61,25 @@ class ApiKeyAuthFilterTest {
         assertThat(response.getStatus()).isEqualTo(401);
     }
 
+    // 실제 서버에서 이 네 요청이 키 없이 컨트롤러에 닿았다. 필터는 원문을, Spring 은 디코딩한
+    // 경로를 보고 있었기 때문이다. 같은 요청을 두 쪽이 다르게 읽으면 그 틈이 곧 우회로다.
+    @ParameterizedTest(name = "{0} {1}")
+    @CsvSource({
+            "GET, /api/%68istory",
+            "POST, /%61nalyze",
+            "DELETE, /api/%70hrases/1",
+            "GET, /api/history;x=1",
+            "GET, //api//history",
+    })
+    @DisplayName("인코딩·세미콜론·이중 슬래시로 바꿔 써도 보호 경로는 401")
+    void encodedPathsAreStillProtected(String method, String uri) throws Exception {
+        MockFilterChain chain = new MockFilterChain();
+        MockHttpServletResponse response = run(filterWithKey(KEY), new MockHttpServletRequest(method, uri), chain);
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(chain.getRequest()).isNull();
+    }
+
     @Test
     @DisplayName("키가 설정되지 않으면 쓰기 요청도 통과한다 (로컬 개발)")
     void noKeyConfiguredLetsWritesThrough() throws Exception {

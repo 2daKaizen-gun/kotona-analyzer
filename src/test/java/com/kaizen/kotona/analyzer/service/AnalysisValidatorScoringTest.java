@@ -102,6 +102,28 @@ class AnalysisValidatorScoringTest {
             assertThat(result.metrics().etiquette()).isGreaterThanOrEqualTo(0);
             assertThat(result.metrics().indirectness()).isGreaterThanOrEqualTo(0);
         }
+
+        @Test
+        @DisplayName("배점 밖의 모델 점수는 배점 끝으로 당기고, 총점이 음수가 되지 않는다")
+        void pullsOutOfScaleMetricsBackOntoTheScale() {
+            // 스키마는 범위를 설명으로만 말한다. 이 값이 그대로 지나가면 총점이 -10 이었다.
+            // 완곡 어미가 있는 문장이라야 30 으로 당긴 뒤 간접성 감점(-5)이 겹치지 않는다
+            NuanceResponseDTO result = validate(
+                    metrics(-20, 45, 5), "ご確認いただけますでしょうか。", RelationshipType.INTERNAL, true);
+
+            assertThat(result.metrics().politeness()).isZero();
+            assertThat(result.metrics().indirectness()).isEqualTo(30);
+            assertThat(result.totalScore()).isBetween(0, 100);
+        }
+
+        @Test
+        @DisplayName("배점 안의 값에는 손대지 않는다")
+        void leavesInScaleMetricsAlone() {
+            NuanceResponseDTO result = validate(metrics(0, 0, 0), PLAIN, RelationshipType.INTERNAL, true);
+
+            assertThat(result.metrics()).isEqualTo(metrics(0, 0, 0));
+            assertThat(result.scoreAdjustments()).isEmpty();
+        }
     }
 
     @Nested
@@ -302,6 +324,35 @@ class AnalysisValidatorScoringTest {
                         assertThat(adjustment.after()).isEqualTo("DANGER");
                         assertThat(adjustment.reason()).contains("難しい");
                     });
+        }
+
+        @Test
+        @DisplayName("배점 밖의 점수를 당겼으면 그렇다고 적는다")
+        void recordsAPullBackOntoTheScale() {
+            NuanceResponseDTO result = validate(metrics(-20, 10, 10), PLAIN, RelationshipType.INTERNAL, true);
+
+            assertThat(result.scoreAdjustments())
+                    .filteredOn(adjustment -> adjustment.metric().equals("politeness"))
+                    .singleElement()
+                    .satisfies(adjustment -> {
+                        assertThat(adjustment.before()).isEqualTo("-20");
+                        assertThat(adjustment.after()).isEqualTo("0");
+                        assertThat(adjustment.reason()).contains("0~40");
+                    });
+        }
+
+        @Test
+        @DisplayName("모르는 등급을 SAFE 로 읽었으면 '더 위험한 쪽을 택했다' 고 적지 않는다")
+        void doesNotClaimSeverityWhenTheModelVerdictWasUnreadable() {
+            // "LOW" → SAFE 는 두 판정을 비교한 결과가 아니다. 예전 문구는 그 반대를 말했다.
+            NuanceResponseDTO result = validateRisk(PLAIN, RelationshipType.INTERNAL, "LOW");
+
+            assertThat(result.scoreAdjustments())
+                    .filteredOn(adjustment -> adjustment.metric().equals("riskLevel"))
+                    .singleElement()
+                    .satisfies(adjustment -> assertThat(adjustment.reason())
+                            .contains("알 수 없는 등급")
+                            .doesNotContain("더 위험한 쪽"));
         }
     }
 

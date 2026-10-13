@@ -1,5 +1,6 @@
 package com.kaizen.kotona.analyzer.utils;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +52,9 @@ public final class EtiquetteConstants {
             "でしょうか", "いただけますか", "いただけますでしょうか", "かと思われます", "ございませんか"
     );
 
-    /** 소프트 리젝션 신호와 가중치. 프롬프트의 Risk Detection Guide 와 같은 목록을 본다. */
     /**
+     * 소프트 리젝션 신호와 가중치. 프롬프트의 Risk Detection Guide 와 같은 목록을 본다.
+     *
      * @param requires 함께 나와야 성립하는 낱말. 없으면 {@code null}.
      *                 「考える」 하나로는 보류가 아니다 — 「考えておきます」(考える+おく)는 보류지만
      *                 「貢献したいと考えております」(考える+おる)는 포부다. 짝으로만 구분된다.
@@ -77,7 +79,7 @@ public final class EtiquetteConstants {
      * 그래서 0.8 은 단독으로 사내에서도 DANGER, 0.5 는 단독으로 CAUTION,
      * 0.2 는 단독으로는 어느 등급도 아니다.
      */
-    public static final Map<String, SoftRejectionSignal> SOFT_REJECTION_SIGNALS = new LinkedHashMap<>() {{
+    public static final Map<String, SoftRejectionSignal> SOFT_REJECTION_SIGNALS = Collections.unmodifiableMap(new LinkedHashMap<>() {{
         // 불가능을 직접 말하지 않는 거절. 사내에서도 그대로 거절로 읽힌다.
         put("難しい", new SoftRejectionSignal(0.8, "'어렵다(難しい)' 시그널 감지"));
         // 완곡하지만 결론이 난 거절이다. 「今回は見送らせていただきます」
@@ -96,7 +98,7 @@ public final class EtiquetteConstants {
         // 確認 은 정중한 표현에서도 흔히 쓰이므로 단독으로는 CAUTION 이 되지 않게 낮게 잡는다.
         // 「確認のうえ改めてご連絡いたします」 는 정상적인 절차이지 거절이 아니다.
         put("確認", new SoftRejectionSignal(0.2, "'확인(確認)' 후 회신 — 즉답 회피 가능성"));
-    }};
+    }});
 
     /**
      * 낱말로 환원되지 않는 굳은 거절 표현. 구 그대로 맞춘다.
@@ -106,8 +108,8 @@ public final class EtiquetteConstants {
      * 사전으로는 둘을 가릴 수 없고, 오경보는 이 규칙이 유일하게 금지한 것이므로 포기한다.
      * 그 문장은 모델이 잡는다 — 규칙은 모델의 두 번째 눈이지 유일한 눈이 아니다.
      */
-    public static final Map<String, SoftRejectionSignal> SOFT_REJECTION_PHRASES = new LinkedHashMap<>() {{
+    public static final Map<String, SoftRejectionSignal> SOFT_REJECTION_PHRASES = Collections.unmodifiableMap(new LinkedHashMap<>() {{
         put("予定はございません", new SoftRejectionSignal(0.8, "'그럴 예정이 없다' — 현시점의 명확한 거절"));
         put("予定はありません", new SoftRejectionSignal(0.8, "'그럴 예정이 없다' — 현시점의 명확한 거절"));
-    }};
+    }});
 }

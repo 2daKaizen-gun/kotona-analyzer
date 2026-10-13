@@ -3,6 +3,7 @@ package com.kaizen.kotona.analyzer.exception;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.InvalidFormatException;
 import com.google.genai.errors.ClientException;
+import com.google.genai.errors.GenAiIOException;
 import com.google.genai.errors.ServerException;
 import com.kaizen.kotona.analyzer.entity.Situation;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +21,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -216,6 +219,28 @@ class GlobalExceptionHandlerTest {
         void mapsUpstreamServerErrorsToBadGateway() {
             assertThat(handler.handleGeminiError(new ServerException(503, "UNAVAILABLE", "overloaded"))
                     .getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+        }
+
+        @Test
+        @DisplayName("기다리다 포기한 호출은 504 — 우리 코드가 망가진 500 과 구분한다")
+        void mapsAGivenUpCallToGatewayTimeout() {
+            // SDK(OkHttp)가 실제로 던지는 모양: 시간 초과를 GenAiIOException 이 감싼다
+            ResponseEntity<?> response = handler.handleGeminiUnreachable(
+                    new GenAiIOException("Failed to execute HTTP request.", new SocketTimeoutException("timeout")));
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.GATEWAY_TIMEOUT);
+            assertThat(errorOf(response)).contains("시간").doesNotContain("HTTP request");
+        }
+
+        @Test
+        @DisplayName("시간 초과가 아닌 연결 실패는 502")
+        void mapsAnUnreachableUpstreamToBadGateway() {
+            ResponseEntity<?> response = handler.handleGeminiUnreachable(
+                    new GenAiIOException("Failed to execute HTTP request.",
+                            new ConnectException("Connection refused: generativelanguage.googleapis.com")));
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+            assertThat(errorOf(response)).doesNotContain("googleapis");
         }
     }
 
