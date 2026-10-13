@@ -77,12 +77,13 @@ public class GlobalExceptionHandler {
         return badRequest(e.getName() + " 값의 형식이 올바르지 않습니다.");
     }
 
-    /** 없는 숙어 id → 404 */
+    /** 없는 이력 id → 404 */
     @ExceptionHandler(HistoryNotFoundException.class)
     public ResponseEntity<?> handleHistoryNotFound(HistoryNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", messageOf(e)));
     }
 
+    /** 없는 숙어 id → 404 */
     @ExceptionHandler(PhraseNotFoundException.class)
     public ResponseEntity<?> handleNotFound(PhraseNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", messageOf(e)));

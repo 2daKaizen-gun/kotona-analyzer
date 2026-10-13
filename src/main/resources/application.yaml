@@ -30,7 +30,9 @@ spring:
     # 응답을 쓰는 동안까지 영속성 컨텍스트와 DB 연결을 붙잡지 않는다. 엔티티에 연관이
     # 없어서 지연 로딩이 일어날 곳도 없고, 켜 두면 Spring 이 기동할 때마다 경고한다.
     open-in-view: false
-    show-sql: true
+    # 기본은 끈다. 켜 두면 요청마다 SQL 이 줄 맞춰 찍혀 실제 오류 로그가 그 사이에 묻힌다.
+    # 쿼리를 보고 싶을 때만 SHOW_SQL=true.
+    show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true

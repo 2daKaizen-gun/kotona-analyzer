@@ -152,8 +152,9 @@ public class GeminiService {
             NuanceResponseDTO validatedResult =
                     analysisValidator.validate(aiResult, cleanInput, relationshipType, hasPoliteTokens);
 
-            // DB에 저장
-            historyService.saveHistory(cleanInput, validatedResult);
+            // DB에 저장. 이력에는 사용자가 쓴 그대로를 남긴다 — 정규화(NFKC)는 분석을 위한 것이고,
+            // 저장까지 하면 반각 ｶﾀｶﾅ 가 전각으로, ① 이 1 로 바뀐 문장이 "내가 쓴 문장" 으로 보인다.
+            historyService.saveHistory(userInput.strip(), validatedResult);
 
             return validatedResult;
 

@@ -15,9 +15,9 @@ instead, with its denominator.
 
 | what | measured | how to check it |
 |---|---|---|
-| Backend tests | **222** passing | `./gradlew test` — runs on every push |
+| Backend tests | **238** passing | `./gradlew test` — runs on every push |
 | Backend coverage | **96.51%** lines, **86.27%** branches | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
-| Frontend tests | **143** unit, **12** browser | `npm test` and `npm run test:e2e` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
+| Frontend tests | **150** unit, **12** browser | `npm test` and `npm run test:e2e` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
 | Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
 | Polite form, rules vs. labels | **34 / 34** | `./gradlew test --tests '*RuleLayerEvaluationTest'` |
 | Cushion phrase, rules vs. labels | **34 / 34** | same test |
@@ -193,6 +193,7 @@ Everything is an environment variable with a working default, so a clone runs wi
 | `DB_USERNAME` / `DB_PASSWORD` | `root` / `1234` | Local defaults; CI uses the same so the workflow needs no secrets |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Comma-separated. Patterns allowed, and pinned by `WebConfigCorsTest` |
 | `TRUST_FORWARDED_FOR` | `false` | Whether the rate limiter believes `X-Forwarded-For`. Only turn it on behind a proxy that overwrites the header, or an IP can be spoofed to bypass the limit |
+| `SHOW_SQL` | `false` | Log every SQL statement. Off by default — on, the queries bury the error lines you were looking for |
 | `SPRINGDOC_ENABLED` | `true` | Serves `/v3/api-docs` and Swagger UI. The spec is what the frontend generates its types from |
 
 > **API route note**: KOTONA talks to Gemini through the **AI Studio** endpoint (a plain API key), not Vertex AI.
@@ -345,7 +346,13 @@ fetches one when a row is actually expanded.
 **Protected when `API_KEY` is set**: `/analyze`, everything under `/api/history`, and dictionary
 writes. Dictionary reads, health and Swagger stay open. With `API_KEY` unset the filter logs a
 warning and lets everything through, which is what makes local development frictionless — and what
-makes setting it mandatory before exposing the service.
+makes setting it mandatory before exposing the service. The filter judges the path the way the router
+reads it — decoded, `;params` removed, `//` folded. It used to compare the raw request line, and
+`/api/%68istory` was "not under `/api/history`" to the filter while Spring served it the history.
+
+**The key guards the backend, not the frontend.** kotona-web adds the key server-side in its `/api/*`
+handlers and asks nothing of its own callers, so a public frontend is a public backend. Who may use
+that proxy is a product decision — one shared password, or accounts — and it is still open.
 
 **Errors** are `{"error": "..."}` with a meaningful status: 413 a body over 64 KB and 411 a body that does not declare its length — both refused before anything is read, since `@Size` only judges after the body has been parsed. 400 invalid input (including a
 relationship or situation outside its enum), 404 unknown id, 409 duplicate phrase, 429 rate
@@ -433,6 +440,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
     - [x] Phase 6-5: Every number in the docs paired with the command that prints it, and every limit with its denominator
     - [x] Phase 6-6: Model-side measurement filled to the end — risk 34/34, ordering 7/7, a week of free-tier quota (2026-10-05 → 10-11)
     - [ ] Phase 6-7: Native-speaker review of the two convention axes — the one remaining item, and the only one that needs someone other than the author. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet, kept in step with the labels by a test
+    - [x] Phase 6-8: A second full read of both repositories (#89) — a path spelling that walked around the API key, a model deadline longer than the frontend's, scores off their scale, a timeout reported as our own failure, a dictionary list that a late answer could overwrite
 
 ## 🔥 Troubleshooting & Lessons Learned
 **1. External Resource Path Resolution (Classpath vs FileSystem)** *(historical — resolved by removing the key file entirely)*
@@ -480,7 +488,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 222 backend tests covering 96% of lines and 86% of branches, plus 143 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 238 backend tests covering 96% of lines and 86% of branches, plus 150 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 

@@ -205,6 +205,22 @@ class GeminiServiceTest {
         }
 
         @Test
+        @DisplayName("이력에는 정규화한 문장이 아니라 사용자가 쓴 문장을 남긴다")
+        void persistsTheSentenceAsTyped() {
+            // NFKC 는 반각 ｶﾀｶﾅ 를 전각으로, ① 을 1 로 바꾼다. 분석에는 필요하지만, 이력에서
+            // 그 문장을 "내가 쓴 것" 으로 보여 주면 사용자는 쓰지 않은 문장을 보게 된다.
+            givenModelAnswers();
+            given(analysisValidator.validate(any(), anyString(), any(), anyBoolean()))
+                    .willReturn(validatedResult());
+            String typed = "ｽｹｼﾞｭｰﾙの件、①から検討させていただきます。";
+
+            service.analyzeJapaneseNuance("  " + typed + "\n", RelationshipType.INTERNAL);
+
+            verify(historyService).saveHistory(eq(typed), any());
+            verify(analysisValidator).validate(any(), eq("スケジュールの件、1から検討させていただきます。"), any(), anyBoolean());
+        }
+
+        @Test
         @DisplayName("빈 응답은 저장하지 않는다")
         void doesNotPersistAnEmptyAnswer() {
             given(modelClient.generate(anyString(), anyString(), any())).willReturn("   ");
