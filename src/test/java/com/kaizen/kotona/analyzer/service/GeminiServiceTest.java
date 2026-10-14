@@ -275,17 +275,19 @@ class GeminiServiceTest {
         }
 
         @Test
-        @DisplayName("저장이 실패해도 내부 메시지를 내보이지 않는다")
-        void hidesPersistenceFailures() {
+        @DisplayName("저장이 실패해도 이미 값을 치른 분석 결과는 돌려준다")
+        void returnsTheResultEvenWhenTheHistorySaveFails() {
+            // 예전에는 500 이 나갔다. 모델 호출은 끝나 쿼터를 썼는데 결과는 버려졌고,
+            // 사용자는 "다시 시도" 를 보고 한 번 더 썼다. 내부 메시지가 새지 않는 것은 여전히 지킨다 —
+            // 예외가 응답으로 나가지 않으므로 샐 자리가 없다.
             givenModelAnswers();
+            NuanceResponseDTO validated = validatedResult();
             given(analysisValidator.validate(any(), anyString(), any(), anyBoolean()))
-                    .willReturn(validatedResult());
+                    .willReturn(validated);
             willThrow(new RuntimeException("Duplicate entry for key 'PRIMARY'"))
                     .given(historyService).saveHistory(anyString(), any());
 
-            assertThatThrownBy(() -> service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL))
-                    .hasMessageNotContaining("Duplicate entry")
-                    .hasMessageNotContaining("PRIMARY");
+            assertThat(service.analyzeJapaneseNuance(VALID_INPUT, RelationshipType.INTERNAL)).isSameAs(validated);
         }
     }
 

@@ -154,7 +154,7 @@ public class GeminiService {
 
             // DB에 저장. 이력에는 사용자가 쓴 그대로를 남긴다 — 정규화(NFKC)는 분석을 위한 것이고,
             // 저장까지 하면 반각 ｶﾀｶﾅ 가 전각으로, ① 이 1 로 바뀐 문장이 "내가 쓴 문장" 으로 보인다.
-            historyService.saveHistory(userInput.strip(), validatedResult);
+            saveQuietly(userInput.strip(), validatedResult);
 
             return validatedResult;
 
@@ -168,6 +168,21 @@ public class GeminiService {
             // 원인 메시지에는 내부 경로·벤더 응답이 섞일 수 있으므로 로그에만 남긴다.
             log.error("Gemini 분석 중 오류 발생", e);
             throw new AnalysisFailedException("분석 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+        }
+    }
+
+    /**
+     * 이력 저장은 분석의 부산물이다. 실패해도 분석 결과는 돌려준다.
+     *
+     * <p>예전에는 저장 예외가 그대로 올라가 500 이 나갔다. 그 시점에는 모델 호출이 이미 끝나 쿼터를
+     * 썼는데, 사용자는 결과 없이 "다시 시도" 를 보고 다시 눌러 한 번 더 썼다. 잃는 것을 비교하면
+     * 답이 나온다 — 이력 한 줄 대 이미 값을 치른 분석 하나. 저장 실패는 로그로 남겨 알아챌 수 있게 한다.
+     */
+    private void saveQuietly(String userInput, NuanceResponseDTO result) {
+        try {
+            historyService.saveHistory(userInput, result);
+        } catch (RuntimeException e) {
+            log.error("분석은 끝났지만 이력 저장에 실패했다 — 결과는 사용자에게 그대로 돌려준다", e);
         }
     }
 
