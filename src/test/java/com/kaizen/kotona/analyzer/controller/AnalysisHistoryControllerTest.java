@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -60,6 +61,26 @@ class AnalysisHistoryControllerTest {
                 .andExpect(status().isOk());
 
         verify(historyService).getHistoryPage(2, 5);
+    }
+
+    @Test
+    @DisplayName("before 가 오면 페이지 번호 대신 커서로 읽는다")
+    void continuesFromACursorWhenGiven() throws Exception {
+        given(historyService.getHistoryBefore(anyLong(), anyInt()))
+                .willReturn(new PageResponse<>(List.of(), 0, 20, 0, 0, false));
+
+        mockMvc.perform(get("/api/history").param("before", "41").param("page", "3"))
+                .andExpect(status().isOk());
+
+        verify(historyService).getHistoryBefore(41L, 20);
+        verify(historyService, never()).getHistoryPage(anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("숫자가 아닌 커서는 400")
+    void refusesANonNumericCursor() throws Exception {
+        mockMvc.perform(get("/api/history").param("before", "abc"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

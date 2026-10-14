@@ -329,7 +329,7 @@ TypeScript types from that spec, so the response shapes below are never declared
 | Method | Path | Notes |
 |---|---|---|
 | `POST` | `/analyze` | The paid call. Body `{ text, relationshipType }`; `text` is at most 2,000 characters (and any body over 64 KB is refused unread), `relationshipType` is `INTERNAL` / `EXTERNAL` / `INTERVIEW` and defaults to `INTERNAL`. Takes 20–30s. |
-| `GET` | `/api/history` | Page of summaries, newest first. `?page=0&size=20`; `size` is capped at 100. |
+| `GET` | `/api/history` | Page of summaries, newest first. `?page=0&size=20`; `size` is capped at 100. `?before={id}` continues after the last row seen instead of counting pages — deleting a row no longer makes "more" skip one |
 | `GET` | `/api/history/{id}` | One record including the stored analysis. |
 | `DELETE` | `/api/history/{id}` | 204 on success, like the dictionary. |
 | `GET` | `/api/phrases` | Dictionary, most polite first. |

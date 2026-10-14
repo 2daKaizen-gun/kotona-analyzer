@@ -22,12 +22,17 @@ public class AnalysisHistoryController {
     private final AnalysisHistoryService historyService;
 
     @Operation(summary = "분석 이력 목록",
-            description = "최신순 요약 목록. 저장된 분석 결과 전체는 포함되지 않는다 — 한 건을 펼칠 때 상세 조회를 쓴다.")
+            description = "최신순 요약 목록. 저장된 분석 결과 전체는 포함되지 않는다 — 한 건을 펼칠 때 상세 조회를 쓴다. "
+                    + "before 를 주면 그 id 보다 오래된 것부터 준다(이때 page 는 무시하고, totalElements 는 커서 뒤에 남은 건수다).")
     @GetMapping
     public PageResponse<AnalysisHistorySummaryDTO> getHistory(
             @Parameter(description = "0부터 시작하는 페이지 번호") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size) {
-        return historyService.getHistoryPage(page, size);
+            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "이 id 보다 오래된 이력부터. \"더 보기\" 는 이것을 쓴다 — 앞쪽이 지워지거나 늘어도 밀리지 않는다")
+            @RequestParam(required = false) Long before) {
+        return before != null
+                ? historyService.getHistoryBefore(before, size)
+                : historyService.getHistoryPage(page, size);
     }
 
     @Operation(summary = "분석 이력 상세", description = "저장된 분석 결과 전체(fullAnalysisJson)를 포함한 한 건.")

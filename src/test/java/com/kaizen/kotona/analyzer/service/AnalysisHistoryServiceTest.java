@@ -25,6 +25,8 @@ import static com.kaizen.kotona.analyzer.utils.Paging.MAX_PAGE_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -42,16 +44,29 @@ class AnalysisHistoryServiceTest {
     private AnalysisHistoryService service;
 
     @Test
-    @DisplayName("목록은 최신순으로, 같은 시각이면 id 내림차순으로 읽는다")
-    void readsNewestFirstWithAStableTiebreak() {
+    @DisplayName("목록은 id 내림차순(저장 순서의 역순)으로 읽는다 — 커서와 같은 기준이다")
+    void readsNewestFirstByTheSameKeyTheCursorUses() {
+        // (createdAt, id) 로 정렬하면 커서(id)와 기준이 둘이 된다. 한 열이어야 이어 받을 수 있다.
         givenEmptyPage();
 
         service.getHistoryPage(0, 20);
 
-        Sort sort = capturePageable().getSort();
-        assertThat(sort).containsExactly(
-                Sort.Order.desc("createdAt"),
-                Sort.Order.desc("id"));
+        assertThat(capturePageable().getSort()).containsExactly(Sort.Order.desc("id"));
+    }
+
+    @Test
+    @DisplayName("더 보기는 마지막으로 본 id 다음부터, 같은 정렬과 크기 상한으로 읽는다")
+    void continuesFromTheLastIdSeen() {
+        given(repository.findSummariesBefore(anyLong(), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of()));
+
+        service.getHistoryBefore(41L, 5_000);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(repository).findSummariesBefore(eq(41L), captor.capture());
+        assertThat(captor.getValue().getSort()).containsExactly(Sort.Order.desc("id"));
+        assertThat(captor.getValue().getPageNumber()).isZero();
+        assertThat(captor.getValue().getPageSize()).isEqualTo(MAX_PAGE_SIZE);
     }
 
     @Test
