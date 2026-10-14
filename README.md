@@ -168,12 +168,11 @@ docker compose up -d --build
 - API base: `http://localhost:8081`
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 
-> **The runtime image runs as root.** For a local-only service that is a small
-> exposure, and it is written down rather than quietly left out: a non-root `USER`
-> in the Dockerfile is the fix, and it needs a container build to verify, which is
-> the one thing this machine could not do when the project was audited. Anyone
-> exposing this image to a network should make that change first, and check that
-> `/app` is readable by the new user.
+> **The runtime image runs as an unprivileged user**, `kotona`. Until 2026-10-14 it ran
+> as root, and that stayed written down here instead of fixed because verifying it needs a
+> container build, which the audit machine could not do. Built and run since: PID 1 is
+> `kotona` (uid 999), `/app` refuses writes, and health, the database and the key filter
+> behave as before.
 - Analyze (POST): `POST /analyze` with body `{ "text": "...", "relationshipType": "EXTERNAL" }` and header `X-API-KEY: <API_KEY>` when configured. `relationshipType` is one of `INTERNAL` / `EXTERNAL` / `INTERVIEW`; anything else is refused with the allowed list.
 
 ### Configuration
