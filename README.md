@@ -15,10 +15,10 @@ instead, with its denominator.
 
 | what | measured | how to check it |
 |---|---|---|
-| Backend tests | **238** passing | `./gradlew test` — runs on every push |
-| Backend coverage | **96.51%** lines, **86.27%** branches | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
-| Frontend tests | **150** unit, **12** browser | `npm test` and `npm run test:e2e` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
-| Frontend coverage | **94%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
+| Backend tests | **259** passing | `./gradlew test` — runs on every push |
+| Backend coverage | **96.08%** lines, **87.16%** branches | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
+| Frontend tests | **169** unit, **12** browser | `npm test` and `npm run test:e2e` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
+| Frontend coverage | **96%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
 | Polite form, rules vs. labels | **41 / 41** | `./gradlew test --tests '*RuleLayerEvaluationTest'` |
 | Cushion phrase, rules vs. labels | **41 / 41** | same test |
 | Refusal signals the **rules** catch, of the risky sentences | **13 / 14** | same test — held as a floor, not a target; the one miss is explained below |
@@ -441,6 +441,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
     - [x] Phase 6-6: Model-side measurement filled to the end — risk 34/34, ordering 7/7, a week of free-tier quota (2026-10-05 → 10-11)
     - [ ] Phase 6-7: Native-speaker review of the two convention axes — the one remaining item, and the only one that needs someone other than the author. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet, kept in step with the labels by a test
     - [x] Phase 6-8: A second full read of both repositories (#89) — a path spelling that walked around the API key, a model deadline longer than the frontend's, scores off their scale, a timeout reported as our own failure, a dictionary list that a late answer could overwrite
+    - [x] Phase 6-9: What #89 left open, decided and closed (#91) — rules that read a signal word by where it sits, one password in front of the frontend, a rate limit per user rather than per frontend, history paged by cursor, an analysis that survives a failed save, and a container that no longer runs as root
 
 ## 🔥 Troubleshooting & Lessons Learned
 **1. External Resource Path Resolution (Classpath vs FileSystem)** *(historical — resolved by removing the key file entirely)*
@@ -488,7 +489,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 238 backend tests covering 96% of lines and 86% of branches, plus 150 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 94% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 259 backend tests covering 96% of lines and 87% of branches, plus 169 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 96% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 
