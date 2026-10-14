@@ -43,15 +43,26 @@ public class AnalysisHistoryService {
     }
 
     /**
-     * 최신순 이력 목록. 저장된 분석 결과 원본은 빠진 요약만 담는다.
-     *
-     * <p>createdAt 이 같거나 비어 있어도 순서가 흔들리지 않도록 id 를 보조 정렬로 둔다.
-     * (Auditing 을 켜기 전에 쌓인 행은 createdAt 이 null 이다)
+     * 최신순. id 는 저장 순서이고 createdAt 도 저장할 때 채워지므로 둘의 순서는 같다 —
+     * 그래서 id 하나로 정렬한다. 예전에는 (createdAt, id) 였는데, 커서는 한 열로만 이어 받을 수 있고
+     * Auditing 이전의 행은 createdAt 이 null 이라 커서로 쓸 수도 없었다.
      */
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Order.desc("id"));
+
+    /** 최신순 이력 목록의 한 페이지. 저장된 분석 결과 원본은 빠진 요약만 담는다. */
     @Transactional(readOnly = true)
     public PageResponse<AnalysisHistorySummaryDTO> getHistoryPage(int page, int size) {
-        Sort newestFirst = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
-        return PageResponse.from(repository.findSummaries(Paging.of(page, size, newestFirst)));
+        return PageResponse.from(repository.findSummaries(Paging.of(page, size, NEWEST_FIRST)));
+    }
+
+    /**
+     * {@code before} 보다 오래된 이력. "더 보기" 가 쓴다.
+     *
+     * <p>{@code totalElements} 는 커서 뒤에 남은 건수다 — 전체 건수는 첫 페이지가 이미 알려 줬다.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AnalysisHistorySummaryDTO> getHistoryBefore(long before, int size) {
+        return PageResponse.from(repository.findSummariesBefore(before, Paging.of(0, size, NEWEST_FIRST)));
     }
 
     /** 목록에서 한 건을 펼칠 때. 저장된 분석 결과 전체가 여기 담겨 있다. */

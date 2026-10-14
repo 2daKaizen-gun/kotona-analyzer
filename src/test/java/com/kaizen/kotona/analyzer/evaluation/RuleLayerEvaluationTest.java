@@ -63,11 +63,11 @@ class RuleLayerEvaluationTest {
      * 않고, 요구하면 테스트셋에 맞춰 사전을 늘리는 일(과적합)밖에 남지 않는다. 규칙은 모델의
      * 두 번째 눈이고, 최종 등급은 둘 중 더 위험한 쪽을 택하므로 규칙이 놓친 것은 모델이 잡는다.
      *
-     * <p>대신 <b>내려가지 않는 것</b>을 지킨다. 지금 13건 중 12건이고, 놓친 하나는
+     * <p>대신 <b>내려가지 않는 것</b>을 지킨다. 지금 14건 중 13건이고, 놓친 하나는
      * 「状況が変わりましたらお声がけいたします」 다 — 같은 표현이 권유로도 쓰여 사전으로는
      * 가릴 수 없다({@code EtiquetteConstants.SOFT_REJECTION_PHRASES} 주석 참고).
      */
-    private static final double RECALL_FLOOR = 12.0 / 13.0;
+    private static final double RECALL_FLOOR = 13.0 / 14.0;
 
     @Test
     @DisplayName("거절 신호 사전의 재현율이 기준 아래로 내려가지 않는다")

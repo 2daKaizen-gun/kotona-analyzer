@@ -24,7 +24,7 @@ final class RuleGrade {
 
     /** 사전에 걸린 거절 신호의 합. 낱말과 구를 함께 본다. */
     static double score(JapaneseTokenService tokenService, String text) {
-        Set<String> lemmas = tokenService.baseForms(text);
+        Set<String> lemmas = tokenService.refusalLemmas(text);
         double fromLemmas = EtiquetteConstants.SOFT_REJECTION_SIGNALS.entrySet().stream()
                 .filter(entry -> EtiquetteConstants.signalMatches(entry, lemmas))
                 .mapToDouble(entry -> entry.getValue().weight())

@@ -43,6 +43,14 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     /** 상태를 바꾸지 않는 메서드. OPTIONS 는 CORS preflight 라 헤더 없이 온다. */
     private static final Set<String> READ_METHODS = Set.of("GET", "HEAD", "OPTIONS");
 
+    /**
+     * 키가 맞은 요청에 붙이는 표시. 키를 가진 호출자는 우리 프론트(kotona-web 의 route handler)뿐이다.
+     *
+     * <p>{@code RateLimitInterceptor} 가 이 표시를 보고 그 호출자가 전달한 사용자 IP 를 믿는다.
+     * 표시가 없으면 믿을 근거가 없다 — 아무나 헤더를 바꿔 가며 제한을 우회할 수 있다.
+     */
+    public static final String VERIFIED_CALLER = ApiKeyAuthFilter.class.getName() + ".VERIFIED_CALLER";
+
     @Value("${API_KEY:}")
     private String apiKey;
 
@@ -51,17 +59,18 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
+        boolean keyConfigured = apiKey != null && !apiKey.isBlank();
         if (isProtected(request)) {
-            if (apiKey == null || apiKey.isBlank()) {
+            if (!keyConfigured) {
                 log.warn("API_KEY 미설정: {} {} 인증이 비활성화되어 있습니다. 운영 환경에서는 반드시 설정하세요.",
                         request.getMethod(), request.getRequestURI());
-            } else {
-                String provided = request.getHeader(HEADER);
-                if (!matches(provided, apiKey)) {
-                    writeUnauthorized(response);
-                    return;
-                }
+            } else if (!matches(request.getHeader(HEADER), apiKey)) {
+                writeUnauthorized(response);
+                return;
             }
+        }
+        if (keyConfigured && matches(request.getHeader(HEADER), apiKey)) {
+            request.setAttribute(VERIFIED_CALLER, Boolean.TRUE);
         }
         filterChain.doFilter(request, response);
     }

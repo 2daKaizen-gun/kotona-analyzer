@@ -1,5 +1,6 @@
 package com.kaizen.kotona.analyzer.config;
 
+import com.kaizen.kotona.analyzer.security.ApiKeyAuthFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -149,6 +150,34 @@ class RateLimitInterceptorTest {
         }
 
         @Test
+        @DisplayName("키가 맞은 호출자(우리 프론트)가 넘긴 사용자 IP 로 센다")
+        void usesTheForwardedAddressFromAVerifiedCaller() throws Exception {
+            // 프론트를 거친 요청은 모두 같은 소켓 주소다. 그 주소로만 세면 사용자 전원이 한 버킷을 나눠 쓴다.
+            RateLimitInterceptor interceptor = new RateLimitInterceptor(false, clock);
+
+            for (int i = 0; i <= MAX_REQUESTS; i++) {
+                verifiedCall(interceptor, "10.0.0.1", "203.0.113.7");
+            }
+            assertThat(verifiedCall(interceptor, "10.0.0.1", "203.0.113.7").allowed()).isFalse();
+
+            // 같은 프론트 서버를 거쳐 온 다른 사용자는 막히지 않는다
+            assertThat(verifiedCall(interceptor, "10.0.0.1", "203.0.113.8").allowed()).isTrue();
+        }
+
+        @Test
+        @DisplayName("키 없이 온 X-Forwarded-For 는 여전히 무시한다")
+        void stillIgnoresForwardedForWithoutAVerifiedCaller() throws Exception {
+            // 표시가 없는 요청의 헤더를 믿으면, 헤더만 바꿔 가며 제한을 무한 우회한다
+            RateLimitInterceptor interceptor = new RateLimitInterceptor(false, clock);
+
+            for (int i = 0; i <= MAX_REQUESTS; i++) {
+                call(interceptor, "10.0.0.1", "1.1.1." + i);
+            }
+
+            assertThat(call(interceptor, "10.0.0.1", "9.9.9.9").allowed()).isFalse();
+        }
+
+        @Test
         @DisplayName("프록시를 신뢰해도 헤더가 없으면 소켓 주소로 센다")
         void fallsBackToTheSocketAddress() throws Exception {
             RateLimitInterceptor interceptor = new RateLimitInterceptor(true, clock);
@@ -192,8 +221,22 @@ class RateLimitInterceptorTest {
         return call(interceptor, remoteAddr, null);
     }
 
+    /** ApiKeyAuthFilter 가 키를 확인한 뒤의 요청 — 필터가 남기는 표시를 그대로 붙인다. */
+    private Result verifiedCall(RateLimitInterceptor interceptor, String remoteAddr, String forwardedFor)
+            throws Exception {
+        return call(interceptor, remoteAddr, forwardedFor, true);
+    }
+
     private Result call(RateLimitInterceptor interceptor, String remoteAddr, String forwardedFor) throws Exception {
+        return call(interceptor, remoteAddr, forwardedFor, false);
+    }
+
+    private Result call(RateLimitInterceptor interceptor, String remoteAddr, String forwardedFor, boolean verified)
+            throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/analyze");
+        if (verified) {
+            request.setAttribute(ApiKeyAuthFilter.VERIFIED_CALLER, Boolean.TRUE);
+        }
         request.setRemoteAddr(remoteAddr);
         if (forwardedFor != null) {
             request.addHeader("X-Forwarded-For", forwardedFor);

@@ -2,6 +2,7 @@ package com.kaizen.kotona.analyzer.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +56,38 @@ class JapaneseTokenServiceTest {
     @DisplayName("정중체가 없는 문장은 정중하지 않다")
     void rejectsPlainSentences(String sentence) {
         assertThat(service.hasPoliteEnding(sentence)).isFalse();
+    }
+
+    // 거절 신호는 놓인 자리로 읽는다. 아래는 신호 낱말이 들어 있지만 거절·보류가 아닌 자리들이다.
+    @ParameterizedTest(name = "{0} 에서 {1} 은(는) 세지 않는다")
+    @CsvSource({
+            "ご確認とご検討のほど、よろしくお願いいたします。, 検討",   // 부탁
+            "ご確認とご検討のほど、よろしくお願いいたします。, 確認",
+            "資料を添付しましたので、ご検討ください。, 検討",
+            "内容を確認し、検討した結果、ぜひお願いしたいと考えております。, 検討", // 끝난 일
+            "確認いたしましたところ、問題ございませんでした。, 確認",
+            "難しい課題ですが、必ず期日までに対応いたします。, 難しい",       // 양보절
+            "前向きに検討いたします。来週金曜までに回答します。, 検討",       // 기한
+            "社内で確認のうえ、三日以内にご連絡いたします。, 確認",
+    })
+    @DisplayName("부탁·끝난 일·양보절·기한 있는 약속 자리의 신호 낱말은 세지 않는다")
+    void ignoresSignalsInPlacesThatAreNotRefusals(String sentence, String lemma) {
+        assertThat(service.refusalLemmas(sentence)).doesNotContain(lemma);
+    }
+
+    // 같은 낱말이 거절·보류 자리에 있으면 그대로 센다. 문맥 규칙이 과하게 넓어지지 않았다는 것을 붙잡는다.
+    @ParameterizedTest(name = "{0} 에서 {1} 은(는) 센다")
+    @CsvSource({
+            "ご提案の件、社内で検討させていただきます。, 検討",
+            "前向きに検討させていただきます。, 検討",
+            "申し訳ございませんが、本日中の対応は難しい状況です。, 難しい", // が 는 難しい 앞에 있다
+            "それは難しいですね。, 難しい",
+            "確認してから返事します。, 確認",                             // 기한 없는 회신
+            "検討のうえ、必要に応じてご連絡させていただきます。, 検討",
+    })
+    @DisplayName("보류·거절 자리의 신호 낱말은 그대로 센다")
+    void keepsSignalsWhereTheyRefuseOrDefer(String sentence, String lemma) {
+        assertThat(service.refusalLemmas(sentence)).contains(lemma);
     }
 
     @ParameterizedTest(name = "반말: {0}")

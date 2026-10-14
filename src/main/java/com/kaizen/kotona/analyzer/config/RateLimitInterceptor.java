@@ -1,5 +1,6 @@
 package com.kaizen.kotona.analyzer.config;
 
+import com.kaizen.kotona.analyzer.security.ApiKeyAuthFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -71,8 +72,18 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    /**
+     * 누구로 셀지.
+     *
+     * <p>프론트를 거쳐 오는 요청은 모두 프론트 서버의 주소에서 온다. 그 주소로만 세면 모든 사용자가
+     * 분당 20 회를 나눠 쓰게 되어, 한 사람이 몰아치면 나머지 전원이 429 를 받았다. 그래서 프론트가
+     * 사용자의 IP 를 X-Forwarded-For 로 넘기고, 여기서는 <b>API 키가 맞은 호출자</b>가 보낸 그 헤더만
+     * 믿는다 — 키를 가진 것은 우리 프론트뿐이므로 헤더를 위조할 수 있는 쪽도 그뿐이다.
+     * {@code trustForwardedFor} 는 키와 무관하게 앞단 프록시를 믿는 예전 설정으로, 그대로 둔다.
+     */
     private String clientIp(HttpServletRequest request) {
-        if (trustForwardedFor) {
+        boolean verifiedCaller = Boolean.TRUE.equals(request.getAttribute(ApiKeyAuthFilter.VERIFIED_CALLER));
+        if (trustForwardedFor || verifiedCaller) {
             String forwarded = request.getHeader("X-Forwarded-For");
             if (forwarded != null && !forwarded.isBlank()) {
                 return forwarded.split(",")[0].trim();

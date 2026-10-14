@@ -81,6 +81,26 @@ class ApiKeyAuthFilterTest {
     }
 
     @Test
+    @DisplayName("키가 맞은 요청에만 '확인된 호출자' 표시를 남긴다")
+    void marksOnlyCallersWhoseKeyMatched() throws Exception {
+        // 이 표시가 있어야 레이트 리미터가 그 호출자가 넘긴 사용자 IP 를 믿는다
+        MockHttpServletRequest withKey = new MockHttpServletRequest("POST", "/analyze");
+        withKey.addHeader("X-API-KEY", KEY);
+        MockHttpServletRequest wrongKey = new MockHttpServletRequest("GET", "/api/phrases");
+        wrongKey.addHeader("X-API-KEY", "guess");
+        MockHttpServletRequest noKeyConfigured = new MockHttpServletRequest("POST", "/analyze");
+        noKeyConfigured.addHeader("X-API-KEY", "");
+
+        run(filterWithKey(KEY), withKey, new MockFilterChain());
+        run(filterWithKey(KEY), wrongKey, new MockFilterChain());
+        run(filterWithKey(""), noKeyConfigured, new MockFilterChain());
+
+        assertThat(withKey.getAttribute(ApiKeyAuthFilter.VERIFIED_CALLER)).isEqualTo(Boolean.TRUE);
+        assertThat(wrongKey.getAttribute(ApiKeyAuthFilter.VERIFIED_CALLER)).isNull();
+        assertThat(noKeyConfigured.getAttribute(ApiKeyAuthFilter.VERIFIED_CALLER)).isNull();
+    }
+
+    @Test
     @DisplayName("키가 설정되지 않으면 쓰기 요청도 통과한다 (로컬 개발)")
     void noKeyConfiguredLetsWritesThrough() throws Exception {
         MockFilterChain chain = new MockFilterChain();

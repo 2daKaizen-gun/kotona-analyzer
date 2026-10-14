@@ -158,12 +158,23 @@ class AnalysisValidatorScoringTest {
         }
 
         @Test
-        @DisplayName("같은 確認 도 면접에서는 주의로 올라간다")
+        @DisplayName("내가 미루는 確認 은 면접에서 주의로 올라간다")
         void escalatesKakuninAtInterview() {
-            // 確認 0.2 × INTERVIEW 1.5 = 0.3 → CAUTION 경계에 닿는다
-            NuanceResponseDTO result = validateRisk("ご確認をお願いします。", RelationshipType.INTERVIEW, "SAFE");
+            // 確認 0.2 × INTERVIEW 1.5 = 0.3 → CAUTION 경계에 닿는다.
+            // 예전 이 테스트의 문장은 「ご確認をお願いします」 였다 — 상대에게 하는 부탁을 보류로 센 것이다.
+            NuanceResponseDTO result = validateRisk("確認してから返事します。", RelationshipType.INTERVIEW, "SAFE");
 
             assertThat(result.riskAnalysis().riskLevel()).isEqualTo("CAUTION");
+        }
+
+        @Test
+        @DisplayName("상대에게 確認 을 부탁하는 것은 면접에서도 안전하다")
+        void doesNotFlagARequestToCheckEvenAtInterview() {
+            // 프롬프트의 정의: SAFE 는 "commits, accepts, asks, or states a next step"
+            NuanceResponseDTO result = validateRisk("ご確認をお願いします。", RelationshipType.INTERVIEW, "SAFE");
+
+            assertThat(result.riskAnalysis().riskLevel()).isEqualTo("SAFE");
+            assertThat(result.riskAnalysis().redFlags()).isEmpty();
         }
 
         @Test
