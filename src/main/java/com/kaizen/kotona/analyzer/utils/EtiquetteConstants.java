@@ -52,6 +52,29 @@ public final class EtiquetteConstants {
             "でしょうか", "いただけますか", "いただけますでしょうか", "かと思われます", "ございませんか"
     );
 
+    /*
+     * 거절 신호를 문맥으로 거르는 데 쓰는 목록. 쓰는 곳은 JapaneseTokenService.refusalLemmas 이고,
+     * 왜 거르는지도 거기 적었다. 여기 있는 것은 낱말이 아니라 문장 구조의 표지들이다.
+     */
+
+    /** 보류 신호. 부탁·끝난 일·기한 있는 약속 자리에서는 세지 않는다. 거절 신호(難しい·見送る)는 여기 없다. */
+    public static final Set<String> DEFERRAL_LEMMAS = Set.of("検討", "確認", "考える", "持ち帰る", "善処");
+
+    /** 상대의 행위에 붙는 존경 접두사. 「ご検討ください」 의 검토는 내가 아니라 상대가 한다. */
+    public static final Set<String> REQUEST_PREFIXES = Set.of("ご", "御");
+
+    /** 양보절 안에서는 결론이 아닌 낱말. 「難しい課題ですが、対応いたします」 */
+    public static final Set<String> CONCESSIVE_SENSITIVE_LEMMAS = Set.of("難しい");
+
+    /** 양보의 접속조사. 이 뒤에 오는 절이 말하는 사람의 결론이다. */
+    public static final Set<String> CONCESSIVE_PARTICLES = Set.of("が", "けど", "けれど", "けれども", "ものの");
+
+    /** 기한을 세우는 말. 바로 뒤에 「に」 가 와야 한다(「金曜までに」「三日以内に」). */
+    public static final Set<String> DEADLINE_MARKERS = Set.of("まで", "以内");
+
+    /** 기한 뒤에 오면 "그때까지 답하겠다" 는 약속이 되는 낱말. */
+    public static final Set<String> REPLY_LEMMAS = Set.of("回答", "連絡", "返答", "返信", "返事", "報告", "提出");
+
     /**
      * 소프트 리젝션 신호와 가중치. 프롬프트의 Risk Detection Guide 와 같은 목록을 본다.
      *

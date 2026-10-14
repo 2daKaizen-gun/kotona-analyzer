@@ -75,9 +75,11 @@ public class AnalysisValidator {
         double riskScore = 0.0;
         List<String> detectedRedFlags = new ArrayList<>();
 
+        // 신호는 문맥을 거친 낱말로 센다 — 「ご検討ください」 의 検討 는 보류가 아니라 부탁이다.
+        Set<String> refusalLemmas = tokenService.refusalLemmas(cleanInput);
         for (Map.Entry<String, EtiquetteConstants.SoftRejectionSignal> entry
                 : EtiquetteConstants.SOFT_REJECTION_SIGNALS.entrySet()) {
-            if (EtiquetteConstants.signalMatches(entry, lemmas)) {
+            if (EtiquetteConstants.signalMatches(entry, refusalLemmas)) {
                 riskScore += entry.getValue().weight();
                 detectedRedFlags.add(entry.getValue().description());
             }

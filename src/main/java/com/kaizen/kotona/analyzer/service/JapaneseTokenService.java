@@ -2,9 +2,12 @@ package com.kaizen.kotona.analyzer.service;
 
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
+import com.kaizen.kotona.analyzer.utils.EtiquetteConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,6 +56,129 @@ public class JapaneseTokenService {
                 .map(Token::getBaseForm)
                 .filter(form -> form != null && !form.equals("*"))
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * 거절 신호로 셀 낱말의 기본형. {@link #baseForms} 와 같지만, 문맥상 거절이 아닌 자리에 놓인
+     * 신호 낱말은 빠진다.
+     *
+     * <p>낱말 주머니로만 보던 때 「ご確認とご検討のほど、よろしくお願いいたします」 — 상대에게 하는
+     * 부탁 — 가 確認 0.2 + 検討 0.5 = 0.7 로 사내에서도 DANGER 였다. 같은 낱말이라도 놓인 자리가
+     * 뜻을 정한다. 빼는 자리는 네 가지이고, 모두 문장 구조로 판정한다(낱말을 더 외우는 것이 아니다).
+     * <ul>
+     *   <li><b>부탁</b>: 「ご」가 붙은 検討·確認 — 내가 미루는 것이 아니라 상대에게 해 달라는 것
+     *   <li><b>끝난 일</b>: 보류 낱말 뒤 동사 사슬에 「た」— 「検討した結果」 는 검토가 끝났다는 말
+     *   <li><b>양보절</b>: 難しい 뒤 같은 문장에서 「が・けど」로 말이 이어짐 — 결론은 뒤에 온다
+     *       (「難しい課題ですが、必ず対応いたします」)
+     *   <li><b>기한</b>: 메시지 어딘가에 「〜までに回答します」 같은 기한 있는 약속이 있으면 보류
+     *       낱말을 세지 않는다 — 프롬프트의 정의도 CAUTION 은 "기한도 약속도 없는 보류" 다
+     * </ul>
+     * 이 네 가지로 놓치게 되는 거절은 모델이 본다. 규칙에게 금지된 것은 놓침이 아니라 오경보다.
+     */
+    public Set<String> refusalLemmas(String text) {
+        List<Token> tokens = tokenizer.tokenize(text);
+        boolean deadlineGiven = hasDeadlineCommitment(tokens);
+
+        Set<String> lemmas = new HashSet<>();
+        for (int index = 0; index < tokens.size(); index++) {
+            String form = tokens.get(index).getBaseForm();
+            if (form == null || form.equals("*")) {
+                continue;
+            }
+            boolean deferral = EtiquetteConstants.DEFERRAL_LEMMAS.contains(form);
+            if (deferral && (deadlineGiven || isRequested(tokens, index) || isCompleted(tokens, index))) {
+                continue;
+            }
+            if (EtiquetteConstants.CONCESSIVE_SENSITIVE_LEMMAS.contains(form) && isConceded(tokens, index)) {
+                continue;
+            }
+            lemmas.add(form);
+        }
+        return Set.copyOf(lemmas);
+    }
+
+    /** 바로 앞이 존경 접두사 「ご・御」 인가. 「ご検討ください」「ご確認のほど」 */
+    private static boolean isRequested(List<Token> tokens, int index) {
+        if (index == 0) {
+            return false;
+        }
+        Token previous = tokens.get(index - 1);
+        return previous.getPartOfSpeechLevel1().equals("接頭詞")
+                && EtiquetteConstants.REQUEST_PREFIXES.contains(previous.getSurface());
+    }
+
+    /** 뒤따르는 동사 사슬(동사·조동사·접속조사 て)에 과거 「た」 가 있는가. */
+    private static boolean isCompleted(List<Token> tokens, int index) {
+        for (int next = index + 1; next < tokens.size(); next++) {
+            Token token = tokens.get(next);
+            String pos = token.getPartOfSpeechLevel1();
+            boolean chain = pos.equals("動詞") || pos.equals("助動詞")
+                    || (pos.equals("助詞") && token.getSurface().equals("て"));
+            if (!chain) {
+                return false;
+            }
+            if (pos.equals("助動詞") && token.getBaseForm().equals("た")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 같은 문장 안에서 뒤에 양보의 접속조사가 오고, 그 뒤에도 말이 이어지는가. */
+    private static boolean isConceded(List<Token> tokens, int index) {
+        for (int next = index + 1; next < tokens.size(); next++) {
+            Token token = tokens.get(next);
+            if (isSentenceEnd(token)) {
+                return false;
+            }
+            if (token.getPartOfSpeechLevel2().equals("接続助詞")
+                    && EtiquetteConstants.CONCESSIVE_PARTICLES.contains(token.getSurface())) {
+                return continuesAfter(tokens, next);
+            }
+        }
+        return false;
+    }
+
+    private static boolean continuesAfter(List<Token> tokens, int index) {
+        for (int next = index + 1; next < tokens.size(); next++) {
+            Token token = tokens.get(next);
+            if (isSentenceEnd(token)) {
+                return false;
+            }
+            if (!token.getPartOfSpeechLevel1().equals("記号")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 「までに・以内に」 다음, 같은 문장 안에 회신·제출 낱말이 오는가. */
+    private static boolean hasDeadlineCommitment(List<Token> tokens) {
+        for (int index = 0; index + 1 < tokens.size(); index++) {
+            boolean bound = EtiquetteConstants.DEADLINE_MARKERS.contains(tokens.get(index).getSurface())
+                    && tokens.get(index + 1).getSurface().equals("に");
+            if (bound && repliesLater(tokens, index + 2)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean repliesLater(List<Token> tokens, int from) {
+        for (int next = from; next < tokens.size(); next++) {
+            Token token = tokens.get(next);
+            if (isSentenceEnd(token)) {
+                return false;
+            }
+            if (EtiquetteConstants.REPLY_LEMMAS.contains(token.getBaseForm())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isSentenceEnd(Token token) {
+        return token.getPartOfSpeechLevel2().equals("句点");
     }
 
     private static boolean isPolite(Token token) {

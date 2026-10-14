@@ -372,5 +372,82 @@
     "cushionBasis": "なし",
     "risk": "CAUTION",
     "riskBasis": "「善処」は何も確約しない。「前向きに」が付いても保留のまま"
+  },
+  {
+    "id": "context-01",
+    "text": "ご確認とご検討のほど、よろしくお願いいたします。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "SAFE",
+    "riskBasis": "確認と検討を相手に依頼している。「ご」が付いた検討は送り手の保留ではない"
+  },
+  {
+    "id": "context-02",
+    "text": "資料を添付しましたので、ご検討ください。",
+    "relationship": "INTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "丁寧語「ます」+ 尊敬語「くださる」の依頼形",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "SAFE",
+    "riskBasis": "相手に検討を依頼している。保留しているのは送り手ではない"
+  },
+  {
+    "id": "context-03",
+    "text": "難しい課題ですが、必ず期日までに対応いたします。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "丁寧語「です」+ 謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "SAFE",
+    "riskBasis": "「難しい」は「が」で終わる譲歩節の中にあり、結論は「必ず対応いたします」という確約"
+  },
+  {
+    "id": "context-04",
+    "text": "内容を確認し、検討した結果、ぜひお願いしたいと考えております。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「おる」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "SAFE",
+    "riskBasis": "検討は「した結果」で終わっており、結論は依頼したいという意思表示"
+  },
+  {
+    "id": "context-05",
+    "text": "前向きに検討いたします。来週金曜までに回答します。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "SAFE",
+    "riskBasis": "検討に期限付きの回答の約束が添えられている。CAUTION は期限も約束もない保留なので当たらない"
+  },
+  {
+    "id": "context-06",
+    "text": "お忙しいところ恐縮ですが、ご確認いただけますと幸いです。",
+    "relationship": "INTERVIEW",
+    "politeForm": true,
+    "politeFormBasis": "謙譲語Ⅰ「いただく」+ 丁寧語「です」",
+    "cushion": true,
+    "cushionBasis": "「お忙しいところ恐縮ですが」— 相手の事情に配慮するクッション言葉",
+    "risk": "SAFE",
+    "riskBasis": "面接の場でも依頼は依頼。「ご確認」は相手への依頼で、送り手の保留ではない"
+  },
+  {
+    "id": "context-07",
+    "text": "現状では難しいですが、社内で検討いたします。",
+    "relationship": "EXTERNAL",
+    "politeForm": true,
+    "politeFormBasis": "丁寧語「です」+ 謙譲語Ⅱ「いたす」+ 丁寧語「ます」",
+    "cushion": false,
+    "cushionBasis": "なし",
+    "risk": "CAUTION",
+    "riskBasis": "「難しい」は譲歩節で結論ではないが、結論の「検討いたします」は期限も約束もない保留"
   }
 ]
