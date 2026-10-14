@@ -193,7 +193,7 @@ Everything is an environment variable with a working default, so a clone runs wi
 | `DB_NAME` | `kotona` | Created on first connect if missing |
 | `DB_USERNAME` / `DB_PASSWORD` | `root` / `1234` | Local defaults; CI uses the same so the workflow needs no secrets |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Comma-separated. Patterns allowed, and pinned by `WebConfigCorsTest` |
-| `TRUST_FORWARDED_FOR` | `false` | Whether the rate limiter believes `X-Forwarded-For`. Only turn it on behind a proxy that overwrites the header, or an IP can be spoofed to bypass the limit |
+| `TRUST_FORWARDED_FOR` | `false` | Whether the rate limiter believes `X-Forwarded-For` from *anyone*. Only turn it on behind a proxy that overwrites the header, or an IP can be spoofed to bypass the limit. Not needed for kotona-web: a caller whose `X-API-KEY` matched is believed regardless, because only the frontend holds the key — so each user gets their own 20/min instead of all of them sharing the frontend's |
 | `SHOW_SQL` | `false` | Log every SQL statement. Off by default — on, the queries bury the error lines you were looking for |
 | `SPRINGDOC_ENABLED` | `true` | Serves `/v3/api-docs` and Swagger UI. The spec is what the frontend generates its types from |
 
