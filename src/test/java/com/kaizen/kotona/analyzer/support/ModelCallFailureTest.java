@@ -1,8 +1,11 @@
 package com.kaizen.kotona.analyzer.support;
 
+import com.google.genai.errors.GenAiIOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.time.Duration;
 
 import com.kaizen.kotona.analyzer.support.ModelCallFailure.Kind;
@@ -32,6 +35,31 @@ class ModelCallFailureTest {
     private static final String OVERLOADED =
             "503 UNAVAILABLE. This model is currently experiencing high demand. "
                     + "Spikes in demand are usually temporary. Please try again later.";
+
+    @Test
+    @DisplayName("시간 상한을 넘긴 호출은 모델 쪽 지연으로 읽는다 — 빨간불이 아니다")
+    void readsATimeoutAsTheModelBeingSlow() {
+        // 2026-10-15: 붐비는 날 두 호출이 100초 상한을 넘겼다. SDK 가 준 메시지는 이 한 줄뿐이었고,
+        // OURS 로 떨어져 측정이 빨간불이 됐다. 바로 다음 호출은 503 이었다.
+        ModelCallFailure failure = ModelCallFailure.of(new GenAiIOException(
+                "Failed to execute HTTP request.", new SocketTimeoutException("timeout")));
+
+        assertThat(failure.kind()).isEqualTo(Kind.UPSTREAM);
+        assertThat(failure.ours()).isFalse();
+        assertThat(failure.waitBeforeRetry()).isPositive();
+        assertThat(failure.summary()).contains("시간 상한").contains("SocketTimeoutException");
+    }
+
+    @Test
+    @DisplayName("시간 초과가 아닌 입출력 실패는 여전히 우리 쪽이고, 근본 원인을 적는다")
+    void keepsOtherIoFailuresOursAndNamesTheRootCause() {
+        // 「Failed to execute HTTP request.」 만으로는 무엇이 고장인지 알 수 없었다
+        ModelCallFailure failure = ModelCallFailure.of(new GenAiIOException(
+                "Failed to execute HTTP request.", new UnknownHostException("generativelanguage.googleapis.com")));
+
+        assertThat(failure.kind()).isEqualTo(Kind.OURS);
+        assertThat(failure.summary()).contains("UnknownHostException").contains("googleapis");
+    }
 
     /** 키를 일부러 망가뜨려 확인한 응답. */
     private static final String BAD_KEY =

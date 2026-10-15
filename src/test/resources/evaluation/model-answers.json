@@ -285,4 +285,11 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-11",
   "value" : "25/25"
+}, {
+  "id" : "context-02",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-15",
+  "value" : "SAFE"
 } ]

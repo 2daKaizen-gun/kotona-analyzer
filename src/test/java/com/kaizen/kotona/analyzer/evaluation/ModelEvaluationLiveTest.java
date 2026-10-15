@@ -66,13 +66,18 @@ class ModelEvaluationLiveTest {
     private static final int CONSECUTIVE_FAILURE_LIMIT = 3;
 
     /**
-     * 호출 한 건의 시간 상한. 운영과 같은 값을 쓴다.
+     * 호출 한 건의 시간 상한. 운영값보다 길다 — 일부러 그렇게 둔다.
      *
      * <p>측정도 멈춘 호출에 걸릴 수 있다. 기다려 주는 한계가 없으면 그 실행은 영원히 끝나지
      * 않고, 쿼터가 비었는지 모델이 멈췄는지도 알 수 없다 — 둘 다 "아무 일도 일어나지 않음"
-     * 으로 보인다.
+     * 으로 보인다. 그래서 상한은 있어야 한다.
+     *
+     * <p>하지만 운영값({@link GeminiConfig#DEFAULT_TIMEOUT_MS}, 100초)을 따를 이유는 없다. 그 값은
+     * 프론트가 110초에 포기하기 때문에 정해졌고, 측정에는 기다리는 사람이 없다. 2026-10-14 에 이
+     * 상수를 운영값에 묶었더니, 다음 날 붐비는 시간에 세 호출이 100초를 넘겨 끊겼다 — 그리고 끊긴
+     * 호출도 쿼터는 썼다. 답이 늦게 오는 것은 측정이 버릴 이유가 아니다.
      */
-    private static final int CALL_TIMEOUT_MS = GeminiConfig.DEFAULT_TIMEOUT_MS;
+    private static final int CALL_TIMEOUT_MS = 180_000;
 
     private static final String SYSTEM_INSTRUCTION = """
             You are a "Business Japanese Communication Expert".
