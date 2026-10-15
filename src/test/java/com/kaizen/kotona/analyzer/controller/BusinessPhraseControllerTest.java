@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
@@ -74,6 +75,23 @@ class BusinessPhraseControllerTest {
                 .andExpect(status().isOk());
 
         verify(service).getAllPhrases(2, 5);
+    }
+
+    @Test
+    @DisplayName("afterId 가 오면 페이지 번호 대신 커서로 읽는다 — 전체와 상황별 모두")
+    void continuesFromACursorWhenGiven() throws Exception {
+        given(service.getPhrasesAfter(any(), any(), anyLong(), anyInt()))
+                .willReturn(new PageResponse<>(List.of(), 0, 20, 0, 0, false));
+
+        mockMvc.perform(get("/api/phrases").param("afterId", "7").param("afterLevel", "4").param("page", "3"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/phrases/search").param("situation", "EMAIL").param("afterId", "12"))
+                .andExpect(status().isOk());
+
+        verify(service).getPhrasesAfter(null, 4, 7L, 20);
+        // 정중도를 비우면 "정중도 없는 행" 다음이라는 뜻이다
+        verify(service).getPhrasesAfter(Situation.EMAIL, null, 12L, 20);
+        verify(service, never()).getAllPhrases(anyInt(), anyInt());
     }
 
     @Test

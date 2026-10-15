@@ -15,9 +15,9 @@ instead, with its denominator.
 
 | what | measured | how to check it |
 |---|---|---|
-| Backend tests | **259** passing | `./gradlew test` — runs on every push |
-| Backend coverage | **96.08%** lines, **87.16%** branches | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
-| Frontend tests | **169** unit, **12** browser | `npm test` and `npm run test:e2e` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
+| Backend tests | **265** passing | `./gradlew test` — runs on every push |
+| Backend coverage | **96.16%** lines, **87.25%** branches | `./gradlew check` — JaCoCo floors of 0.90 lines / 0.80 branches are wired into `check`, so this cannot quietly fall |
+| Frontend tests | **175** unit, **12** browser | `npm test` and `npm run test:e2e` in [kotona-web](https://github.com/2daKaizen-gun/kotona-web) |
 | Frontend coverage | **96%** lines | `npm run test:coverage` — thresholds in `vitest.config.mts` |
 | Polite form, rules vs. labels | **41 / 41** | `./gradlew test --tests '*RuleLayerEvaluationTest'` |
 | Cushion phrase, rules vs. labels | **41 / 41** | same test |
@@ -26,11 +26,11 @@ instead, with its denominator.
 | Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
 | Sentences the rules grade *more* severely than the label | **0 / 41** | same test as above — the weights and the labels have to agree on the grade, not only on the signal |
 | Review sheet's verdict column matches the labels | **41 / 41** | `ReviewDocumentTest` — a changed label makes the stale sheet fail |
-| **The grade a reader actually sees**, vs. the labels | **31 / 34** answered — 3 more severe, 0 less | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
+| **The grade a reader actually sees**, vs. the labels | **32 / 35** answered — 3 more severe, 0 less | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
-| Model agreement, risk grade | **34 / 41** answered — **30** agreed (88%); the 7 added on 2026-10-14 wait for quota | `./gradlew evalTest` — the answers are checked in; re-running asks nothing until the prompt or model changes |
+| Model agreement, risk grade | **35 / 41** answered — **31** agreed (89%); of the 7 added on 2026-10-14 one is answered (agreed), six wait for quota | `./gradlew evalTest` — the answers are checked in; re-running asks nothing until the prompt or model changes |
 | Model agreement, ordering | **7 / 7** compared, **7** held — 6 strictly higher, 1 tied | same command |
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
@@ -80,6 +80,14 @@ the same `429`; only the retry hint differs — `23h39m` against `5.04s`. On 202
 on a five-second refusal while the day still had requests left, and it cost a strike toward the three that
 end the run. A short hint is now waited out and the sentence asked again; a long one still ends the day.
 `ModelCallFailureTest` pins both readings against messages actually received.
+
+A deadline was then borrowed from the wrong place. On 2026-10-14 the measurement's per-call limit was tied
+to production's — 100 s, which exists because the frontend gives up at 110 s. On 2026-10-15, a busy day on
+the model's side, three calls ran past it and were cut. Two things were wrong at once. The cut arrived as
+`GenAiIOException: Failed to execute HTTP request.` and nothing else, so it was filed as *ours* and the run
+went red; a timeout is now read from the cause chain and filed with the overloaded model, and every *ours*
+names its root cause. And a measurement has nobody waiting on it, so it waits 180 s again. The cut calls
+still counted against the day — the quota ran out with six of the seven new sentences unasked.
 
 And the report it printed was a guess. Every failure was logged as `호출 실패: ClientException` followed by
 "quota is empty, stopping" — a conclusion the code had no way to reach. A dead API key, a retired model name
@@ -166,6 +174,7 @@ The whole stack (Spring Boot app + MySQL) runs locally with a single command —
 docker compose up -d --build
 ```
 - API base: `http://localhost:8081`
+- Hosting it publicly, for free: [`docs/HOSTING.md`](docs/HOSTING.md) — measured needs (about 320 MB, a ~20 s start, MySQL 8 for the Japanese collation) against the free tiers available in October 2026
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 
 > **The runtime image runs as an unprivileged user**, `kotona`. Until 2026-10-14 it ran
@@ -259,7 +268,7 @@ Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | answers kept in `model-answers.json` | agreed |
 |---|---|---|
-| risk grade | **34 of 41** | **30** (88% of answered) |
+| risk grade | **35 of 41** | **31** (89% of answered) |
 | ordering pairs | **7 of 7** | **7** (6 strictly, 1 tied) |
 
 **One of the seven is weaker than it looks.** `indirect-added-01` asks whether 「ご確認いただけますでしょうか」
@@ -286,13 +295,13 @@ An earlier run is why the prompt changed: the model read `riskLevel` as rudeness
 
 **What the screen shows is neither of the two numbers above.** The grade is the more severe of the rules' and the model's, so neither agreement rate describes what a user is told. That composition is now measured, from the answers already recorded — no quota needed, so it runs on every push:
 
-| on the 34 sentences the model has answered | agrees with the label |
+| on the 35 sentences the model has answered | agrees with the label |
 |---|---|
-| the rules alone | 33 |
-| the model alone | 30 |
-| **the grade on screen** (more severe of the two) | **31** — 3 more severe than the label, 0 less |
+| the rules alone | 34 |
+| the model alone | 31 |
+| **the grade on screen** (more severe of the two) | **32** — 3 more severe than the label, 0 less |
 
-**Read the first row with suspicion.** The dictionaries and weights were built against these same labels, so 33 of 34 is partly a measurement of itself. The model never saw the labels, which is what makes its 30 the more informative number — and what makes the third row the one that matters, because it is the only one a user experiences.
+**Read the first row with suspicion.** The dictionaries and weights were built against these same labels, so 34 of 35 is partly a measurement of itself. The model never saw the labels, which is what makes its 31 the more informative number — and what makes the third row the one that matters, because it is the only one a user experiences.
 
 **Three sentences come out more severe than the label, and zero come out less.** For this tool that asymmetry is the intended direction: a missed refusal is a reply sent to a client in good faith. But the cost is now visible with a denominator. `reject-05` 「社内で確認のうえ、改めてご連絡いたします」 is labelled `SAFE`, the rules agree, and the model's `CAUTION` wins by being the more severe — so a reader is warned about an ordinary procedural reply. The rules' false alarms are asserted at zero; the model's are not, and `ProductGradeTest` names the three so a fourth fails the build rather than joining them quietly.
 
@@ -308,7 +317,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 | limit | where it stands | what would move it |
 |---|---|---|
 | native-speaker review of the labels | **0 / 41** sentences | one reader of Japanese, on the two convention axes only |
-| model agreement, risk grade | **34 / 41** sentences | the next day of free quota — `evalTest` asks only the 7 unanswered |
+| model agreement, risk grade | **35 / 41** sentences | the next day of free quota — `evalTest` asks only the 6 unanswered |
 | model agreement, ordering | **7 / 7** pairs — done | — |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 41** | correspondence nobody can publish |
@@ -318,7 +327,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **41 sentences and 7 pairs.** Ten come from expressions a reviewer called troublesome in practice, which is closer to real use than the 31 the author wrote, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **Both model columns were filled once, and they took a week of free quota.** Risk grade: **34 of 34** at the time, 30 agreed; the seven sentences added on 2026-10-14 reopen that column at 34 of 41. Ordering: **7 of 7**, none inverted, one tied. The daily allowance was neither ours to size nor to schedule — 2026-10-05 gave one answer, 10-06 none, 10-07 twelve, 10-08 eight, 10-09 eleven, 10-10 one, and 10-11 the last six pairs. What finished the ordering column was not more quota but the risk column closing: the cheaper check is asked first, so until it was done the pairs never got a call.
+- **Both model columns were filled once, and they took a week of free quota.** Risk grade: **34 of 34** at the time, 30 agreed; the seven sentences added on 2026-10-14 reopened that column at 34 of 41; it stands at 35 after 2026-10-15, a busy day on the model's side — see [What the measurement found](#-what-the-measurement-found). Ordering: **7 of 7**, none inverted, one tied. The daily allowance was neither ours to size nor to schedule — 2026-10-05 gave one answer, 10-06 none, 10-07 twelve, 10-08 eight, 10-09 eleven, 10-10 one, and 10-11 the last six pairs. What finished the ordering column was not more quota but the risk column closing: the cheaper check is asked first, so until it was done the pairs never got a call.
 
 ## 📡 API
 
@@ -331,8 +340,8 @@ TypeScript types from that spec, so the response shapes below are never declared
 | `GET` | `/api/history` | Page of summaries, newest first. `?page=0&size=20`; `size` is capped at 100. `?before={id}` continues after the last row seen instead of counting pages — deleting a row no longer makes "more" skip one |
 | `GET` | `/api/history/{id}` | One record including the stored analysis. |
 | `DELETE` | `/api/history/{id}` | 204 on success, like the dictionary. |
-| `GET` | `/api/phrases` | Dictionary, most polite first. |
-| `GET` | `/api/phrases/search?situation=` | Filter by situation. |
+| `GET` | `/api/phrases` | Dictionary, most polite first (unrated last, then by id). `?afterId=&afterLevel=` continues after the last row seen — leave `afterLevel` empty when that row had none |
+| `GET` | `/api/phrases/search?situation=` | Filter by situation. Same cursor |
 | `POST` | `/api/phrases` | |
 | `PUT` | `/api/phrases/{id}` | |
 | `DELETE` | `/api/phrases/{id}` | |
@@ -442,6 +451,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
     - [ ] Phase 6-7: Native-speaker review of the two convention axes — the one remaining item, and the only one that needs someone other than the author. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet, kept in step with the labels by a test
     - [x] Phase 6-8: A second full read of both repositories (#89) — a path spelling that walked around the API key, a model deadline longer than the frontend's, scores off their scale, a timeout reported as our own failure, a dictionary list that a late answer could overwrite
     - [x] Phase 6-9: What #89 left open, decided and closed (#91) — rules that read a signal word by where it sits, one password in front of the frontend, a rate limit per user rather than per frontend, history paged by cursor, an analysis that survives a failed save, and a container that no longer runs as root
+    - [x] Phase 6-10: The seven new sentences put to the model (#93) — one answered and agreed before a busy day and a deadline borrowed from production cut the rest; a timeout no longer read as our breakage; the dictionary paged by (politeness, id); free hosting measured against the app's real needs ([`docs/HOSTING.md`](docs/HOSTING.md))
 
 ## 🔥 Troubleshooting & Lessons Learned
 **1. External Resource Path Resolution (Classpath vs FileSystem)** *(historical — resolved by removing the key file entirely)*
@@ -489,7 +499,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
 
 - **API Response Time**: usually 20–30 seconds, with a long tail (79s observed). The dominant lever is `GEMINI_THINKING_LEVEL`, which defaults to `high` on purpose — at `low` the model mixes Korean and English into the Japanese replies and two of every three get discarded (see `PROMPT_DESIGN.md`). `GEMINI_MODEL` is the second lever
 
-- **Test Coverage**: 259 backend tests covering 96% of lines and 87% of branches, plus 169 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 96% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
+- **Test Coverage**: 265 backend tests covering 96% of lines and 87% of branches, plus 175 unit and 12 browser tests in [kotona-web](https://github.com/2daKaizen-gun/kotona-web), which is measured too — 96% of lines there. Both CIs print the totals and the least-covered files in the run summary and fail below a floor. Measuring is what found the gaps worth fixing: on the backend, the save path behind every analysis at 0% and a politeness check that marked 「ご確認ください」 as impolite; on the frontend, the dictionary screen at 60%, with editing, deleting and paging untested.
 
 - **Reaching the real API**: `./gradlew test` never calls Gemini — `NuanceModelClient` is swapped for a fake, so the suite is free, fast and deterministic. That leaves the SDK call itself unexercised, so it has its own test behind a tag: `GEMINI_API_KEY=... ./gradlew liveTest` spends one call and checks the answer still parses into `NuanceResponseDTO`. Worth running after an SDK upgrade or a model change; deliberately not in CI, which would spend quota on every push
 

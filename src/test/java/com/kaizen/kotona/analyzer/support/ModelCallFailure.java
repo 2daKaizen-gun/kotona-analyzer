@@ -1,5 +1,6 @@
 package com.kaizen.kotona.analyzer.support;
 
+import java.io.InterruptedIOException;
 import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -87,6 +88,12 @@ public record ModelCallFailure(Kind kind, String summary, Duration retryAfter) {
      * 빨간불로 끝났다 — 모델이 붐비는 것은 우리 잘못이 아니다.
      */
     private static Kind classify(RuntimeException e, String message, Duration retryAfter) {
+        // 2026-10-15: 붐비는 날 두 호출이 시간 상한(100초)을 넘겨 GenAiIOException 으로 끝났고, 그 바로
+        // 다음 호출이 503 이었다. 메시지는 "Failed to execute HTTP request." 뿐이라 OURS 로 떨어져
+        // 측정이 빨간불이 됐다. 원인이 시간 초과면 모델이 늦은 것이다 — 운영에서 504 로 답하는 것과 같다.
+        if (timedOut(e)) {
+            return Kind.UPSTREAM;
+        }
         if (message.contains("RESOURCE_EXHAUSTED") || message.contains("429")) {
             return retryAfter != null && retryAfter.compareTo(WAITABLE) <= 0
                     ? Kind.THROTTLE
@@ -103,14 +110,36 @@ public record ModelCallFailure(Kind kind, String summary, Duration retryAfter) {
         return Kind.OURS;
     }
 
+    /** 원인 사슬 어딘가에 시간 초과가 있는가. SDK(OkHttp)의 시간 초과는 SocketTimeoutException 이다. */
+    private static boolean timedOut(Throwable e) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            if (cause instanceof InterruptedIOException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static String summarize(RuntimeException e, String message, Kind kind, Duration retryAfter) {
         return switch (kind) {
             case DAILY_LIMIT -> "쿼터 소진 (429 RESOURCE_EXHAUSTED)"
                     + (retryAfter == null ? "" : " — %s 뒤에 다시 열린다".formatted(readable(retryAfter)));
             case THROTTLE -> "분당 제한 (429) — %s 뒤에 다시 열린다".formatted(readable(retryAfter));
-            case UPSTREAM -> "모델 과부하 — 우리 쪽 문제가 아니다: " + firstLine(message);
-            case OURS -> "%s: %s".formatted(e.getClass().getSimpleName(), firstLine(message));
+            case UPSTREAM -> timedOut(e)
+                    ? "모델 응답이 시간 상한 안에 오지 않았다 — 우리 쪽 문제가 아니다 (" + rootCause(e) + ")"
+                    : "모델 과부하 — 우리 쪽 문제가 아니다: " + firstLine(message);
+            // 「Failed to execute HTTP request.」 한 줄로는 무엇이 고장인지 알 수 없었다. 근본 원인을 붙인다.
+            case OURS -> "%s: %s (원인: %s)".formatted(e.getClass().getSimpleName(), firstLine(message), rootCause(e));
         };
+    }
+
+    private static String rootCause(Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        String detail = root.getMessage() == null ? "" : ": " + firstLine(root.getMessage());
+        return root.getClass().getSimpleName() + detail;
     }
 
     private static String firstLine(String message) {

@@ -26,21 +26,34 @@ public class BusinessPhraseController {
 
     private final BusinessPhraseService service;
 
-    @Operation(summary = "숙어 목록", description = "정중도 높은 순으로 한 페이지. 사용자가 추가한 표현까지 포함한다.")
+    private static final String CURSOR_NOTE = " afterId 를 주면 그 행 다음부터 준다(이때 page 는 무시하고, "
+            + "totalElements 는 커서 뒤에 남은 건수다). 정렬은 정중도 내림차순(없는 행은 맨 뒤), id 오름차순.";
+
+    @Operation(summary = "숙어 목록",
+            description = "정중도 높은 순으로 한 페이지. 사용자가 추가한 표현까지 포함한다." + CURSOR_NOTE)
     @GetMapping
     public PageResponse<BusinessPhrase> getAllPhrases(
             @Parameter(description = "0부터 시작하는 페이지 번호") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size) {
-        return service.getAllPhrases(page, size);
+            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "마지막으로 받은 행의 id. \"더 보기\" 는 이것을 쓴다") @RequestParam(required = false) Long afterId,
+            @Parameter(description = "마지막으로 받은 행의 정중도. 그 행에 정중도가 없었으면 비운다") @RequestParam(required = false) Integer afterLevel) {
+        return afterId != null
+                ? service.getPhrasesAfter(null, afterLevel, afterId, size)
+                : service.getAllPhrases(page, size);
     }
 
-    @Operation(summary = "상황별 숙어 검색", description = "EMAIL, MEETING 등 특정 상황에 맞는 숙어만 필터링. 허용되지 않은 값이면 400")
+    @Operation(summary = "상황별 숙어 검색",
+            description = "EMAIL, MEETING 등 특정 상황에 맞는 숙어만 필터링. 허용되지 않은 값이면 400." + CURSOR_NOTE)
     @GetMapping("/search")
     public PageResponse<BusinessPhrase> getPhrasesBySituation(
             @Parameter(description = "검색할 상황 태그(예: EMAIL, MEETING)") @RequestParam Situation situation,
             @Parameter(description = "0부터 시작하는 페이지 번호") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size) {
-        return service.getPhrasesBySituation(situation, page, size);
+            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "마지막으로 받은 행의 id. \"더 보기\" 는 이것을 쓴다") @RequestParam(required = false) Long afterId,
+            @Parameter(description = "마지막으로 받은 행의 정중도. 그 행에 정중도가 없었으면 비운다") @RequestParam(required = false) Integer afterLevel) {
+        return afterId != null
+                ? service.getPhrasesAfter(situation, afterLevel, afterId, size)
+                : service.getPhrasesBySituation(situation, page, size);
     }
 
     @Operation(summary = "숙어 추가", description = "새 표현을 사전에 등록. 이미 있는 표현이면 409")
