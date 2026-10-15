@@ -174,6 +174,7 @@ The whole stack (Spring Boot app + MySQL) runs locally with a single command —
 docker compose up -d --build
 ```
 - API base: `http://localhost:8081`
+- Hosting it publicly, for free: [`docs/HOSTING.md`](docs/HOSTING.md) — measured needs (about 320 MB, a ~20 s start, MySQL 8 for the Japanese collation) against the free tiers available in October 2026
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 
 > **The runtime image runs as an unprivileged user**, `kotona`. Until 2026-10-14 it ran
