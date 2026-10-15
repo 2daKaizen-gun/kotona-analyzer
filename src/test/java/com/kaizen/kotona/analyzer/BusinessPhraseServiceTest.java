@@ -48,9 +48,50 @@ class BusinessPhraseServiceTest {
 
         service.getAllPhrases(0, 20);
 
+        // 정중도가 없는 행은 맨 뒤 — 커서 조건이 이 순서를 전제한다
         assertThat(capturePageable().getSort()).containsExactly(
-                Sort.Order.desc("politenessLevel"),
+                Sort.Order.desc("politenessLevel").nullsLast(),
                 Sort.Order.asc("id"));
+    }
+
+    @Test
+    @DisplayName("커서가 정중도 있는 행이면 그 아래 정중도와 정중도 없는 행까지 이어서 읽는다")
+    void continuesFromARatedRow() {
+        given(repository.findAfter(anyInt(), anyLong(), any(Pageable.class))).willReturn(new PageImpl<>(List.of()));
+
+        service.getPhrasesAfter(null, 4, 7L, 9_999);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(repository).findAfter(eq(4), eq(7L), captor.capture());
+        assertThat(captor.getValue().getPageNumber()).isZero();
+        assertThat(captor.getValue().getPageSize()).isEqualTo(MAX_PAGE_SIZE);
+        assertThat(captor.getValue().getSort().getOrderFor("politenessLevel").getNullHandling())
+                .isEqualTo(Sort.NullHandling.NULLS_LAST);
+    }
+
+    @Test
+    @DisplayName("커서가 이미 정중도 없는 구간이면 그 구간만 이어서 읽는다")
+    void continuesInsideTheUnratedTail() {
+        given(repository.findAfterUnrated(anyLong(), any(Pageable.class))).willReturn(new PageImpl<>(List.of()));
+
+        service.getPhrasesAfter(null, null, 12L, 20);
+
+        verify(repository).findAfterUnrated(eq(12L), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("상황 필터가 있으면 같은 커서를 그 상황 안에서 쓴다")
+    void continuesWithinASituation() {
+        given(repository.findBySituationAfter(any(), anyInt(), anyLong(), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of()));
+        given(repository.findBySituationAfterUnrated(any(), anyLong(), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of()));
+
+        service.getPhrasesAfter(Situation.EMAIL, 5, 1L, 20);
+        service.getPhrasesAfter(Situation.EMAIL, null, 1L, 20);
+
+        verify(repository).findBySituationAfter(eq(Situation.EMAIL), eq(5), eq(1L), any(Pageable.class));
+        verify(repository).findBySituationAfterUnrated(eq(Situation.EMAIL), eq(1L), any(Pageable.class));
     }
 
     @Test

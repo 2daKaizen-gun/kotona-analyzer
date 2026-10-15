@@ -339,8 +339,8 @@ TypeScript types from that spec, so the response shapes below are never declared
 | `GET` | `/api/history` | Page of summaries, newest first. `?page=0&size=20`; `size` is capped at 100. `?before={id}` continues after the last row seen instead of counting pages — deleting a row no longer makes "more" skip one |
 | `GET` | `/api/history/{id}` | One record including the stored analysis. |
 | `DELETE` | `/api/history/{id}` | 204 on success, like the dictionary. |
-| `GET` | `/api/phrases` | Dictionary, most polite first. |
-| `GET` | `/api/phrases/search?situation=` | Filter by situation. |
+| `GET` | `/api/phrases` | Dictionary, most polite first (unrated last, then by id). `?afterId=&afterLevel=` continues after the last row seen — leave `afterLevel` empty when that row had none |
+| `GET` | `/api/phrases/search?situation=` | Filter by situation. Same cursor |
 | `POST` | `/api/phrases` | |
 | `PUT` | `/api/phrases/{id}` | |
 | `DELETE` | `/api/phrases/{id}` | |

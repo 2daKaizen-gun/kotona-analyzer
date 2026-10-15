@@ -36,8 +36,30 @@ public class BusinessPhraseService {
         return PageResponse.from(repository.findBySituation(situation, Paging.of(page, size, POLITE_FIRST)));
     }
 
+    /**
+     * 정중도가 없는 행은 맨 뒤. MySQL 의 내림차순도 null 을 뒤에 두지만, 커서 조건
+     * ({@code BusinessPhraseRepository.AFTER_RATED})이 그 순서를 전제하므로 DB 기본값에 맡기지 않고 적는다.
+     */
     private static final Sort POLITE_FIRST =
-            Sort.by(Sort.Order.desc("politenessLevel"), Sort.Order.asc("id"));
+            Sort.by(Sort.Order.desc("politenessLevel").nullsLast(), Sort.Order.asc("id"));
+
+    /**
+     * 커서 다음 한 페이지. {@code afterLevel}·{@code afterId} 는 화면이 마지막으로 받은 행의 정중도와 id 이고,
+     * 정중도가 비어 있던 행이면 {@code afterLevel} 도 null 이다. {@code situation} 이 null 이면 전체에서 찾는다.
+     *
+     * <p>{@code totalElements} 는 커서 뒤에 남은 건수다 — 전체 건수는 첫 페이지가 이미 알려 줬다.
+     */
+    public PageResponse<BusinessPhrase> getPhrasesAfter(Situation situation, Integer afterLevel, long afterId, int size) {
+        var pageable = Paging.of(0, size, POLITE_FIRST);
+        if (situation == null) {
+            return PageResponse.from(afterLevel == null
+                    ? repository.findAfterUnrated(afterId, pageable)
+                    : repository.findAfter(afterLevel, afterId, pageable));
+        }
+        return PageResponse.from(afterLevel == null
+                ? repository.findBySituationAfterUnrated(situation, afterId, pageable)
+                : repository.findBySituationAfter(situation, afterLevel, afterId, pageable));
+    }
 
     /**
      * 표현을 새로 등록한다.
