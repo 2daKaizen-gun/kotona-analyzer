@@ -367,7 +367,7 @@ that proxy is a product decision — one shared password, or accounts — and it
 
 **Errors** are `{"error": "..."}` with a meaningful status: 413 a body over 64 KB and 411 a body that does not declare its length — both refused before anything is read, since `@Size` only judges after the body has been parsed. 400 invalid input (including a
 relationship or situation outside its enum), 404 unknown id, 409 duplicate phrase, 429 rate
-limited (20 requests/minute/IP on `/analyze`) or model quota exhausted, 502 anything else from
+limited (20 requests a minute on `/analyze`, counted per user when the call comes through kotona-web with the key, per IP otherwise) or model quota exhausted, 504 a model call that ran past `GEMINI_TIMEOUT_MS`, 502 a model that could not be reached or answered with anything else from
 the model. Upstream response bodies are logged, never returned — and so is the message of any
 error we did not classify, since that text belongs to a JDBC driver or the JDK, not to us.
 
