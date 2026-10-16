@@ -292,4 +292,46 @@
   "promptVersion" : "2026-10-02-risk-definition",
   "askedOn" : "2026-10-15",
   "value" : "SAFE"
+}, {
+  "id" : "context-01",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-16",
+  "value" : "SAFE"
+}, {
+  "id" : "context-03",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-16",
+  "value" : "SAFE"
+}, {
+  "id" : "context-04",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-16",
+  "value" : "SAFE"
+}, {
+  "id" : "context-05",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-16",
+  "value" : "SAFE"
+}, {
+  "id" : "context-06",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-16",
+  "value" : "SAFE"
+}, {
+  "id" : "context-07",
+  "kind" : "risk",
+  "model" : "gemini-3.6-flash",
+  "promptVersion" : "2026-10-02-risk-definition",
+  "askedOn" : "2026-10-16",
+  "value" : "DANGER"
 } ]

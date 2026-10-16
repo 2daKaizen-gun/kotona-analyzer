@@ -26,11 +26,11 @@ instead, with its denominator.
 | Ordering constraints the rules hold | **7 / 7** | `./gradlew test --tests '*RuleLayerOrderingTest'` — both sentences are given identical model scores, so any difference is the rules' doing |
 | Sentences the rules grade *more* severely than the label | **0 / 41** | same test as above — the weights and the labels have to agree on the grade, not only on the signal |
 | Review sheet's verdict column matches the labels | **41 / 41** | `ReviewDocumentTest` — a changed label makes the stale sheet fail |
-| **The grade a reader actually sees**, vs. the labels | **32 / 35** answered — 3 more severe, 0 less | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
+| **The grade a reader actually sees**, vs. the labels | **37 / 41** — 4 more severe, 0 less | `./gradlew test --tests '*ProductGradeTest'` — recomputed from the recorded answers on every push, no quota needed |
 | Review sheet still matches the evaluation set | every sentence, every pair | `ReviewDocumentTest` — the sheet cannot go stale without the build failing |
 | Gemini's request schema | generated from the DTO, no second copy by hand | `NuanceSchemaFactoryTest` |
 | The real SDK call still parses | **1** call | `GEMINI_API_KEY=... ./gradlew liveTest` — deliberately outside CI, which would spend quota on every push |
-| Model agreement, risk grade | **35 / 41** answered — **31** agreed (89%); of the 7 added on 2026-10-14 one is answered (agreed), six wait for quota | `./gradlew evalTest` — the answers are checked in; re-running asks nothing until the prompt or model changes |
+| Model agreement, risk grade | **41 / 41** answered — the column is full again — **36** agreed (88%) | `./gradlew evalTest` — the answers are checked in; re-running asks nothing until the prompt or model changes |
 | Model agreement, ordering | **7 / 7** compared, **7** held — 6 strictly higher, 1 tied | same command |
 | Why those two fill slowly | **20** requests per day, per model | the free tier's own refusal names it: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `limit: 20`, `model: gemini-3.6-flash` |
 | Compile and startup warnings | **0** | `./gradlew clean build` with `-Xlint:deprecation` on |
@@ -268,7 +268,7 @@ Measured so far, on `gemini-3.6-flash` with the current prompt:
 
 | check | answers kept in `model-answers.json` | agreed |
 |---|---|---|
-| risk grade | **35 of 41** | **31** (89% of answered) |
+| risk grade | **41 of 41** | **36** (88%) |
 | ordering pairs | **7 of 7** | **7** (6 strictly, 1 tied) |
 
 **One of the seven is weaker than it looks.** `indirect-added-01` asks whether 「ご確認いただけますでしょうか」
@@ -279,13 +279,15 @@ log records the numbers so the distinction is visible rather than rounded into "
 
 Every figure here is written with its denominator, because the alternative is writing nothing and sounding more certain. The quota arrives in a trickle, so the risk check runs first — one call per sentence tells us more per call than two calls per pair — and both checks stop after three consecutive failures instead of collecting the same error thirty times.
 
-**Four sentences disagree, and three of them disagree the same way.**
+**Five sentences disagree, and four of them disagree the same way.**
 
 `cushion-06`, 「申し訳ございませんが、本日中の対応は難しい状況です」 — labelled `DANGER`, answered `CAUTION`. 「難しい」 is listed in the prompt as a refusal, and the label follows that; the model appears to read it as softer because the refusal is bounded to *today* rather than to the request itself. Both readings are arguable, and neither definition in the prompt covers the case: `DANGER` says "a refusal, however softly worded" and `CAUTION` says "deferred with no commitment and no deadline", and a refusal of the deadline sits between them.
 
 `reject-03`, 「少し考えておきます」 to an `EXTERNAL` contact — answered `DANGER`, and **the label was wrong**. The prompt lists 「考えておきます」 under `CAUTION`, which is where the label came from, but the label carries a relationship and the grade is computed with it: 考える+おく weighs 0.6, `EXTERNAL` multiplies by 1.2, and 0.72 is past the 0.7 boundary. Our own rules had been calling that sentence `DANGER` all along. The model agreed with the rules, and the label — written from the sentence while ignoring the multiplier its own `relationship` field implies — was the odd one out. It is now `DANGER`, and a test makes that class of inconsistency impossible to leave in (see [What the measurement found](#-what-the-measurement-found)).
 
 **`real-02` and `real-05` are the same disagreement twice, and it is definitional.** 「検討のうえ、必要に応じてご連絡させていただきます」 and 「状況が変わりましたら、こちらからお声がけいたします」 are both labelled `CAUTION` and both answered `DANGER`. Their labels say why in their own basis field: *実務では拒否として読まれることも多いが、文面としては期限も約束もない保留なので CAUTION とする* — we deliberately labelled what the sentence says, while the model answers what the sentence does in practice. Across three days of answers that looks like a consistent difference in reading rather than an error on either side, so the labels keep their text-level reading and the disagreement is recorded instead of resolved by moving whichever side is cheaper.
+
+**`context-07` is the same disagreement a third time, and it says something about the concession rule.** 「現状では難しいですが、社内で検討いたします」 was added on 2026-10-14 to keep the new concession rule honest: 難しい sits in a 「が」 clause, so the rules stop counting it and read the conclusion — 検討いたします, a deferral, `CAUTION`. The label says the same. The model answered `DANGER`. It is not reading concessions blindly: for 「難しい課題ですが、必ず期日までに対応いたします」 (`context-03`), the same structure ending in a commitment, it answered `SAFE`. It separates a concession followed by a commitment from one followed by a deferral, and reads the second as a refusal in practice. That is the `real-02` / `real-05` difference again — text against practice — so the label stays, the sentence is the fourth named in `ProductGradeTest`, and №41 on the review sheet asks a native reader which is natural. The screen shows `DANGER`, the more severe, so a reader is not left unwarned meanwhile.
 
 **`reject-05` is the one the model simply got wrong.** 「社内で確認のうえ、改めてご連絡いたします」 is labelled `SAFE`, and the prompt names that very sentence as its example of `SAFE` — "names a next step". The model answered `CAUTION`. Nothing is ambiguous about it; it is an ordinary procedural reply. This one matters more than the others because of what it does to the grade on screen, which is now measured.
 
@@ -295,15 +297,15 @@ An earlier run is why the prompt changed: the model read `riskLevel` as rudeness
 
 **What the screen shows is neither of the two numbers above.** The grade is the more severe of the rules' and the model's, so neither agreement rate describes what a user is told. That composition is now measured, from the answers already recorded — no quota needed, so it runs on every push:
 
-| on the 35 sentences the model has answered | agrees with the label |
+| on all 41 labelled sentences | agrees with the label |
 |---|---|
-| the rules alone | 34 |
-| the model alone | 31 |
-| **the grade on screen** (more severe of the two) | **32** — 3 more severe than the label, 0 less |
+| the rules alone | 40 |
+| the model alone | 36 |
+| **the grade on screen** (more severe of the two) | **37** — 4 more severe than the label, 0 less |
 
-**Read the first row with suspicion.** The dictionaries and weights were built against these same labels, so 34 of 35 is partly a measurement of itself. The model never saw the labels, which is what makes its 31 the more informative number — and what makes the third row the one that matters, because it is the only one a user experiences.
+**Read the first row with suspicion.** The dictionaries and weights were built against these same labels, so 40 of 41 is partly a measurement of itself. The model never saw the labels, which is what makes its 36 the more informative number — and what makes the third row the one that matters, because it is the only one a user experiences.
 
-**Three sentences come out more severe than the label, and zero come out less.** For this tool that asymmetry is the intended direction: a missed refusal is a reply sent to a client in good faith. But the cost is now visible with a denominator. `reject-05` 「社内で確認のうえ、改めてご連絡いたします」 is labelled `SAFE`, the rules agree, and the model's `CAUTION` wins by being the more severe — so a reader is warned about an ordinary procedural reply. The rules' false alarms are asserted at zero; the model's are not, and `ProductGradeTest` names the three so a fourth fails the build rather than joining them quietly.
+**Four sentences come out more severe than the label, and zero come out less.** For this tool that asymmetry is the intended direction: a missed refusal is a reply sent to a client in good faith. But the cost is now visible with a denominator. `reject-05` 「社内で確認のうえ、改めてご連絡いたします」 is labelled `SAFE`, the rules agree, and the model's `CAUTION` wins by being the more severe — so a reader is warned about an ordinary procedural reply. The rules' false alarms are asserted at zero; the model's are not, and `ProductGradeTest` names them so a new one fails the build rather than joining them quietly — which is how the fourth, `context-07`, was found on 2026-10-16.
 
 **Scoring is deterministic.** `GEMINI_TEMPERATURE` defaults to 0. At 0.7 the same sentence scored 70/71/71 overall but 15/10/12 on etiquette across three identical requests.
 
@@ -317,7 +319,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 | limit | where it stands | what would move it |
 |---|---|---|
 | native-speaker review of the labels | **0 / 41** sentences | one reader of Japanese, on the two convention axes only |
-| model agreement, risk grade | **35 / 41** sentences | the next day of free quota — `evalTest` asks only the 6 unanswered |
+| model agreement, risk grade | **41 / 41** sentences — done | — |
 | model agreement, ordering | **7 / 7** pairs — done | — |
 | calibration of the absolute scores | **none, and none planned** | a source that says what 「ご確認ください」 is out of 40 — there isn't one |
 | sentences sampled from real correspondence | **0 / 41** | correspondence nobody can publish |
@@ -327,7 +329,7 @@ checked and can move, while a limit stated as a disclaimer only sounds humble.
 **Status: returned by two language models, not by a person.** ChatGPT and Gemini both marked every row sound ([`docs/reviews/`](docs/reviews/)). That is weaker evidence than it looks: the labels were written by a language model, the reviewers are language models that share much of the same training, and the sheet handed them the verdict and its reasoning before asking whether it was right. Read it as "no obvious error was found". One part of it was genuinely useful — Gemini supplied the ten real-world expressions now in the set, none of which our dictionaries recognised.
 - **The metrics have ordering, not calibration.** Seven pairs say which of two sentences must score higher. Nothing says whether a polite request deserves 35 or 28 out of 40, and nothing here will.
 - **41 sentences and 7 pairs.** Ten come from expressions a reviewer called troublesome in practice, which is closer to real use than the 31 the author wrote, but none of it is sampled from actual correspondence. Agreement here still says nothing about the distribution of sentences a user types.
-- **Both model columns were filled once, and they took a week of free quota.** Risk grade: **34 of 34** at the time, 30 agreed; the seven sentences added on 2026-10-14 reopened that column at 34 of 41; it stands at 35 after 2026-10-15, a busy day on the model's side — see [What the measurement found](#-what-the-measurement-found). Ordering: **7 of 7**, none inverted, one tied. The daily allowance was neither ours to size nor to schedule — 2026-10-05 gave one answer, 10-06 none, 10-07 twelve, 10-08 eight, 10-09 eleven, 10-10 one, and 10-11 the last six pairs. What finished the ordering column was not more quota but the risk column closing: the cheaper check is asked first, so until it was done the pairs never got a call.
+- **Both model columns were filled once, and they took a week of free quota.** Risk grade: **34 of 34** at the time, 30 agreed; the seven sentences added on 2026-10-14 reopened that column at 34 of 41; it stood at 35 after 2026-10-15, a busy day on the model's side, and was full again on 10-16 with six calls and one throttle wait — see [What the measurement found](#-what-the-measurement-found). Ordering: **7 of 7**, none inverted, one tied. The daily allowance was neither ours to size nor to schedule — 2026-10-05 gave one answer, 10-06 none, 10-07 twelve, 10-08 eight, 10-09 eleven, 10-10 one, and 10-11 the last six pairs. What finished the ordering column was not more quota but the risk column closing: the cheaper check is asked first, so until it was done the pairs never got a call.
 
 ## 📡 API
 
@@ -451,7 +453,7 @@ remove or narrow one, so a deleted field left its column behind forever and a re
     - [ ] Phase 6-7: Native-speaker review of the two convention axes — the one remaining item, and the only one that needs someone other than the author. [`docs/NATIVE_REVIEW.md`](docs/NATIVE_REVIEW.md) is the sheet, kept in step with the labels by a test
     - [x] Phase 6-8: A second full read of both repositories (#89) — a path spelling that walked around the API key, a model deadline longer than the frontend's, scores off their scale, a timeout reported as our own failure, a dictionary list that a late answer could overwrite
     - [x] Phase 6-9: What #89 left open, decided and closed (#91) — rules that read a signal word by where it sits, one password in front of the frontend, a rate limit per user rather than per frontend, history paged by cursor, an analysis that survives a failed save, and a container that no longer runs as root
-    - [x] Phase 6-10: The seven new sentences put to the model (#93) — one answered and agreed before a busy day and a deadline borrowed from production cut the rest; a timeout no longer read as our breakage; the dictionary paged by (politeness, id); free hosting measured against the app's real needs ([`docs/HOSTING.md`](docs/HOSTING.md))
+    - [x] Phase 6-10: The seven new sentences put to the model (#93) — one answered on a busy day when a deadline borrowed from production cut the rest, the other six the day after (36 of 41 agree; `context-07` became the fourth named over-escalation, sent to native review); a timeout no longer read as our breakage; the dictionary paged by (politeness, id); free hosting measured against the app's real needs ([`docs/HOSTING.md`](docs/HOSTING.md))
 
 ## 🔥 Troubleshooting & Lessons Learned
 **1. External Resource Path Resolution (Classpath vs FileSystem)** *(historical — resolved by removing the key file entirely)*
