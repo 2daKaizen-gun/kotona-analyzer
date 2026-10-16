@@ -60,16 +60,17 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         boolean keyConfigured = apiKey != null && !apiKey.isBlank();
+        boolean keyMatched = keyConfigured && matches(request.getHeader(HEADER), apiKey);
         if (isProtected(request)) {
             if (!keyConfigured) {
                 log.warn("API_KEY 미설정: {} {} 인증이 비활성화되어 있습니다. 운영 환경에서는 반드시 설정하세요.",
                         request.getMethod(), request.getRequestURI());
-            } else if (!matches(request.getHeader(HEADER), apiKey)) {
+            } else if (!keyMatched) {
                 writeUnauthorized(response);
                 return;
             }
         }
-        if (keyConfigured && matches(request.getHeader(HEADER), apiKey)) {
+        if (keyMatched) {
             request.setAttribute(VERIFIED_CALLER, Boolean.TRUE);
         }
         filterChain.doFilter(request, response);
