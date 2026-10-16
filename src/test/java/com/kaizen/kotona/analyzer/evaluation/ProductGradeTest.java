@@ -32,15 +32,22 @@ class ProductGradeTest {
      * 지금 과하게 올려 읽는 문장들.
      *
      * <p>비워 두지 않고 이름을 적어 둔다 — 새로 하나가 늘면 테스트가 깨지고, 그때 이것이
-     * 설계의 대가인지 고칠 수 있는 결함인지 보게 된다. 셋 다 모델이 라벨보다 위험하게 읽은
-     * 경우이고, 라벨 쪽 근거에 "실무에서는 거절로 읽히지만 문면상 보류" 라고 적어 둔 문장이
-     * 둘 섞여 있다. 그 둘은 정의의 차이에 가깝고, {@code reject-05} 는 그렇지 않다 —
-     * 프롬프트가 바로 그 문장을 SAFE 의 예로 적어 두었는데도 모델이 CAUTION 으로 답했다.
+     * 설계의 대가인지 고칠 수 있는 결함인지 보게 된다. 넷 다 모델이 라벨보다 위험하게 읽은
+     * 경우이고, 라벨은 문면을, 모델은 실무 관행을 읽은 문장이 셋 섞여 있다. 그 셋은 정의의 차이에
+     * 가깝고, {@code reject-05} 는 그렇지 않다 — 프롬프트가 바로 그 문장을 SAFE 의 예로 적어
+     * 두었는데도 모델이 CAUTION 으로 답했다.
+     *
+     * <p>{@code context-07} 「現状では難しいですが、社内で検討いたします」 는 2026-10-16 에 이 테스트가
+     * 깨뜨려 찾아낸 넷째다. 라벨은 양보절 뒤의 결론(검토하겠다)을 읽어 CAUTION, 모델은 「難しい」+「検討」
+     * 를 실무의 거절로 읽어 DANGER. 같은 양보절이라도 결론이 확약인 {@code context-03} 은 모델도 SAFE 로
+     * 읽었다 — 모델은 양보절 뒤가 확약이냐 보류냐로 가른다. 라벨을 모델 쪽으로 옮기지 않고 원어민 검수에
+     * 올린다(NATIVE_REVIEW 41번). 화면은 더 위험한 쪽을 보이므로 사용자가 경고를 놓치지는 않는다.
      */
-    private static final Set<String> KNOWN_OVER_ESCALATIONS = Set.of("reject-05", "real-02", "real-05");
+    private static final Set<String> KNOWN_OVER_ESCALATIONS =
+            Set.of("reject-05", "real-02", "real-05", "context-07");
 
     @Test
-    @DisplayName("합성 등급이 라벨보다 위험해지는 문장은 알고 있는 세 건뿐이다")
+    @DisplayName("합성 등급이 라벨보다 위험해지는 문장은 알고 있는 네 건뿐이다")
     void theGradeTheUserSeesIsNotMoreSevereThanTheLabelExceptWhereWeKnowItIs() {
         Map<String, String> modelAnswers = EvaluationLog.load().recorded("risk").stream()
                 .collect(Collectors.toMap(EvaluationLog.Answer::id, EvaluationLog.Answer::value));
